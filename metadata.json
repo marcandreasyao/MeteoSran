@@ -1,0 +1,6 @@
+{
+  "name": "Weather Pro Explainer",
+  "description": "An interactive app to learn about weather phenomena like cloud formations, hurricanes, precipitation, and storms. Ask MeteoSran your questions and get clear, engaging explanations powered by Gemini.",
+  "requestFramePermissions": [],
+  "prompt": ""
+}
