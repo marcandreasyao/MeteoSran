@@ -8,11 +8,16 @@ interface MessageBubbleProps {
 }
 
 const UserIcon: React.FC = () => (
-  <span className="material-symbols-outlined text-xl text-white dark:text-slate-200">person</span>
+  <span className="inline-block h-7 w-7 rounded-full bg-gray-300 dark:bg-slate-700 flex items-center justify-center">
+    <svg className="h-5 w-5 text-white dark:text-slate-200" fill="currentColor" viewBox="0 0 24 24">
+      <circle cx="12" cy="8" r="4" />
+      <path d="M4 20c0-2.21 3.58-4 8-4s8 1.79 8 4v1H4v-1z" />
+    </svg>
+  </span>
 );
 
 const ModelIcon: React.FC = () => (
-  <span className="material-symbols-outlined text-xl text-sky-700 dark:text-sky-400">cloud</span>
+  <img src="/Meteosran-logo.png" alt="MeteoSran Logo" className="h-7 w-7 rounded-full bg-white dark:bg-slate-800 p-1" />
 );
 
 export const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {

@@ -87,12 +87,10 @@ export const Header: React.FC<HeaderProps> = ({ theme, toggleTheme, messages, se
     >
       <div className="container mx-auto flex items-center justify-between">
         <div className="flex items-center space-x-4">
-          <span className="material-symbols-outlined text-3xl text-sky-600 dark:text-sky-400">
-            filter_drama
-          </span>
-          <h1 className="text-2xl font-semibold tracking-tight text-slate-800 dark:text-slate-100">
+          <img src="/Meteosran-logo.png" alt="MeteoSran Logo" className="h-10 w-auto mr-2" />
+          <span className="text-2xl font-semibold tracking-tight text-slate-800 dark:text-slate-100">
             MeteoSran
-          </h1>
+          </span>
 
           {/* Mode Selector Dropdown */}
           <div className="relative" ref={dropdownRef}>
