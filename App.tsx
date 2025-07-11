@@ -50,6 +50,9 @@ const App: React.FC = () => {
   const [selectedMode, setSelectedMode] = useState<ResponseMode>(ResponseMode.DEFAULT);
   const [currentInput, setCurrentInput] = useState<CurrentInputState>({ text: '', imageFile: null });
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const [userLocation, setUserLocation] = useState<{ lat: number; lon: number } | null>(null);
+  const [locationError, setLocationError] = useState<string | null>(null);
+  const [locationPrompt, setLocationPrompt] = useState(false);
 
   useEffect(() => {
     if (theme === 'dark') {
@@ -97,6 +100,47 @@ const App: React.FC = () => {
 
     initializeChat();
   }, []);
+
+  // Geolocation logic
+  useEffect(() => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setUserLocation({
+            lat: position.coords.latitude,
+            lon: position.coords.longitude,
+          });
+          setLocationError(null);
+        },
+        (error) => {
+          setLocationError('Location access denied. Please enter your location manually.');
+          setLocationPrompt(true);
+        }
+      );
+    } else {
+      setLocationError('Geolocation is not supported by your browser. Please enter your location manually.');
+      setLocationPrompt(true);
+    }
+  }, []);
+
+  // Handler for manual location entry (simple prompt for now)
+  const handleManualLocation = () => {
+    const manual = prompt('Enter your city or coordinates (lat,lon):');
+    if (manual) {
+      const parts = manual.split(',');
+      if (parts.length === 2) {
+        const lat = parseFloat(parts[0]);
+        const lon = parseFloat(parts[1]);
+        if (!isNaN(lat) && !isNaN(lon)) {
+          setUserLocation({ lat, lon });
+          setLocationError(null);
+          setLocationPrompt(false);
+          return;
+        }
+      }
+      setLocationError('Invalid format. Please enter as lat,lon (e.g., 5.34,-4.03)');
+    }
+  };
 
   const triggerShockwave = () => {
     setShowShockwave(true);
@@ -189,6 +233,12 @@ const App: React.FC = () => {
           <div className="shockwave-glass"></div>
         </div>
       )}
+      {/* Location error and manual entry */}
+      {locationError && (
+        <div className="bg-yellow-100 text-yellow-800 p-2 text-center">
+          {locationError} {locationPrompt && <button className="ml-2 underline" onClick={handleManualLocation}>Enter manually</button>}
+        </div>
+      )}
       <div className="flex-grow flex flex-col overflow-hidden">
         <Header 
           theme={theme} 
@@ -201,7 +251,7 @@ const App: React.FC = () => {
           {error && <ErrorMessage message={error} />}
           {showWeatherWidget && (
             <div className="my-4 flex justify-center">
-              <WeatherWidget />
+              <WeatherWidget userLocation={userLocation} />
             </div>
           )}
           <ChatInterface

@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Theme } from '../App';
 import { Message, ResponseMode } from '../types';
 import { generateChatPdf } from '../services/pdfService'; // Import the PDF generation service
@@ -47,11 +47,44 @@ const ResponseModeDetails = {
 export const Header: React.FC<HeaderProps> = ({ theme, toggleTheme, messages, selectedMode, onModeChange }) => {
   const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
   const [isModeDropdownOpen, setIsModeDropdownOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
+  const [showSettings, setShowSettings] = useState(false);
+  // Notification and location preferences
+  const [notificationsEnabled, setNotificationsEnabled] = useState(() => {
+    const stored = localStorage.getItem('notificationsEnabled');
+    return stored ? stored === 'true' : false;
+  });
+  const [locationMode, setLocationMode] = useState<'auto' | 'manual'>(() => {
+    const stored = localStorage.getItem('locationMode');
+    return stored === 'manual' ? 'manual' : 'auto';
+  });
+  const [notificationType, setNotificationType] = useState(() => {
+    return localStorage.getItem('notificationType') || 'Daily Summary';
+  });
+  // Request notification permission if enabled
+  useEffect(() => {
+    if (notificationsEnabled && 'Notification' in window) {
+      Notification.requestPermission().then((permission) => {
+        if (permission !== 'granted') {
+          setNotificationsEnabled(false);
+          localStorage.setItem('notificationsEnabled', 'false');
+        }
+      });
+    }
+  }, [notificationsEnabled]);
+  // Persist preferences
+  useEffect(() => {
+    localStorage.setItem('notificationsEnabled', notificationsEnabled.toString());
+  }, [notificationsEnabled]);
+  useEffect(() => {
+    localStorage.setItem('locationMode', locationMode);
+  }, [locationMode]);
+  useEffect(() => {
+    localStorage.setItem('notificationType', notificationType);
+  }, [notificationType]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      if (false) { // dropdownRef removed, so this block is now unreachable
         setIsModeDropdownOpen(false);
       }
     };
@@ -93,7 +126,7 @@ export const Header: React.FC<HeaderProps> = ({ theme, toggleTheme, messages, se
           </span>
 
           {/* Mode Selector Dropdown */}
-          <div className="relative" ref={dropdownRef}>
+          <div className="relative">
             <button
               type="button"
               onClick={() => setIsModeDropdownOpen(!isModeDropdownOpen)}
@@ -165,31 +198,121 @@ export const Header: React.FC<HeaderProps> = ({ theme, toggleTheme, messages, se
         </div>
 
         <div className="flex items-center space-x-2">
-          <button
-            onClick={handleDownloadPdf}
-            disabled={!canDownload}
-            className="p-2 rounded-full hover:bg-black/10 dark:hover:bg-white/10 
-                      focus:outline-none focus:ring-2 focus:ring-sky-500 dark:focus:ring-sky-400 
-                      disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            aria-label={isDownloadingPdf ? "Generating PDF..." : "Download chat as PDF"}
-            title={messages.length <= 1 ? "Send a message to enable download" : (isDownloadingPdf ? "Generating PDF..." : "Download chat as PDF")}
-          >
-            <span className="material-symbols-outlined text-slate-700 dark:text-slate-200">
-              {isDownloadingPdf ? 'hourglass_top' : 'download'}
-            </span>
-          </button>
-          <button
-            onClick={toggleTheme}
-            className="p-2 rounded-full hover:bg-black/10 dark:hover:bg-white/10 
-                      focus:outline-none focus:ring-2 focus:ring-sky-500 dark:focus:ring-sky-400 
-                      transition-colors"
-            aria-label={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
-            title={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
-          >
-            <span className="material-symbols-outlined text-slate-700 dark:text-slate-200">
-              {theme === 'light' ? 'dark_mode' : 'light_mode'}
-            </span>
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleDownloadPdf}
+              disabled={!canDownload}
+              className="p-2 rounded-full hover:bg-black/10 dark:hover:bg-white/10 
+                        focus:outline-none focus:ring-2 focus:ring-sky-500 dark:focus:ring-sky-400 
+                        disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              aria-label={isDownloadingPdf ? "Generating PDF..." : "Download chat as PDF"}
+              title={messages.length <= 1 ? "Send a message to enable download" : (isDownloadingPdf ? "Generating PDF..." : "Download chat as PDF")}
+            >
+              <span className="material-symbols-outlined text-slate-700 dark:text-slate-200">
+                {isDownloadingPdf ? 'hourglass_top' : 'download'}
+              </span>
+            </button>
+            <button
+              onClick={toggleTheme}
+              className="p-2 rounded-full hover:bg-black/10 dark:hover:bg-white/10 
+                        focus:outline-none focus:ring-2 focus:ring-sky-500 dark:focus:ring-sky-400 
+                        transition-colors"
+              aria-label={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
+              title={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
+            >
+              <span className="material-symbols-outlined text-slate-700 dark:text-slate-200">
+                {theme === 'light' ? 'dark_mode' : 'light_mode'}
+              </span>
+            </button>
+            <div className="relative">
+              <button
+                className="p-2 rounded-full hover:bg-black/10 dark:hover:bg-white/10 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-sky-500 dark:focus:ring-sky-400 transition-colors"
+                onClick={() => setShowSettings(!showSettings)}
+                aria-label="Open settings"
+              >
+                <span className="material-symbols-outlined">settings</span>
+              </button>
+              {showSettings && (
+                <div className="absolute right-0 mt-2 w-[320px] origin-top-right rounded-xl bg-white/90 dark:bg-slate-800/90 backdrop-blur-xl shadow-2xl border border-white/30 dark:border-slate-700/40 ring-1 ring-black ring-opacity-5 focus:outline-none z-30 overflow-hidden max-h-[80vh] overflow-y-auto p-4">
+                  <button
+                    className="absolute top-2 right-2 text-gray-400 hover:text-gray-700 dark:hover:text-white text-2xl focus:outline-none"
+                    onClick={() => setShowSettings(false)}
+                    aria-label="Close settings"
+                  >
+                    ×
+                  </button>
+                  <h2 className="text-2xl font-bold mb-6 text-center text-gray-900 dark:text-white tracking-tight">User Preferences</h2>
+                  <div className="space-y-6">
+                    {/* Notification toggle */}
+                    <div className="flex items-center justify-between">
+                      <span className="text-lg text-gray-700 dark:text-gray-200 font-medium">Enable Notifications</span>
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input
+                          type="checkbox"
+                          className="sr-only peer"
+                          checked={notificationsEnabled}
+                          onChange={e => setNotificationsEnabled(e.target.checked)}
+                        />
+                        <div className={`w-11 h-6 ${notificationsEnabled ? 'bg-blue-500' : 'bg-gray-200 dark:bg-gray-700'} peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500 rounded-full transition-all duration-300`}></div>
+                        <span className="ml-3 text-sm text-gray-500 dark:text-gray-400">{notificationsEnabled ? 'On' : 'Off'}</span>
+                      </label>
+                    </div>
+                    {/* Location preference */}
+                    <div className="flex items-center justify-between">
+                      <span className="text-lg text-gray-700 dark:text-gray-200 font-medium">Location</span>
+                      <div className="flex items-center space-x-2">
+                        <button
+                          className={`px-3 py-1 rounded-lg font-semibold shadow-sm transition ${locationMode === 'auto' ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-200' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'}`}
+                          onClick={() => setLocationMode('auto')}
+                          disabled={locationMode === 'auto'}
+                        >
+                          Auto
+                        </button>
+                        <button
+                          className={`px-3 py-1 rounded-lg font-semibold shadow-sm transition ${locationMode === 'manual' ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-200' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'}`}
+                          onClick={() => setLocationMode('manual')}
+                          disabled={locationMode === 'manual'}
+                        >
+                          Manual
+                        </button>
+                      </div>
+                    </div>
+                    {/* Notification type */}
+                    <div>
+                      <label className="block text-lg text-gray-700 dark:text-gray-200 font-medium mb-2">Notification Type</label>
+                      <select
+                        className="w-full rounded-lg border border-gray-300 dark:border-slate-600 bg-gray-50 dark:bg-slate-700 text-gray-800 dark:text-gray-100 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+                        value={notificationType}
+                        onChange={e => setNotificationType(e.target.value)}
+                      >
+                        <option>Daily Summary</option>
+                        <option>Severe Weather Alerts</option>
+                        <option>Rain Alerts</option>
+                        <option>Custom</option>
+                      </select>
+                    </div>
+                    {/* Test Notification Button */}
+                    <div className="flex justify-end">
+                      <button
+                        className="px-4 py-2 rounded bg-blue-500 text-white font-semibold shadow hover:bg-blue-600 transition disabled:opacity-50"
+                        disabled={!notificationsEnabled || Notification.permission !== 'granted'}
+                        onClick={() => {
+                          if (Notification.permission === 'granted') {
+                            new Notification('MeteoSran', {
+                              body: 'This is a test notification!',
+                              icon: '/Meteosran-logo.png'
+                            });
+                          }
+                        }}
+                      >
+                        Send Test Notification
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       </div>
     </header>

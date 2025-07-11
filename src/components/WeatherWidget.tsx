@@ -11,7 +11,11 @@ interface WeatherData {
   // Add more properties as needed based on your server response
 }
 
-const WeatherWidget: React.FC = () => {
+interface WeatherWidgetProps {
+  userLocation?: { lat: number; lon: number } | null;
+}
+
+const WeatherWidget: React.FC<WeatherWidgetProps> = ({ userLocation }) => {
   const [weather, setWeather] = useState<WeatherData | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -19,9 +23,11 @@ const WeatherWidget: React.FC = () => {
   useEffect(() => {
     const fetchWeather = async () => {
       try {
-        // Replace with your Node.js proxy server's URL
-        const response = await fetch('http://localhost:5000/api/weather/current'); 
-        
+        let url = 'http://localhost:5000/api/weather/current';
+        if (userLocation && userLocation.lat && userLocation.lon) {
+          url += `?lat=${userLocation.lat}&lon=${userLocation.lon}`;
+        }
+        const response = await fetch(url);
         if (!response.ok) {
           const errorData = await response.json();
           throw new Error(errorData.error || 'Failed to fetch weather data.');
@@ -35,9 +41,8 @@ const WeatherWidget: React.FC = () => {
         setLoading(false);
       }
     };
-
     fetchWeather();
-  }, []);
+  }, [userLocation]);
 
   if (loading) {
     return (
