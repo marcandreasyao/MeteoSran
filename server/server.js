@@ -17,9 +17,67 @@ app.use(express.json());
 
 // Proxy endpoint for current weather
 app.get('/api/weather/current', async (req, res) => {
-    // Always use Abidjan location key, ignore lat/lon for now
-    const locationKey = ABIDJAN_LOCATION_KEY;
-    const locationLabel = "Abidjan, Ivory Coast";
+    let lat, lon, locationKey, locationLabel;
+
+    // 0. If 'fixed' param is set, always use Abidjan
+    if (req.query.fixed) {
+        locationKey = ABIDJAN_LOCATION_KEY;
+        locationLabel = "Abidjan, Ivory Coast";
+    } else {
+        // 1. If lat/lon provided by frontend, use them
+        if (req.query.lat && req.query.lon) {
+            lat = req.query.lat;
+            lon = req.query.lon;
+            try {
+                const geoUrl = `http://dataservice.accuweather.com/locations/v1/cities/geoposition/search?apikey=${ACCUWEATHER_API_KEY}&q=${lat},${lon}`;
+                const geoResp = await fetch(geoUrl);
+                if (geoResp.ok) {
+                    const geoData = await geoResp.json();
+                    if (geoData && geoData.Key) {
+                        locationKey = geoData.Key;
+                        locationLabel = geoData.LocalizedName + (geoData.AdministrativeArea ? ', ' + geoData.AdministrativeArea.LocalizedName : '') + (geoData.Country ? ', ' + geoData.Country.LocalizedName : '');
+                    }
+                }
+            } catch (e) {
+                // If geolocation fails, fallback below
+            }
+        }
+
+        // 2. If no lat/lon or failed, try IP geolocation
+        if (!locationKey) {
+            try {
+                // Get client IP (works behind proxies/load balancers if x-forwarded-for is set)
+                const ip = req.headers['x-forwarded-for']?.split(',')[0] || req.connection.remoteAddress;
+                // Use a free IP geolocation API (ip-api.com)
+                const ipGeoResp = await fetch(`http://ip-api.com/json/${ip}`);
+                if (ipGeoResp.ok) {
+                    const ipGeoData = await ipGeoResp.json();
+                    if (ipGeoData && ipGeoData.status === 'success') {
+                        lat = ipGeoData.lat;
+                        lon = ipGeoData.lon;
+                        // Now get AccuWeather location key for these coords
+                        const geoUrl = `http://dataservice.accuweather.com/locations/v1/cities/geoposition/search?apikey=${ACCUWEATHER_API_KEY}&q=${lat},${lon}`;
+                        const geoResp = await fetch(geoUrl);
+                        if (geoResp.ok) {
+                            const geoData = await geoResp.json();
+                            if (geoData && geoData.Key) {
+                                locationKey = geoData.Key;
+                                locationLabel = geoData.LocalizedName + (geoData.AdministrativeArea ? ', ' + geoData.AdministrativeArea.LocalizedName : '') + (geoData.Country ? ', ' + geoData.Country.LocalizedName : '');
+                            }
+                        }
+                    }
+                }
+            } catch (e) {
+                // If IP geolocation fails, fallback below
+            }
+        }
+
+        // 3. If all else fails, fallback to Abidjan
+        if (!locationKey) {
+            locationKey = ABIDJAN_LOCATION_KEY;
+            locationLabel = "Abidjan, Ivory Coast";
+        }
+    }
 
     const accuweatherUrl = `http://dataservice.accuweather.com/currentconditions/v1/${locationKey}?apikey=${ACCUWEATHER_API_KEY}&details=true&metric=true`;
 

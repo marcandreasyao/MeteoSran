@@ -53,9 +53,10 @@ export const Header: React.FC<HeaderProps> = ({ theme, toggleTheme, messages, se
     const stored = localStorage.getItem('notificationsEnabled');
     return stored ? stored === 'true' : false;
   });
-  const [locationMode, setLocationMode] = useState<'auto' | 'manual'>(() => {
+  const [locationMode, setLocationMode] = useState<'auto' | 'manual' | 'ip' | 'fixed'>(() => {
     const stored = localStorage.getItem('locationMode');
-    return stored === 'manual' ? 'manual' : 'auto';
+    if (stored === 'manual' || stored === 'ip' || stored === 'fixed') return stored;
+    return 'auto';
   });
   const [notificationType, setNotificationType] = useState(() => {
     return localStorage.getItem('notificationType') || 'Daily Summary';
@@ -110,6 +111,28 @@ export const Header: React.FC<HeaderProps> = ({ theme, toggleTheme, messages, se
 
   const canDownload = messages.length > 1 && !isDownloadingPdf;
   const selectedModeDetails = ResponseModeDetails[selectedMode];
+
+  // Handler for sending a test notification
+  const handleSendTestNotification = () => {
+    if (!notificationsEnabled) return;
+    if ('Notification' in window) {
+      if (Notification.permission === 'granted') {
+        new Notification('MeteoSran Test Notification', {
+          body: `This is a test notification (${notificationType})!`,
+          icon: '/Meteosran-logo.png',
+        });
+      } else if (Notification.permission !== 'denied') {
+        Notification.requestPermission().then(permission => {
+          if (permission === 'granted') {
+            new Notification('MeteoSran Test Notification', {
+              body: `This is a test notification (${notificationType})!`,
+              icon: '/Meteosran-logo.png',
+            });
+          }
+        });
+      }
+    }
+  };
 
   return (
     <header 
@@ -233,7 +256,7 @@ export const Header: React.FC<HeaderProps> = ({ theme, toggleTheme, messages, se
                 <span className="material-symbols-outlined">settings</span>
               </button>
               {showSettings && (
-                <div className="absolute right-0 mt-2 w-[320px] origin-top-right rounded-xl bg-white/90 dark:bg-slate-800/90 backdrop-blur-xl shadow-2xl border border-white/30 dark:border-slate-700/40 ring-1 ring-black ring-opacity-5 focus:outline-none z-30 overflow-hidden max-h-[80vh] overflow-y-auto p-4">
+                <div className="absolute right-0 mt-2 w-[380px] origin-top-right rounded-2xl bg-white/80 dark:bg-slate-800/80 backdrop-blur-lg shadow-2xl border border-white/30 dark:border-slate-700/40 ring-1 ring-black ring-opacity-5 focus:outline-none z-30 overflow-hidden max-h-[80vh] overflow-y-auto p-6">
                   <button
                     className="absolute top-2 right-2 text-gray-400 hover:text-gray-700 dark:hover:text-white text-2xl focus:outline-none"
                     onClick={() => setShowSettings(false)}
@@ -241,69 +264,97 @@ export const Header: React.FC<HeaderProps> = ({ theme, toggleTheme, messages, se
                   >
                     ×
                   </button>
-                  <h2 className="text-2xl font-bold mb-6 text-center text-gray-900 dark:text-white tracking-tight">User Preferences</h2>
+                  <h2 className="text-2xl font-extrabold mb-6 text-center text-gray-900 dark:text-white tracking-tight flex items-center justify-center gap-2">
+                    <span className="material-symbols-outlined text-3xl align-middle">settings</span>
+                    User Preferences
+                  </h2>
                   <div className="space-y-6">
                     {/* Notification toggle */}
-                    <div className="flex items-center justify-between">
-                      <span className="text-lg text-gray-700 dark:text-gray-200 font-medium">Enable Notifications</span>
-                      <label className="relative inline-flex items-center cursor-pointer">
-                        <input
-                          type="checkbox"
-                          className="sr-only peer"
-                          checked={notificationsEnabled}
-                          onChange={e => setNotificationsEnabled(e.target.checked)}
-                        />
-                        <div className={`w-11 h-6 ${notificationsEnabled ? 'bg-blue-500' : 'bg-gray-200 dark:bg-gray-700'} peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500 rounded-full transition-all duration-300`}></div>
-                        <span className="ml-3 text-sm text-gray-500 dark:text-gray-400">{notificationsEnabled ? 'On' : 'Off'}</span>
-                      </label>
+                    <div>
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-lg text-gray-700 dark:text-gray-200 font-semibold flex items-center gap-2">
+                          <span className="material-symbols-outlined text-xl align-middle">notifications</span>
+                          Enable Notifications
+                        </span>
+                        {/* Apple-style switch */}
+                        <label className="relative inline-block w-12 h-7 align-middle select-none">
+                          <input
+                            type="checkbox"
+                            checked={notificationsEnabled}
+                            onChange={e => setNotificationsEnabled(e.target.checked)}
+                            className="sr-only peer"
+                          />
+                          <div className="block bg-gray-300 peer-checked:bg-green-500 w-12 h-7 rounded-full transition-colors duration-300"></div>
+                          <div className="dot absolute left-1 top-1 bg-white w-5 h-5 rounded-full shadow-md transition-transform duration-300 peer-checked:translate-x-5"></div>
+                        </label>
+                      </div>
+                      <span className="ml-10 text-xs text-gray-500 dark:text-gray-400">Get notified about weather updates and alerts.</span>
                     </div>
+                    <hr className="my-2 border-t border-gray-200 dark:border-gray-700" />
                     {/* Location preference */}
-                    <div className="flex items-center justify-between">
-                      <span className="text-lg text-gray-700 dark:text-gray-200 font-medium">Location</span>
-                      <div className="flex items-center space-x-2">
+                    <div>
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-lg text-gray-700 dark:text-gray-200 font-semibold flex items-center gap-2">
+                          <span className="material-symbols-outlined text-xl align-middle">location_on</span>
+                          Location
+                        </span>
+                      </div>
+                      <div className="flex flex-wrap gap-1 ml-2">
                         <button
-                          className={`px-3 py-1 rounded-lg font-semibold shadow-sm transition ${locationMode === 'auto' ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-200' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'}`}
+                          className={`px-2 py-1 text-xs rounded-l-lg font-semibold shadow-sm transition min-w-[60px] ${locationMode === 'auto' ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-200' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'}`}
                           onClick={() => setLocationMode('auto')}
                           disabled={locationMode === 'auto'}
                         >
                           Auto
                         </button>
                         <button
-                          className={`px-3 py-1 rounded-lg font-semibold shadow-sm transition ${locationMode === 'manual' ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-200' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'}`}
+                          className={`px-2 py-1 text-xs font-semibold shadow-sm transition min-w-[60px] ${locationMode === 'manual' ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-200' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'}`}
                           onClick={() => setLocationMode('manual')}
                           disabled={locationMode === 'manual'}
                         >
                           Manual
                         </button>
+                        <button
+                          className={`px-2 py-1 text-xs font-semibold shadow-sm transition min-w-[60px] ${locationMode === 'ip' ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-200' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'}`}
+                          onClick={() => setLocationMode('ip')}
+                          disabled={locationMode === 'ip'}
+                        >
+                          IP-based
+                        </button>
+                        <button
+                          className={`px-2 py-1 text-xs rounded-r-lg font-semibold shadow-sm transition min-w-[60px] ${locationMode === 'fixed' ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-200' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'}`}
+                          onClick={() => setLocationMode('fixed')}
+                          disabled={locationMode === 'fixed'}
+                        >
+                          Fixed city
+                        </button>
                       </div>
+                      <span className="ml-10 text-xs text-gray-500 dark:text-gray-400">Choose how your location is determined for weather updates.</span>
                     </div>
+                    <hr className="my-2 border-t border-gray-200 dark:border-gray-700" />
                     {/* Notification type */}
                     <div>
-                      <label className="block text-lg text-gray-700 dark:text-gray-200 font-medium mb-2">Notification Type</label>
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-lg text-gray-700 dark:text-gray-200 font-semibold flex items-center gap-2">
+                          <span className="material-symbols-outlined text-xl align-middle">list_alt</span>
+                          Notification Type
+                        </span>
+                      </div>
                       <select
-                        className="w-full rounded-lg border border-gray-300 dark:border-slate-600 bg-gray-50 dark:bg-slate-700 text-gray-800 dark:text-gray-100 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+                        className="w-full mt-1 p-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-slate-700 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
                         value={notificationType}
                         onChange={e => setNotificationType(e.target.value)}
                       >
-                        <option>Daily Summary</option>
-                        <option>Severe Weather Alerts</option>
-                        <option>Rain Alerts</option>
-                        <option>Custom</option>
+                        <option value="Daily Summary">Daily Summary</option>
+                        <option value="Severe Alerts">Severe Alerts</option>
+                        <option value="Rain Warnings">Rain Warnings</option>
                       </select>
                     </div>
-                    {/* Test Notification Button */}
-                    <div className="flex justify-end">
+                    <div className="flex justify-center mt-4">
                       <button
-                        className="px-4 py-2 rounded bg-blue-500 text-white font-semibold shadow hover:bg-blue-600 transition disabled:opacity-50"
-                        disabled={!notificationsEnabled || Notification.permission !== 'granted'}
-                        onClick={() => {
-                          if (Notification.permission === 'granted') {
-                            new Notification('MeteoSran', {
-                              body: 'This is a test notification!',
-                              icon: '/Meteosran-logo.png'
-                            });
-                          }
-                        }}
+                        className="px-4 py-2 rounded-lg bg-blue-500 text-white font-semibold shadow hover:bg-blue-600 transition disabled:opacity-50"
+                        disabled={!notificationsEnabled}
+                        onClick={handleSendTestNotification}
                       >
                         Send Test Notification
                       </button>

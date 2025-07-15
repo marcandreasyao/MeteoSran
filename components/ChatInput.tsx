@@ -21,11 +21,19 @@ const SendIcon: React.FC<{isLoading: boolean}> = ({isLoading}) => (
 );
 
 const ImageIcon: React.FC = () => (
-  <span className="material-symbols-outlined">image</span>
+  <span className="material-symbols-outlined text-xl md:text-2xl "></span>
 );
 
 const CloseIcon: React.FC = () => (
   <span className="material-symbols-outlined text-xs">close</span>
+);
+
+const UploadIcon: React.FC = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6 text-blue-500 dark:text-sky-400">
+    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+    <polyline points="17 8 12 3 7 8" />
+    <line x1="12" y1="3" x2="12" y2="15" />
+  </svg>
 );
 
 export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading, currentInputState, setCurrentInputState, inputRef }) => {
@@ -116,17 +124,17 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading, 
           </button>
         </div>
       )}
-      <form onSubmit={handleSubmit} className="flex items-end space-x-2 md:space-x-3 
-                     bg-white/30 dark:bg-slate-800/40 
-                     rounded-xl p-1 border border-white/40 dark:border-slate-600/50 
+      <form onSubmit={handleSubmit} className="flex items-center gap-2 md:gap-3 
+                     bg-white/40 dark:bg-slate-800/50 
+                     rounded-2xl p-1 border border-white/40 dark:border-slate-600/50 
                      focus-within:ring-2 focus-within:ring-blue-500 dark:focus-within:ring-sky-500 
-                     transition-all duration-150 shadow-md backdrop-blur-md"
+                     transition-all duration-150 shadow-xl backdrop-blur-md"
       >
         <input
           type="file"
           ref={fileInputRef}
           onChange={handleFileChange}
-          accept="image/png, image/jpeg, image/webp, image/gif" // Common image types
+          accept="image/png, image/jpeg, image/webp, image/gif"
           className="hidden"
           aria-label="Upload image file"
           disabled={isLoading}
@@ -135,20 +143,17 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading, 
           type="button"
           onClick={handleImageUploadClick}
           disabled={isLoading}
-          className="p-2.5 md:p-3 rounded-lg text-slate-600 dark:text-slate-300
-                     hover:bg-black/5 dark:hover:bg-white/5 
-                     focus:outline-none focus:ring-1 focus:ring-blue-500 dark:focus:ring-sky-500
-                     disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          className="flex items-center justify-center p-2.5 md:p-3 rounded-full bg-slate-100/80 dark:bg-slate-700/60 shadow hover:bg-slate-200 dark:hover:bg-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-400 dark:focus:ring-sky-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           aria-label="Attach image"
         >
-          <ImageIcon />
+          <UploadIcon />
         </button>
         <textarea
           ref={inputRef}
           value={currentText}
           onChange={handleTextChange}
           onKeyDown={handleKeyDown}
-          placeholder={imageFile ? "Describe the image or ask a question..." : "Ask about weather..."}
+          placeholder={imageFile ? "Describe the image or simply ask a question..." : "Ask me anything about weather..."}
           className="flex-grow p-2 md:p-3 bg-transparent border-none focus:ring-0 resize-none overflow-y-auto max-h-32 
                      text-sm md:text-base text-slate-800 dark:text-slate-100 
                      placeholder-slate-500 dark:placeholder-slate-400"
@@ -160,7 +165,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading, 
         <button
           type="submit"
           disabled={isLoading || (!currentText.trim() && !imageFile)}
-          className="group p-2.5 md:p-3 rounded-lg bg-blue-500 dark:bg-sky-600 text-white 
+          className="group flex items-center justify-center p-2.5 md:p-3 rounded-full bg-blue-500 dark:bg-sky-600 shadow-lg text-white 
                      hover:bg-blue-600 dark:hover:bg-sky-500 
                      focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-sky-500 focus:ring-offset-1 
                      dark:focus:ring-offset-slate-800

@@ -24,9 +24,12 @@ const WeatherWidget: React.FC<WeatherWidgetProps> = ({ userLocation }) => {
     const fetchWeather = async () => {
       try {
         let url = 'http://localhost:5000/api/weather/current';
-        if (userLocation && userLocation.lat && userLocation.lon) {
+        const locationMode = localStorage.getItem('locationMode') || 'auto';
+        if ((locationMode === 'auto' || locationMode === 'manual') && userLocation && userLocation.lat && userLocation.lon) {
           url += `?lat=${userLocation.lat}&lon=${userLocation.lon}`;
-        }
+        } else if (locationMode === 'fixed') {
+          url += '?fixed=1';
+        } // else 'ip' mode: no lat/lon, let backend use IP
         const response = await fetch(url);
         if (!response.ok) {
           const errorData = await response.json();
