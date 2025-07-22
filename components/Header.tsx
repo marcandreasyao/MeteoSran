@@ -143,7 +143,7 @@ export const Header: React.FC<HeaderProps> = ({ theme, toggleTheme, messages, se
     >
       <div className="container mx-auto flex items-center justify-between">
         <div className="flex items-center space-x-4">
-          <img src="/Meteosran-Icon_128x128.ico" alt="MeteoSran-Logo" className="h-10 w-auto mr-2" />
+          <img src="./Meteosran-logo.png" alt="MeteoSran-Logo" className="h-10 w-auto mr-2" />
           <span className="text-2xl font-bold tracking-tight text-slate-800 dark:text-slate-100">
             MeteoSran
           </span>
