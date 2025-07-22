@@ -5,8 +5,7 @@ let chat: Chat | null = null;
 
 // API Key configuration
 //- Comprehensive Detail: Depending on the mode, provide specific and relevant weather details such as temperature, humidity, wind speed and direction, atmospheric pressure, cloud cover, and precipitation likelihood. If applicable, include highs and lows for the day or near future.
-const API_KEY = "AIzaSyAAnNGk_adLJ-d45AvLTM6Kvw83hzSMvdc";
-
+const API_KEY = "AIzaSyA1zKIf9RrfvzFzYdpb-mRJfFc-UoXprWM";
 const CORE_INSTRUCTION = `You are 'MeteoSran', a friendly and highly knowledgeable meteorologist. 
 Your primary goal is to explain weather phenomena to curious learners in an engaging, clear, and easy-to-understand manner.
 When an image is provided, analyze it carefully and explain any visible weather phenomena. If the user provides text along with the image, address their specific query in relation to the image.
@@ -191,7 +190,7 @@ export const initChatService = async (): Promise<string | null> => {
   try {
     const ai = new GoogleGenAI({ apiKey: API_KEY });
     chat = ai.chats.create({
-      model: 'gemini-2.5-flash-preview-04-17',
+      model: 'gemini-2.5-flash',  // Use the most powerful publicly available model
       config: {
         systemInstruction: SYSTEM_INSTRUCTION,
       },
@@ -208,6 +207,7 @@ export const sendMessageToAI = async (
   mode: ResponseMode = ResponseMode.DEFAULT,
   includeTimeContext: boolean = false
 ): Promise<Message> => {
+  // [1] Chat Initialization Check: If chat isn't initialized, you'll see "Chat service not initialized" error.
   if (!chat) {
     throw new Error("Chat service not initialized. Call initChatService first or wait for initialization.");
   }
@@ -325,13 +325,24 @@ export const sendMessageToAI = async (
   } catch (error: any) {
     console.error('Error sending message to AI:', error);
     
-    if (error.message && error.message.includes("API key not valid")) {
+    // API-specific error handling
+    if (error.message?.includes("API key not valid")) {
       throw new Error("The API key is not valid. Please check your configuration.");
     }
-    if (error.message && error.message.toLowerCase().includes("quota")) {
+    if (error.message?.toLowerCase().includes("quota")) {
       throw new Error("You may have exceeded your API quota. Please check your Gemini API dashboard.");
     }
+    if (error.message?.includes("rate limit")) {
+      throw new Error("Too many requests. Please wait a moment before trying again.");
+    }
+    if (error.message?.includes("network") || error.message?.includes("Failed to fetch")) {
+      throw new Error("Network error. Please check your internet connection.");
+    }
+    if (error.message?.includes("timeout")) {
+      throw new Error("Request timed out. Please try again.");
+    }
     
+    // Response validation errors
     if (error.response?.promptFeedback?.blockReason) {
       return {
         id: crypto.randomUUID(),
@@ -341,6 +352,7 @@ export const sendMessageToAI = async (
       };
     }
 
+    // Image-specific errors
     if (error.message?.includes("does not support image input")) {
       return {
         id: crypto.randomUUID(),
@@ -349,7 +361,15 @@ export const sendMessageToAI = async (
         timestamp: new Date()
       };
     }
+    
+    // If we get here, it's an unexpected error
+    console.error('Unexpected Gemini API error:', {
+      error: error.message,
+      status: error.status,
+      response: error.response,
+      stack: error.stack
+    });
 
-    throw new Error("Failed to get a response from MeteoSran. The weather patterns might be too complex right now, or there was an issue with the image!");
+    throw new Error(`Gemini API Error: ${error.message || 'Unknown error occurred'}`);
   }
 };

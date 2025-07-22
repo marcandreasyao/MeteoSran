@@ -186,7 +186,10 @@ export const generateChatPdf = async (messages: Message[]): Promise<void> => {
   document.body.appendChild(elementToRender);
 
 
-  const filename = `WeatherWhiz_Chat_${new Date().toISOString().split('T')[0]}.pdf`;
+  const now = new Date();
+  const datePart = now.toISOString().split('T')[0];
+  const timePart = now.toTimeString().slice(0,5).replace(':', '-');
+  const filename = `MeteoSran_Chat_${datePart}_${timePart}.pdf`;
 
   try {
     // The element passed to .from() should be the one containing the content to be PDF'd.

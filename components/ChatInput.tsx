@@ -20,20 +20,8 @@ const SendIcon: React.FC<{isLoading: boolean}> = ({isLoading}) => (
   </svg>
 );
 
-const ImageIcon: React.FC = () => (
-  <span className="material-symbols-outlined text-xl md:text-2xl "></span>
-);
-
 const CloseIcon: React.FC = () => (
   <span className="material-symbols-outlined text-xs">close</span>
-);
-
-const UploadIcon: React.FC = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6 text-blue-500 dark:text-sky-400">
-    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-    <polyline points="17 8 12 3 7 8" />
-    <line x1="12" y1="3" x2="12" y2="15" />
-  </svg>
 );
 
 export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading, currentInputState, setCurrentInputState, inputRef }) => {
@@ -146,7 +134,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading, 
           className="flex items-center justify-center p-2.5 md:p-3 rounded-full bg-slate-100/80 dark:bg-slate-700/60 shadow hover:bg-slate-200 dark:hover:bg-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-400 dark:focus:ring-sky-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           aria-label="Attach image"
         >
-          <UploadIcon />
+          <span className="material-symbols-outlined text-xl md:text-2xl text-blue-500 dark:text-sky-400">add_photo_alternate</span>
         </button>
         <textarea
           ref={inputRef}

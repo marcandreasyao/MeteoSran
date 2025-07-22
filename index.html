@@ -44,6 +44,7 @@
         
         body { 
             font-family: 'Poppins', sans-serif; 
+            font-size: 14px;
             overscroll-behavior-y: contain;
             transition: background-color 0.5s ease, color 0.3s ease;
             margin: 0;
@@ -199,6 +200,11 @@
              mix-blend-mode: screen;
         }
 
+        @media (max-width: 768px) {
+            body {
+                font-size: 13px;
+            }
+        }
 
         @keyframes moveInCircle { 0% { transform: rotate(0deg); } 50% { transform: rotate(180deg); } 100% { transform: rotate(360deg); } }
         @keyframes moveVertical { 0% { transform: translateY(-30%); } 50% { transform: translateY(30%); } 100% { transform: translateY(-30%); } }
