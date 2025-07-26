@@ -236,8 +236,8 @@ const App: React.FC = () => {
       )}
       {/* Location error and manual entry */}
       {locationError && (
-        <div className="bg-yellow-100 text-yellow-800 p-2 text-center">
-          {locationError} {locationPrompt && <button className="ml-2 underline" onClick={handleManualLocation}>Enter manually</button>}
+        <div className="bg-yellow-100 text-yellow-800 p-2 text-center text-xs sm:text-sm">
+          {locationError} {locationPrompt && <button className="ml-1 sm:ml-2 underline" onClick={handleManualLocation}>Enter manually</button>}
         </div>
       )}
       <div className="flex-grow flex flex-col overflow-hidden">
@@ -248,10 +248,10 @@ const App: React.FC = () => {
           selectedMode={selectedMode}
           onModeChange={setSelectedMode}
         />
-        <main className="flex-grow flex flex-col overflow-hidden p-2 md:p-4">
+        <main className="flex-grow flex flex-col overflow-hidden p-1 sm:p-2 md:p-4">
           {error && <ErrorMessage message={error} />}
           {showWeatherWidget && (
-            <div className="my-4 flex justify-center">
+            <div className="my-2 sm:my-4 flex justify-center px-1 sm:px-0">
               <WeatherWidget userLocation={userLocation} />
             </div>
           )}

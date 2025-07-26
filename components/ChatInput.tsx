@@ -98,11 +98,11 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading, 
   };
 
   return (
-    <div className="p-3 md:p-4 border-t border-white/20 dark:border-slate-700/30 
+    <div className="p-2 sm:p-3 md:p-4 border-t border-white/20 dark:border-slate-700/30 
                     bg-white/10 dark:bg-slate-900/10 backdrop-blur-sm">
       {imagePreviewUrl && (
-        <div className="mb-2 p-2 bg-white/20 dark:bg-slate-700/30 rounded-lg relative w-fit max-w-[200px]">
-          <img src={imagePreviewUrl} alt="Selected preview" className="max-h-32 rounded object-contain" />
+        <div className="mb-2 p-2 bg-white/20 dark:bg-slate-700/30 rounded-lg relative w-fit max-w-[120px] sm:max-w-[200px]">
+          <img src={imagePreviewUrl} alt="Selected preview" className="max-h-20 sm:max-h-32 rounded object-contain" />
           <button
             onClick={handleClearImage}
             className="absolute top-1 right-1 bg-black/50 hover:bg-black/70 text-white rounded-full p-0.5 focus:outline-none focus:ring-1 focus:ring-white"
@@ -112,9 +112,9 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading, 
           </button>
         </div>
       )}
-      <form onSubmit={handleSubmit} className="flex items-center gap-2 md:gap-3 
+      <form onSubmit={handleSubmit} className="flex items-center gap-1.5 sm:gap-2 md:gap-3 
                      bg-white/40 dark:bg-slate-800/50 
-                     rounded-2xl p-1 border border-white/40 dark:border-slate-600/50 
+                     rounded-xl sm:rounded-2xl p-0.5 sm:p-1 border border-white/40 dark:border-slate-600/50 
                      focus-within:ring-2 focus-within:ring-blue-500 dark:focus-within:ring-sky-500 
                      transition-all duration-150 shadow-xl backdrop-blur-md"
       >
@@ -131,10 +131,10 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading, 
           type="button"
           onClick={handleImageUploadClick}
           disabled={isLoading}
-          className="flex items-center justify-center p-2.5 md:p-3 rounded-full bg-slate-100/80 dark:bg-slate-700/60 shadow hover:bg-slate-200 dark:hover:bg-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-400 dark:focus:ring-sky-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className="flex items-center justify-center p-2 sm:p-2.5 md:p-3 rounded-full bg-slate-100/80 dark:bg-slate-700/60 shadow hover:bg-slate-200 dark:hover:bg-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-400 dark:focus:ring-sky-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px] min-w-[44px]"
           aria-label="Attach image"
         >
-          <span className="material-symbols-outlined text-xl md:text-2xl text-blue-500 dark:text-sky-400">add_photo_alternate</span>
+          <span className="material-symbols-outlined text-lg sm:text-xl md:text-2xl text-blue-500 dark:text-sky-400">add_photo_alternate</span>
         </button>
         <textarea
           ref={inputRef}
@@ -142,7 +142,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading, 
           onChange={handleTextChange}
           onKeyDown={handleKeyDown}
           placeholder={imageFile ? "Describe the image or simply ask a question..." : "Ask me anything about weather..."}
-          className="flex-grow p-2 md:p-3 bg-transparent border-none focus:ring-0 resize-none overflow-y-auto max-h-32 
+          className="flex-grow p-2 sm:p-2 md:p-3 bg-transparent border-none focus:ring-0 resize-none overflow-y-auto max-h-32 
                      text-sm md:text-base text-slate-800 dark:text-slate-100 
                      placeholder-slate-500 dark:placeholder-slate-400"
           rows={1}
@@ -153,13 +153,13 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading, 
         <button
           type="submit"
           disabled={isLoading || (!currentText.trim() && !imageFile)}
-          className="group flex items-center justify-center p-2.5 md:p-3 rounded-full bg-blue-500 dark:bg-sky-600 shadow-lg text-white 
+          className="group flex items-center justify-center p-2 sm:p-2.5 md:p-3 rounded-full bg-blue-500 dark:bg-sky-600 shadow-lg text-white 
                      hover:bg-blue-600 dark:hover:bg-sky-500 
                      focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-sky-500 focus:ring-offset-1 
                      dark:focus:ring-offset-slate-800
                      disabled:bg-slate-400/50 dark:disabled:bg-slate-600/50 
                      disabled:text-slate-500 dark:disabled:text-slate-400
-                     disabled:cursor-not-allowed transition-colors duration-150"
+                     disabled:cursor-not-allowed transition-colors duration-150 min-h-[44px] min-w-[44px]"
           aria-label="Send message"
         >
           <SendIcon isLoading={isLoading} />

@@ -82,6 +82,9 @@
             width: 100vw;
             height: 100vh;
             overflow: hidden; /* Important for full-screen gradient effect */
+            line-height: 1.5;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
         }
 
         /* Base background colors */
@@ -230,13 +233,452 @@
              mix-blend-mode: screen;
         }
 
+        /* Mobile optimizations */
         @media (max-width: 768px) {
             body {
-                font-size: 13px;
+                font-size: 12px;
+            }
+            
+            /* Header mobile improvements */
+            header {
+                padding: 0.75rem 1rem !important;
+            }
+            
+            /* Logo/brand text size */
+            .text-2xl {
+                font-size: 1.0rem !important;
+                line-height: 1.75rem !important;
+            }
+            
+            /* Header buttons more compact */
+            header button {
+                padding: 0.5rem !important;
+            }
+            
+            /* Mode selector compact */
+            header .relative button {
+                padding: 0.375rem 0.5rem !important;
+                font-size: 0.75rem !important;
+            }
+            
+            /* Mode selector dropdown mobile */
+            header .relative .absolute {
+                width: 250px !important;
+                max-width: calc(100vw - 1rem) !important;
+                left: 0 !important;
+                right: auto !important;
+            }
+            
+            /* Mode selector items mobile */
+            header .relative .absolute button {
+                padding: 0.375rem !important;
+                font-size: 0.75rem !important;
+            }
+            
+            /* Mode selector text mobile */
+            header .relative .absolute p {
+                font-size: 0.625rem !important;
+                line-height: 0.875rem !important;
+            }
+            
+            /* Mode selector icons mobile */
+            header .relative .absolute .text-lg {
+                font-size: 0.875rem !important;
+            }
+            
+            /* Settings/dropdown mobile sizing */
+            header .absolute.right-0 {
+                width: 300px !important;
+                max-width: calc(100vw - 2rem) !important;
+                left: auto !important;
+                right: 0 !important;
+            }
+            
+            /* Settings modal specific mobile styles */
+            header .absolute.right-0[class*="w-["] {
+                width: 300px !important;
+                max-width: calc(100vw - 1rem) !important;
+                padding: 0.75rem !important;
+            }
+            
+            /* Settings modal text sizing */
+            header .absolute.right-0 h2 {
+                font-size: 1rem !important;
+                line-height: 1.25rem !important;
+                margin-bottom: 0.75rem !important;
+            }
+            
+            /* Settings sections spacing */
+            header .absolute.right-0 .space-y-6 {
+                gap: 0.75rem !important;
+            }
+            
+            /* Settings labels */
+            header .absolute.right-0 span[class*="text-lg"] {
+                font-size: 0.875rem !important;
+                line-height: 1.25rem !important;
+            }
+            
+            /* Settings description text */
+            header .absolute.right-0 span[class*="text-xs"] {
+                font-size: 0.625rem !important;
+                line-height: 0.875rem !important;
+            }
+            
+            /* Settings buttons */
+            header .absolute.right-0 button {
+                padding: 0.25rem 0.5rem !important;
+                font-size: 0.625rem !important;
+                min-width: 40px !important;
+            }
+            
+            /* Settings select */
+            header .absolute.right-0 select {
+                padding: 0.375rem !important;
+                font-size: 0.75rem !important;
+            }
+            
+            /* Chat interface mobile padding */
+            main {
+                padding: 0.5rem !important;
+            }
+            
+            /* Sample questions mobile improvements */
+            .p-4.border-t {
+                padding: 0.75rem !important;
+            }
+            
+            .p-4.border-t p {
+                font-size: 0.75rem !important;
+                margin-bottom: 0.5rem !important;
+            }
+            
+            /* Sample question buttons mobile */
+            .p-4.border-t button {
+                padding: 0.5rem !important;
+                font-size: 0.75rem !important;
+                border-radius: 0.5rem !important;
+            }
+            
+            .p-4.border-t button .material-symbols-outlined {
+                font-size: 1rem !important;
+                margin-right: 0.375rem !important;
+            }
+            
+            /* Grid gap mobile */
+            .grid[class*="gap-2"] {
+                gap: 0.375rem !important;
+            }
+            
+            /* Chat input mobile */
+            [class*="p-3"][class*="md:p-4"] {
+                padding: 0.75rem !important;
+            }
+            
+            /* Input form mobile */
+            .flex.items-center[class*="gap-2"] {
+                gap: 0.375rem !important;
+                padding: 0.25rem !important;
+            }
+            
+            /* Input buttons mobile */
+            [class*="p-2.5"] {
+                padding: 0.5rem !important;
+            }
+            
+            /* Textarea mobile */
+            [class*="p-2"][class*="md:p-3"] {
+                padding: 0.5rem !important;
+                font-size: 0.875rem !important;
+            }
+            
+            /* Material icons mobile sizing */
+            .material-symbols-outlined {
+                font-size: 1.125rem !important;
+            }
+            
+            /* Message bubbles mobile */
+            .p-4 {
+                padding: 0.75rem !important;
+            }
+            
+            /* Footer mobile */
+            footer {
+                padding: 0.5rem !important;
+                font-size: 0.625rem !important;
             }
         }
 
-        @keyframes moveInCircle { 0% { transform: rotate(0deg); } 50% { transform: rotate(180deg); } 100% { transform: rotate(360deg); } }
+        /* Small mobile devices (iPhone SE, etc.) */
+        @media (max-width: 345px) {
+            body {
+                font-size: 11px;
+            }
+            
+            /* Even more compact header */
+            header {
+                padding: 0.5rem 0.75rem !important;
+            }
+            
+            .text-2xl {
+                font-size: 1.0rem !important;
+                line-height: 1.5rem !important;
+            }
+            
+            /* Very compact header buttons */
+            header button {
+                padding: 0.375rem !important;
+            }
+            
+            /* Hide text in mode selector on very small screens */
+            [class*="hidden"][class*="sm:inline"] {
+                display: none !important;
+            }
+            
+            /* Mode selector dropdown very small */
+            header .relative .absolute {
+                width: 230px !important;
+                max-width: calc(100vw - 0.5rem) !important;
+                left: 0 !important;
+                right: auto !important;
+            }
+            
+            /* Mode selector items very compact */
+            header .relative .absolute button {
+                padding: 0.25rem !important;
+                font-size: 0.6875rem !important;
+            }
+            
+            /* Mode selector text very small */
+            header .relative .absolute p {
+                font-size: 0.5625rem !important;
+                line-height: 0.75rem !important;
+            }
+            
+            /* Mode selector icons very small */
+            header .relative .absolute .text-lg {
+                font-size: 0.75rem !important;
+            }
+            
+            /* Compact mode dropdown */
+            header .absolute.right-0 {
+                width: 260px !important;
+                max-width: calc(100vw - 1rem) !important;
+            }
+            
+            /* Extra compact settings modal */
+            header .absolute.right-0[class*="w-["] {
+                width: 300px !important;
+                max-width: calc(100vw - 0.5rem) !important;
+                padding: 0.5rem !important;
+            }
+            
+            /* Extra small settings text */
+            header .absolute.right-0 h2 {
+                font-size: 0.875rem !important;
+                line-height: 1rem !important;
+                margin-bottom: 0.5rem !important;
+            }
+            
+            /* Extra compact sections */
+            header .absolute.right-0 .space-y-6 {
+                gap: 0.5rem !important;
+            }
+            
+            /* Extra small labels */
+            header .absolute.right-0 span[class*="text-lg"] {
+                font-size: 0.75rem !important;
+                line-height: 1rem !important;
+            }
+            
+            /* Extra small description */
+            header .absolute.right-0 span[class*="text-xs"] {
+                font-size: 0.5625rem !important;
+                line-height: 0.75rem !important;
+            }
+            
+            /* Extra compact buttons */
+            header .absolute.right-0 button {
+                padding: 0.125rem 0.375rem !important;
+                font-size: 0.5625rem !important;
+                min-width: 35px !important;
+            }
+            
+            /* Extra compact select */
+            header .absolute.right-0 select {
+                padding: 0.25rem !important;
+                font-size: 0.6875rem !important;
+            }
+            
+            /* Compact toggle switch */
+            header .absolute.right-0 label[class*="w-12"] {
+                width: 2rem !important;
+                height: 1.25rem !important;
+            }
+            
+            header .absolute.right-0 label .dot {
+                width: 1rem !important;
+                height: 1rem !important;
+            }
+            
+            /* Very compact chat interface */
+            main {
+                padding: 0.25rem !important;
+            }
+            
+            /* Sample questions very compact */
+            .p-4.border-t {
+                padding: 0.5rem !important;
+            }
+            
+            .p-4.border-t p {
+                font-size: 0.6875rem !important;
+            }
+            
+            .p-4.border-t button {
+                padding: 0.375rem !important;
+                font-size: 0.6875rem !important;
+            }
+            
+            .p-4.border-t button .material-symbols-outlined {
+                font-size: 0.875rem !important;
+                margin-right: 0.25rem !important;
+            }
+            
+            /* Very compact input */
+            [class*="p-3"][class*="md:p-4"] {
+                padding: 0.5rem !important;
+            }
+            
+            .flex.items-center[class*="gap-2"] {
+                gap: 0.25rem !important;
+                padding: 0.125rem !important;
+            }
+            
+            /* Very compact input buttons */
+            [class*="p-2.5"] {
+                padding: 0.375rem !important;
+            }
+            
+            /* Textarea very compact */
+            [class*="p-2"][class*="md:p-3"] {
+                padding: 0.375rem !important;
+                font-size: 0.8125rem !important;
+            }
+            
+            /* Very small material icons */
+            .material-symbols-outlined {
+                font-size: 1rem !important;
+            }
+            
+            /* Compact message bubbles */
+            .p-4 {
+                padding: 0.5rem !important;
+            }
+            
+            /* Very compact footer */
+            footer {
+                padding: 0.375rem !important;
+                font-size: 0.5625rem !important;
+            }
+        }
+
+            /* Additional mobile-specific improvements */
+        @media (max-width: 640px) {
+            /* Ensure proper text scaling */
+            html {
+                -webkit-text-size-adjust: 100%;
+                text-size-adjust: 100%;
+            }
+            
+            /* Better tap targets */
+            button, [role="button"] {
+                min-height: 44px;
+                min-width: 44px;
+            }
+            
+            /* Compact grid on mobile */
+            [class*="grid-cols-1"][class*="sm:grid-cols-2"] {
+                grid-template-columns: repeat(1, minmax(0, 1fr)) !important;
+            }
+            
+            /* Better mobile spacing */
+            .space-x-4 > * + * {
+                margin-left: 0.5rem !important;
+            }
+            
+            .space-x-2 > * + * {
+                margin-left: 0.25rem !important;
+            }
+            
+            /* Responsive text sizes */
+            .text-sm {
+                font-size: 0.75rem !important;
+                line-height: 1rem !important;
+            }
+            
+            .text-xs {
+                font-size: 0.625rem !important;
+                line-height: 0.875rem !important;
+            }
+            
+            /* Better mobile image preview */
+            [class*="max-w-[200px]"] {
+                max-width: 120px !important;
+            }
+            
+            .max-h-32 {
+                max-height: 6rem !important;
+            }
+            
+            /* Compact rounded corners on mobile */
+            .rounded-xl {
+                border-radius: 0.75rem !important;
+            }
+            
+            .rounded-2xl {
+                border-radius: 1rem !important;
+            }
+            
+            /* Settings modal mobile improvements */
+            header .absolute.right-0[class*="w-["] {
+                width: 380px !important;
+                max-width: calc(100vw - 1rem) !important;
+                padding: 0.75rem !important;
+                font-size: 0.875rem !important;
+            }
+            
+            /* Mobile settings headings */
+            header .absolute.right-0 h2 {
+                font-size: 1.125rem !important;
+                line-height: 1.5rem !important;
+            }
+            
+            /* Mobile settings icons */
+            header .absolute.right-0 .material-symbols-outlined {
+                font-size: 1.25rem !important;
+            }
+            
+            /* Mode selector dropdown responsive */
+            header .relative .absolute {
+                width: 260px !important;
+                max-width: calc(100vw - 1rem) !important;
+                left: 0 !important;
+                right: auto !important;
+            }
+            
+            /* Mode selector items responsive */
+            header .relative .absolute button {
+                padding: 0.5rem !important;
+                font-size: 0.75rem !important;
+            }
+            
+            /* Mode selector text responsive */
+            header .relative .absolute p {
+                font-size: 0.6875rem !important;
+                line-height: 1rem !important;
+            }
+        }        @keyframes moveInCircle { 0% { transform: rotate(0deg); } 50% { transform: rotate(180deg); } 100% { transform: rotate(360deg); } }
         @keyframes moveVertical { 0% { transform: translateY(-30%); } 50% { transform: translateY(30%); } 100% { transform: translateY(-30%); } }
         @keyframes moveHorizontal { 0% { transform: translateX(-30%) translateY(-10%); } 50% { transform: translateX(30%) translateY(10%); } 100% { transform: translateX(-30%) translateY(-10%); } }
 

@@ -5,7 +5,7 @@ export const Footer: React.FC = () => {
 
   return (
     <footer 
-      className="p-3 text-center text-xs sm:text-sm w-full 
+      className="p-2 sm:p-3 text-center text-xs w-full 
                  bg-white/20 dark:bg-slate-800/60 backdrop-blur-md 
                  border-t border-white/40 dark:border-slate-700/60
                  text-slate-700 dark:text-slate-100"
