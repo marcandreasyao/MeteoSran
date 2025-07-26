@@ -19,6 +19,7 @@ MeteoSran is a Progressive Web App (PWA) that combines cutting-edge AI technolog
 - **🌙 Dark/Light Theme**: Apple-inspired UI with theme switching
 - **♿ Accessibility**: WCAG 2.1 compliant interface design
 - **🔧 Offline Support**: Works without internet connection for basic features
+- **📊 Analytics & Insights**: Privacy-focused usage analytics and performance monitoring
 
 ## 🚀 PWA Installation
 
@@ -132,7 +133,26 @@ MeteoSran PWA
     └── Educational Materials
 ```
 
-## 🔧 Configuration
+## � Analytics & Performance
+
+MeteoSran includes privacy-focused analytics to improve user experience and monitor application performance.
+
+### Analytics Features
+- **User Behavior Tracking**: Theme preferences, feature usage, interaction patterns
+- **Performance Monitoring**: Core Web Vitals, loading times, error rates
+- **Privacy-First**: No personal data collection, GDPR compliant
+- **Real-time Insights**: Live performance and usage metrics
+
+### Tracked Events
+- Theme toggle usage
+- Message interactions (with image/text)
+- Sample question clicks
+- Response mode preferences
+- Weather widget displays
+
+For detailed analytics information, see [ANALYTICS.md](ANALYTICS.md).
+
+## �🔧 Configuration
 
 ### PWA Manifest
 The app includes a comprehensive web app manifest with:

@@ -30,6 +30,8 @@
   "dependencies": {
     "@google/genai": "^1.4.0",
     "@heroicons/react": "^2.2.0",
+    "@vercel/analytics": "^1.5.0",
+    "@vercel/speed-insights": "^1.2.0",
     "html2pdf.js": "^0.10.3",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
@@ -39,6 +41,9 @@
   },
   "devDependencies": {
     "@types/node": "^22.14.0",
+    "@types/react": "^19.1.8",
+    "@types/react-dom": "^19.1.6",
+    "@vitejs/plugin-react": "^4.7.0",
     "terser": "^5.43.1",
     "typescript": "~5.7.2",
     "vite": "^6.2.0"

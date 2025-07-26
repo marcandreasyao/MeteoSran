@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { track } from '@vercel/analytics';
 import { Header } from './components/Header';
 import { ChatInterface } from './components/ChatInterface';
 import { Message, MessageRole, ImagePayload, ResponseMode } from './types';
@@ -154,6 +155,12 @@ const App: React.FC = () => {
   };
 
   const toggleTheme = () => {
+    // Track theme toggle event
+    track('theme_toggle', { 
+      from: theme, 
+      to: theme === 'light' ? 'dark' : 'light' 
+    });
+    
     triggerGlassFade();
     setTimeout(() => {
       setTheme(prevTheme => (prevTheme === 'light' ? 'dark' : 'light'));
@@ -170,8 +177,20 @@ const App: React.FC = () => {
   const handleSendMessage = async (text: string, imageFile?: File | null) => {
     if (!text.trim() && !imageFile) return;
 
+    // Track message sending
+    track('message_sent', { 
+      hasText: !!text.trim(), 
+      hasImage: !!imageFile,
+      mode: selectedMode,
+      messageLength: text.length 
+    });
+
     const isWeatherQueryForCI = text.toLowerCase().includes('weather') && 
                                 (text.toLowerCase().includes('ivory coast') || text.toLowerCase().includes('abidjan'));
+    
+    if (isWeatherQueryForCI) {
+      track('weather_widget_shown', { query: 'ivory_coast_weather' });
+    }
     
     setShowWeatherWidget(isWeatherQueryForCI);
 
@@ -209,6 +228,12 @@ const App: React.FC = () => {
   };
 
   const handleSampleQuestion = (question: string) => {
+    // Track sample question usage
+    track('sample_question_clicked', { 
+      question: question.substring(0, 50), // First 50 chars for privacy
+      questionLength: question.length 
+    });
+    
     setCurrentInput({ text: question, imageFile: null });
     setTimeout(() => {
       handleSendMessage(question);
@@ -216,6 +241,15 @@ const App: React.FC = () => {
         inputRef.current.focus();
       }
     }, 0);
+  };
+
+  const handleModeChange = (mode: ResponseMode) => {
+    // Track mode changes
+    track('response_mode_changed', { 
+      from: selectedMode, 
+      to: mode 
+    });
+    setSelectedMode(mode);
   };
 
   if (!isInitialized) {
@@ -246,7 +280,7 @@ const App: React.FC = () => {
           toggleTheme={toggleTheme} 
           messages={messages}
           selectedMode={selectedMode}
-          onModeChange={setSelectedMode}
+          onModeChange={handleModeChange}
         />
         <main className="flex-grow flex flex-col overflow-hidden p-1 sm:p-2 md:p-4">
           {error && <ErrorMessage message={error} />}
