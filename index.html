@@ -4,9 +4,39 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MeteoSran - AI-Powered Weather Assistant</title>
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="/manifest.json">
+    
+    <!-- Favicon and Icons -->
     <link rel="icon" type="image/x-icon" href="/Meteosran-Icon_128x128.ico">
     <link rel="shortcut icon" type="image/x-icon" href="/Meteosran-Icon_128x128.ico">
     <link rel="apple-touch-icon" href="/Meteosran-logo.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/Meteosran-logo.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="/Meteosran-logo.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="/Meteosran-logo.png">
+    
+    <!-- PWA Meta Tags -->
+    <meta name="application-name" content="MeteoSran">
+    <meta name="apple-mobile-web-app-title" content="MeteoSran">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#0080ff">
+    <meta name="msapplication-TileColor" content="#0080ff">
+    <meta name="msapplication-TileImage" content="/Meteosran-logo.png">
+    <meta name="description" content="MeteoSran: Your First advanced Ivorian Weather AI Assistant. Ask Anything. Discover Everything humanely.">
+    
+    <!-- Open Graph / Social Media -->
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="MeteoSran - Ivorian Weather AI Assistant">
+    <meta property="og:description" content="MeteoSran: Your First advanced Ivorian Weather AI Assistant. Ask Anything. Discover Everything humanely.">
+    <meta property="og:image" content="/Meteosran-logo.png">
+    <meta property="og:url" content="https://meteosran.com">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="MeteoSran - Ivorian Weather AI Assistant">
+    <meta name="twitter:description" content="MeteoSran: Your First advanced Ivorian Weather AI Assistant. Ask Anything. Discover Everything humanely.">
+    <meta name="twitter:image" content="/Meteosran-logo.png">
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -342,6 +372,93 @@
 
     <div id="root"></div>
     <script type="module" src="/index.tsx"></script>
+    
+    <!-- PWA Service Worker Registration -->
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', async () => {
+          try {
+            const registration = await navigator.serviceWorker.register('/sw.js', {
+              scope: '/'
+            });
+            
+            console.log('ServiceWorker registered successfully:', registration);
+            
+            // Handle service worker updates
+            registration.addEventListener('updatefound', () => {
+              const newWorker = registration.installing;
+              if (newWorker) {
+                newWorker.addEventListener('statechange', () => {
+                  if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                    // New version available, show update notification
+                    if (confirm('A new version of MeteoSran is available. Would you like to update?')) {
+                      newWorker.postMessage({ type: 'SKIP_WAITING' });
+                      window.location.reload();
+                    }
+                  }
+                });
+              }
+            });
+            
+            // Handle app shortcuts
+            const urlParams = new URLSearchParams(window.location.search);
+            const shortcut = urlParams.get('shortcut');
+            if (shortcut) {
+              // Handle shortcut actions
+              window.dispatchEvent(new CustomEvent('app-shortcut', { 
+                detail: { type: shortcut } 
+              }));
+            }
+            
+          } catch (error) {
+            console.log('ServiceWorker registration failed:', error);
+          }
+        });
+        
+        // Handle service worker messages
+        navigator.serviceWorker.addEventListener('message', (event) => {
+          if (event.data && event.data.type === 'SW_UPDATE_AVAILABLE') {
+            // Handle update notifications
+            console.log('New app version available');
+          }
+        });
+      }
+      
+      // Handle beforeinstallprompt for custom install UI
+      let deferredPrompt;
+      window.addEventListener('beforeinstallprompt', (e) => {
+        console.log('PWA install prompt available');
+        e.preventDefault();
+        deferredPrompt = e;
+        
+        // Show custom install button/banner
+        window.dispatchEvent(new CustomEvent('pwa-installable'));
+      });
+      
+      // Handle successful PWA installation
+      window.addEventListener('appinstalled', () => {
+        console.log('PWA installed successfully');
+        deferredPrompt = null;
+        
+        // Track installation for analytics
+        if (typeof gtag !== 'undefined') {
+          gtag('event', 'pwa_install', {
+            'event_category': 'PWA',
+            'event_label': 'MeteoSran PWA Installed'
+          });
+        }
+      });
+      
+      // Function to trigger PWA install
+      window.installPWA = async () => {
+        if (deferredPrompt) {
+          deferredPrompt.prompt();
+          const { outcome } = await deferredPrompt.userChoice;
+          console.log(`User ${outcome} the install prompt`);
+          deferredPrompt = null;
+        }
+      };
+    </script>
     <script>
       // Interactive orb script
       document.addEventListener('DOMContentLoaded', () => {

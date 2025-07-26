@@ -1,12 +1,31 @@
 {
-  "name": "weather-pro-explainer",
+  "name": "meteosran",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
   "type": "module",
+  "description": "MeteoSran: Your First advanced Ivorian Weather AI Assistant. Ask Anything. Discover Everything humanely.",
+  "keywords": [
+    "weather",
+    "AI",
+    "assistant",
+    "PWA",
+    "Ivory Coast",
+    "meteorology",
+    "education"
+  ],
+  "author": "Marc Andréas Yao",
+  "license": "MIT",
+  "homepage": "https://meteosran.com",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/marcandreasyao/MeteoSran.git"
+  },
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "pwa:build": "vite build && npm run pwa:generate-icons",
+    "pwa:generate-icons": "echo 'Please generate PWA icons using the guide in icon-generation-guide.md'"
   },
   "dependencies": {
     "@google/genai": "^1.4.0",
@@ -20,6 +39,7 @@
   },
   "devDependencies": {
     "@types/node": "^22.14.0",
+    "terser": "^5.43.1",
     "typescript": "~5.7.2",
     "vite": "^6.2.0"
   }

@@ -6,6 +6,7 @@ import { initChatService, sendMessageToAI } from './services/geminiService';
 import { ErrorMessage } from './components/ErrorMessage';
 import { Footer } from './components/Footer';
 import { LoadingProgress } from './components/LoadingProgress';
+import { PWAInstallPrompt } from './components/PWAInstallPrompt';
 import WeatherWidget from './src/components/WeatherWidget';
 
 export type Theme = 'light' | 'dark';
@@ -267,6 +268,9 @@ const App: React.FC = () => {
         </main>
         <Footer />
       </div>
+      
+      {/* PWA Install Prompt */}
+      <PWAInstallPrompt theme={theme} />
     </div>
   );
 };
