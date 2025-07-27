@@ -85,6 +85,9 @@
             line-height: 1.5;
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
+            /* Hide scrollbars for all browsers */
+            scrollbar-width: none; /* Firefox */
+            -ms-overflow-style: none; /* IE and Edge */
         }
 
         /* Base background colors */
@@ -95,29 +98,29 @@
             background-color: var(--color-bg1-dark);
         }
 
-        /* Custom scrollbar for webkit browsers */
+        /* Hide scrollbars for webkit browsers */
         ::-webkit-scrollbar {
-            width: 8px;
-            height: 8px;
+            width: 0px;
+            height: 0px;
+            background: transparent;
         }
         ::-webkit-scrollbar-track {
-            background: rgba(0,0,0,0.1); 
+            background: transparent;
         }
         body.dark ::-webkit-scrollbar-track {
-            background: rgba(255,255,255,0.05);
+            background: transparent;
         }
         ::-webkit-scrollbar-thumb {
-            background: #bcc0c4;
-            border-radius: 4px;
+            background: transparent;
         }
         body.dark ::-webkit-scrollbar-thumb {
-            background: #555b61;
+            background: transparent;
         }
         ::-webkit-scrollbar-thumb:hover {
-            background: #a0a4a8;
+            background: transparent;
         }
         body.dark ::-webkit-scrollbar-thumb:hover {
-            background: #6b7280;
+            background: transparent;
         }
 
         .material-symbols-outlined {
@@ -690,6 +693,26 @@
             height: 100%;
             overflow-y: auto; /* Allow scrolling for app content */
             overflow-x: hidden;
+            /* Hide scrollbars */
+            scrollbar-width: none; /* Firefox */
+            -ms-overflow-style: none; /* IE and Edge */
+        }
+        
+        #root::-webkit-scrollbar {
+            width: 0px;
+            background: transparent;
+        }
+        
+        /* Hide scrollbars for all elements */
+        * {
+            scrollbar-width: none; /* Firefox */
+            -ms-overflow-style: none; /* IE and Edge */
+        }
+        
+        *::-webkit-scrollbar {
+            width: 0px;
+            height: 0px;
+            background: transparent;
         }
 
         /* Shockwave glass effect for theme toggle */

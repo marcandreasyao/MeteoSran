@@ -147,7 +147,6 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading, 
                      placeholder-slate-500 dark:placeholder-slate-400"
           rows={1}
           disabled={isLoading}
-          style={{ scrollbarWidth: 'thin' }}
           aria-label="Chat message input"
         />
         <button
