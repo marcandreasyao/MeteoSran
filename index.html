@@ -291,17 +291,21 @@
             
             /* Settings/dropdown mobile sizing */
             header .absolute.right-0 {
-                width: 300px !important;
-                max-width: calc(100vw - 2rem) !important;
+                width: 280px !important;
+                max-width: calc(100vw - 1rem) !important;
                 left: auto !important;
-                right: 0 !important;
+                right: 0.5rem !important;
+                transform: translateX(0) !important;
             }
             
             /* Settings modal specific mobile styles */
             header .absolute.right-0[class*="w-["] {
-                width: 300px !important;
+                width: 280px !important;
                 max-width: calc(100vw - 1rem) !important;
                 padding: 0.75rem !important;
+                right: 0.5rem !important;
+                left: auto !important;
+                transform: translateX(0) !important;
             }
             
             /* Settings modal text sizing */
@@ -339,6 +343,61 @@
             header .absolute.right-0 select {
                 padding: 0.375rem !important;
                 font-size: 0.75rem !important;
+            }
+            
+            /* Toggle switch mobile improvements */
+            header .absolute.right-0 .relative.inline-block {
+                width: 3rem !important;
+                height: 1.5rem !important;
+                display: inline-block !important;
+            }
+            
+            /* Hide default toggle elements */
+            header .absolute.right-0 .dot {
+                display: none !important;
+            }
+            
+            header .absolute.right-0 .bg-gray-300,
+            header .absolute.right-0 .peer-checked\:bg-green-500 {
+                display: none !important;
+            }
+            
+            header .absolute.right-0 input[type="checkbox"] {
+                width: 3rem !important;
+                height: 1.5rem !important;
+                border-radius: 0.75rem !important;
+                appearance: none !important;
+                -webkit-appearance: none !important;
+                position: relative !important;
+                cursor: pointer !important;
+                outline: none !important;
+                border: none !important;
+                transition: background-color 0.3s ease !important;
+            }
+            
+            header .absolute.right-0 input[type="checkbox"]:before {
+                content: '';
+                position: absolute;
+                width: 1.25rem !important;
+                height: 1.25rem !important;
+                border-radius: 50% !important;
+                top: 0.125rem !important;
+                left: 0.125rem !important;
+                background: white !important;
+                transition: transform 0.3s ease !important;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.2) !important;
+            }
+            
+            header .absolute.right-0 input[type="checkbox"]:checked:before {
+                transform: translateX(1.5rem) !important;
+            }
+            
+            header .absolute.right-0 input[type="checkbox"]:checked {
+                background-color: #10b981 !important;
+            }
+            
+            header .absolute.right-0 input[type="checkbox"]:not(:checked) {
+                background-color: #d1d5db !important;
             }
             
             /* Chat interface mobile padding */
@@ -395,6 +454,17 @@
                 font-size: 0.875rem !important;
             }
             
+            /* Chat input placeholder mobile */
+            [class*="p-2"][class*="md:p-3"]::placeholder {
+                font-size: 0.75rem !important;
+                opacity: 0.7 !important;
+            }
+            
+            textarea::placeholder {
+                font-size: 0.75rem !important;
+                opacity: 0.7 !important;
+            }
+            
             /* Material icons mobile sizing */
             .material-symbols-outlined {
                 font-size: 1.125rem !important;
@@ -409,6 +479,56 @@
             footer {
                 padding: 0.5rem !important;
                 font-size: 0.625rem !important;
+            }
+            
+            /* Loading screen mobile improvements */
+            .loading-container {
+                padding: 1rem !important;
+            }
+            
+            .loading-container h1,
+            .loading-container h2 {
+                font-size: 1.125rem !important;
+                line-height: 1.375rem !important;
+                margin-bottom: 1rem !important;
+            }
+            
+            .loading-container .text-lg {
+                font-size: 0.875rem !important;
+                line-height: 1.25rem !important;
+            }
+            
+            .loading-container .text-xl {
+                font-size: 1rem !important;
+                line-height: 1.5rem !important;
+            }
+            
+            .loading-container .text-2xl {
+                font-size: 1.125rem !important;
+                line-height: 1.375rem !important;
+            }
+            
+            /* Progress bar mobile */
+            .loading-container .w-full {
+                height: 0.375rem !important;
+                border-radius: 0.375rem !important;
+            }
+            
+            .loading-container .bg-blue-500 {
+                height: 0.375rem !important;
+                border-radius: 0.375rem !important;
+            }
+            
+            /* Loading percentage text */
+            .loading-container .text-right {
+                font-size: 0.75rem !important;
+            }
+            
+            /* Loading message text */
+            .loading-container p,
+            .loading-container span {
+                font-size: 0.75rem !important;
+                line-height: 1rem !important;
             }
         }
 
@@ -465,15 +585,21 @@
             
             /* Compact mode dropdown */
             header .absolute.right-0 {
-                width: 260px !important;
+                width: 240px !important;
                 max-width: calc(100vw - 1rem) !important;
+                right: 0.25rem !important;
+                left: auto !important;
+                transform: translateX(0) !important;
             }
             
             /* Extra compact settings modal */
             header .absolute.right-0[class*="w-["] {
-                width: 300px !important;
+                width: 240px !important;
                 max-width: calc(100vw - 0.5rem) !important;
                 padding: 0.5rem !important;
+                right: 0.25rem !important;
+                left: auto !important;
+                transform: translateX(0) !important;
             }
             
             /* Extra small settings text */
@@ -515,13 +641,71 @@
             
             /* Compact toggle switch */
             header .absolute.right-0 label[class*="w-12"] {
-                width: 2rem !important;
+                width: 2.5rem !important;
                 height: 1.25rem !important;
             }
             
             header .absolute.right-0 label .dot {
                 width: 1rem !important;
                 height: 1rem !important;
+            }
+            
+            /* Extra compact toggle switch mobile */
+            header .absolute.right-0 .relative.inline-block {
+                width: 2.5rem !important;
+                height: 1.25rem !important;
+                display: inline-block !important;
+                vertical-align: middle !important;
+            }
+            
+            /* Hide default toggle elements for small mobile */
+            header .absolute.right-0 .dot {
+                display: none !important;
+            }
+            
+            header .absolute.right-0 .bg-gray-300,
+            header .absolute.right-0 .peer-checked\:bg-green-500,
+            header .absolute.right-0 .block {
+                display: none !important;
+            }
+            
+            header .absolute.right-0 input[type="checkbox"] {
+                width: 2.5rem !important;
+                height: 1.25rem !important;
+                border-radius: 0.625rem !important;
+                appearance: none !important;
+                -webkit-appearance: none !important;
+                position: relative !important;
+                cursor: pointer !important;
+                outline: none !important;
+                border: none !important;
+                transition: background-color 0.3s ease !important;
+                display: block !important;
+            }
+            
+            header .absolute.right-0 input[type="checkbox"]:before {
+                content: '';
+                position: absolute;
+                width: 1rem !important;
+                height: 1rem !important;
+                border-radius: 50% !important;
+                top: 0.125rem !important;
+                left: 0.125rem !important;
+                background: white !important;
+                transition: transform 0.2s ease !important;
+                box-shadow: 0 1px 3px rgba(0,0,0,0.3) !important;
+            }
+            
+            header .absolute.right-0 input[type="checkbox"]:checked:before {
+                transform: translateX(1.25rem) !important;
+            }
+            
+            header .absolute.right-0 input[type="checkbox"]:checked {
+                background-color: #10b981 !important;
+            }
+            
+            header .absolute.right-0 input[type="checkbox"]:not(:checked) {
+                background-color: #9ca3af !important;
             }
             
             /* Very compact chat interface */
@@ -569,6 +753,17 @@
                 font-size: 0.8125rem !important;
             }
             
+            /* Chat input placeholder very compact mobile */
+            [class*="p-2"][class*="md:p-3"]::placeholder {
+                font-size: 0.6875rem !important;
+                opacity: 0.6 !important;
+            }
+            
+            textarea::placeholder {
+                font-size: 0.6875rem !important;
+                opacity: 0.6 !important;
+            }
+            
             /* Very small material icons */
             .material-symbols-outlined {
                 font-size: 1rem !important;
@@ -583,6 +778,55 @@
             footer {
                 padding: 0.375rem !important;
                 font-size: 0.5625rem !important;
+            }
+            
+            /* Loading screen very compact mobile */
+            .loading-container {
+                padding: 0.75rem !important;
+            }
+            
+            .loading-container h1,
+            .loading-container h2 {
+                font-size: 1rem !important;
+                line-height: 1.25rem !important;
+                margin-bottom: 0.75rem !important;
+            }
+            
+            .loading-container .text-lg {
+                font-size: 0.75rem !important;
+                line-height: 1rem !important;
+            }
+            
+            .loading-container .text-xl {
+                font-size: 0.875rem !important;
+                line-height: 1.25rem !important;
+            }
+            
+            .loading-container .text-2xl {
+                font-size: 1rem !important;
+                line-height: 1.25rem !important;
+            }
+            
+            /* Very compact progress bar */
+            .loading-container .w-full {
+                height: 0.25rem !important;
+                border-radius: 0.25rem !important;
+            }
+            
+            .loading-container .bg-blue-500 {
+                height: 0.25rem !important;
+                border-radius: 0.25rem !important;
+            }
+            
+            /* Very compact loading text */
+            .loading-container .text-right {
+                font-size: 0.6875rem !important;
+            }
+            
+            .loading-container p,
+            .loading-container span {
+                font-size: 0.6875rem !important;
+                line-height: 0.875rem !important;
             }
         }
 
@@ -645,10 +889,13 @@
             
             /* Settings modal mobile improvements */
             header .absolute.right-0[class*="w-["] {
-                width: 380px !important;
+                width: 300px !important;
                 max-width: calc(100vw - 1rem) !important;
                 padding: 0.75rem !important;
                 font-size: 0.875rem !important;
+                right: 0.5rem !important;
+                left: auto !important;
+                transform: translateX(0) !important;
             }
             
             /* Mobile settings headings */
@@ -660,6 +907,126 @@
             /* Mobile settings icons */
             header .absolute.right-0 .material-symbols-outlined {
                 font-size: 1.25rem !important;
+            }
+            
+            /* Toggle switch general mobile improvements */
+            header .absolute.right-0 .relative.inline-block {
+                width: 3.5rem !important;
+                height: 1.75rem !important;
+                display: inline-block !important;
+                vertical-align: middle !important;
+            }
+            
+            /* Hide default toggle elements */
+            header .absolute.right-0 .dot {
+                display: none !important;
+            }
+            
+            header .absolute.right-0 .bg-gray-300,
+            header .absolute.right-0 .peer-checked\:bg-green-500,
+            header .absolute.right-0 .block {
+                display: none !important;
+            }
+            
+            header .absolute.right-0 input[type="checkbox"] {
+                width: 3.5rem !important;
+                height: 1.75rem !important;
+                border-radius: 0.875rem !important;
+                appearance: none !important;
+                -webkit-appearance: none !important;
+                position: relative !important;
+                cursor: pointer !important;
+                outline: none !important;
+                border: none !important;
+                transition: background-color 0.3s ease !important;
+                display: block !important;
+            }
+            
+            header .absolute.right-0 input[type="checkbox"]:before {
+                content: '';
+                position: absolute;
+                width: 1.5rem !important;
+                height: 1.5rem !important;
+                border-radius: 50% !important;
+                top: 0.125rem !important;
+                left: 0.125rem !important;
+                background: white !important;
+                transition: transform 0.3s ease !important;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.2) !important;
+            }
+            
+            header .absolute.right-0 input[type="checkbox"]:checked:before {
+                transform: translateX(1.75rem) !important;
+            }
+            
+            header .absolute.right-0 input[type="checkbox"]:checked {
+                background-color: #10b981 !important;
+            }
+            
+            header .absolute.right-0 input[type="checkbox"]:not(:checked) {
+                background-color: #d1d5db !important;
+            }
+            
+            /* Chat input placeholder mobile */
+            [class*="p-2"][class*="md:p-3"]::placeholder {
+                font-size: 0.8125rem !important;
+                opacity: 0.65 !important;
+            }
+            
+            textarea::placeholder {
+                font-size: 0.8125rem !important;
+                opacity: 0.65 !important;
+            }
+            
+            /* Loading screen mobile improvements */
+            .loading-container {
+                padding: 1.25rem !important;
+                max-width: 90vw !important;
+                margin: 0 auto !important;
+            }
+            
+            .loading-container h1,
+            .loading-container h2 {
+                font-size: 1.25rem !important;
+                line-height: 1.5rem !important;
+                margin-bottom: 1.25rem !important;
+            }
+            
+            .loading-container .text-lg {
+                font-size: 1rem !important;
+                line-height: 1.375rem !important;
+            }
+            
+            .loading-container .text-xl {
+                font-size: 1.125rem !important;
+                line-height: 1.625rem !important;
+            }
+            
+            .loading-container .text-2xl {
+                font-size: 1.25rem !important;
+                line-height: 1.5rem !important;
+            }
+            
+            /* Progress bar mobile sizing */
+            .loading-container .w-full {
+                height: 0.5rem !important;
+                border-radius: 0.5rem !important;
+            }
+            
+            .loading-container .bg-blue-500 {
+                height: 0.5rem !important;
+                border-radius: 0.5rem !important;
+            }
+            
+            /* Loading percentage and message text */
+            .loading-container .text-right {
+                font-size: 0.875rem !important;
+            }
+            
+            .loading-container p,
+            .loading-container span {
+                font-size: 0.875rem !important;
+                line-height: 1.25rem !important;
             }
             
             /* Mode selector dropdown responsive */
