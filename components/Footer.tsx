@@ -12,7 +12,7 @@ export const Footer: React.FC = () => {
       role="contentinfo"
     >
       <div className="container mx-auto">
-        <p>&copy; {year} MeteoSran 1.1 by Marc Andréas Yao. </p>
+        <p>&copy; {year} MeteoSran 1.2 by Marc Andréas Yao. </p>
         {/* <p>Powered by Gemini.</p> */}
       </div>
     </footer>
