@@ -167,12 +167,12 @@ const App: React.FC = () => {
     }, 450); // switch theme at midpoint of fade
   };
   
-  const initialWelcomeMessage: Message = useMemo(() => ({
-    id: crypto.randomUUID(),
-    role: MessageRole.MODEL,
-    text: "Hello! I'm MeteoSran. Ask me anything about clouds, storms, hurricanes, or other weather wonders! You can also upload an image of a weather phenomenon for me to explain.",
-    timestamp: new Date(),
-  }),[]);
+  // const initialWelcomeMessage: Message = useMemo(() => ({
+  //   id: crypto.randomUUID(),
+  //   role: MessageRole.MODEL,
+  //   text: "Hello! I'm MeteoSran. Ask me anything about clouds, storms, hurricanes, or other weather wonders! You can also upload an image of a weather phenomenon for me to explain.",
+  //   timestamp: new Date(),
+  // }),[]);
 
   const handleSendMessage = async (text: string, imageFile?: File | null) => {
     if (!text.trim() && !imageFile) return;
