@@ -6,20 +6,20 @@
 
 ## Overview
 
-MeteoSran is a Progressive Web App (PWA) that combines cutting-edge AI technology with meteorological expertise to provide engaging, accurate, and educational weather explanations. Built with React, TypeScript, and powered by Google's Gemini AI, it's designed to work seamlessly across all devices and can be installed like a native app.
+MeteoSran is a Progressive Web App (PWA) that merges modern AI with meteorological expertise to deliver engaging, accurate, and educational weather insights. Built with React and TypeScript, it works seamlessly across devices and can be installed for a native-like experience.
 
 ## 🌟 Features
 
-- **💡 AI-Powered Weather Analysis**: Real-time weather explanations using Google's Gemini AI
-- **📱 Progressive Web App**: Installable on any device, works offline
-- **🖼️ Multi-Modal Input**: Support for text and image-based weather queries
-- **🎨 Six Response Modes**: Default, Concise, Short, Straight, Funny, Einstein
-- **🌍 Real-Time Weather Data**: Live weather information for Ivory Coast
-- **📄 PDF Export**: Conversation export functionality
-- **🌙 Dark/Light Theme**: Apple-inspired UI with theme switching
-- **♿ Accessibility**: WCAG 2.1 compliant interface design
-- **🔧 Offline Support**: Works without internet connection for basic features
-- **📊 Analytics & Insights**: Privacy-focused usage analytics and performance monitoring
+- **AI-Powered Weather Analysis**: Real-time weather explanations using advanced AI models
+- **Progressive Web App**: Installable on any device, works offline
+- **Multi-Modal Input**: Support for text and image-based weather queries
+- **Six Response Modes**: Default, Concise, Short, Straight, Funny, Scientific
+- **Real-Time Weather Data**: Live weather information for Ivory Coast
+- **PDF Export**: Export conversations as professional PDF reports
+- **Dark/Light Theme**: Apple-inspired UI with theme switching
+- **Accessibility**: WCAG 2.1 compliant interface design
+- **Offline Support**: Core features available without internet connection
+- **Analytics & Insights**: Privacy-focused usage analytics and performance monitoring
 
 ## 🚀 PWA Installation
 
@@ -55,7 +55,7 @@ npm install
 ### 2. Environment Configuration
 Create a `.env.local` file in the root directory:
 ```bash
-GEMINI_API_KEY=your_gemini_api_key_here
+AI_API_KEY=your_ai_api_key_here
 ACCUWEATHER_API_KEY=your_accuweather_api_key_here
 ```
 
@@ -120,7 +120,7 @@ MeteoSran PWA
 │   ├── PWA Shell
 │   ├── Service Worker
 │   └── Offline Fallbacks
-├── AI Service (Gemini API)
+├── AI Service
 │   ├── Natural Language Processing
 │   ├── Image Analysis
 │   └── Context Management
@@ -133,7 +133,7 @@ MeteoSran PWA
     └── Educational Materials
 ```
 
-## � Analytics & Performance
+## Analytics & Performance
 
 MeteoSran includes privacy-focused analytics to improve user experience and monitor application performance.
 
@@ -152,7 +152,7 @@ MeteoSran includes privacy-focused analytics to improve user experience and moni
 
 For detailed analytics information, see [ANALYTICS.md](ANALYTICS.md).
 
-## �🔧 Configuration
+## Configuration
 
 ### PWA Manifest
 The app includes a comprehensive web app manifest with:
@@ -217,7 +217,7 @@ npm run build
 
 ## 🤝 Contributing
 
-We welcome contributions to make MeteoSran better! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
+We welcome contributions to make MeteoSran better! Please see our [CONTRIBUTING.md](CONTRIBUTING.md) for details.
 
 ### Development Workflow
 1. Fork the repository
@@ -246,7 +246,6 @@ Connect with the creator:
 
 ## 🙏 Acknowledgments
 
-- Google Gemini AI for natural language processing
 - AccuWeather for weather data
 - React team for the excellent framework
 - PWA community for best practices and guidelines

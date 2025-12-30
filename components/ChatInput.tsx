@@ -27,6 +27,7 @@ const CloseIcon: React.FC = () => (
 export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading, currentInputState, setCurrentInputState, inputRef }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
+  const [showVoiceNotification, setShowVoiceNotification] = useState<boolean>(false);
 
   const { text: currentText, imageFile } = currentInputState;
 
@@ -97,6 +98,11 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading, 
     }
   };
 
+  const handleVoiceInputClick = () => {
+    setShowVoiceNotification(true);
+    setTimeout(() => setShowVoiceNotification(false), 5000); // Hide after 3 seconds
+  };
+
   return (
     <div className="p-2 sm:p-3 md:p-4 border-t border-white/20 dark:border-slate-700/30 
                     bg-white/10 dark:bg-slate-900/10 backdrop-blur-sm">
@@ -112,11 +118,40 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading, 
           </button>
         </div>
       )}
-      <form onSubmit={handleSubmit} className="flex items-center gap-1.5 sm:gap-2 md:gap-3 
-                     bg-white/40 dark:bg-slate-800/50 
-                     rounded-xl sm:rounded-2xl p-0.5 sm:p-1 border border-white/40 dark:border-slate-600/50 
-                     focus-within:ring-2 focus-within:ring-blue-500 dark:focus-within:ring-sky-500 
-                     transition-all duration-150 shadow-xl backdrop-blur-md"
+      
+      {/* Voice Input Notification */}
+      {showVoiceNotification && (
+        <div className={`mb-2 p-3 bg-sky-500/20 dark:bg-sky-600/30 backdrop-blur-sm 
+                        border border-sky-300/50 dark:border-sky-500/50 rounded-lg 
+                        transform transition-all duration-300 ease-out
+                        ${showVoiceNotification ? 'translate-y-0 opacity-100' : 'translate-y-2 opacity-0'}`}>
+          <div className="flex items-center gap-2">
+            <span className="material-symbols-outlined text-sky-600 dark:text-sky-400 text-lg">mic</span>
+            <div className="flex-1">
+              <p className="text-sm font-medium text-sky-800 dark:text-sky-200">
+                🎤 Voice Input Coming Soon!
+              </p>
+              <p className="text-xs text-sky-700 dark:text-sky-300 mt-1">
+                We're working on adding voice input functionality to make your MeteoSran experience even better.
+              </p>
+            </div>
+            <button
+              onClick={() => setShowVoiceNotification(false)}
+              className="text-sky-600 dark:text-sky-400 hover:text-sky-800 dark:hover:text-sky-200 
+                        transition-colors p-1 rounded-full hover:bg-sky-200/30 dark:hover:bg-sky-700/30"
+              aria-label="Close notification"
+            >
+              <span className="material-symbols-outlined text-sm">close</span>
+            </button>
+          </div>
+        </div>
+      )}
+      <form onSubmit={handleSubmit} className="flex items-center gap-1.5 sm:gap-2 
+                     bg-white/60 dark:bg-slate-800/70 
+                     rounded-2xl p-1.5 sm:p-2 
+                     border border-slate-300/70 dark:border-slate-700/60
+                     focus-within:ring-2 focus-within:ring-sky-500
+                     transition-all duration-200 shadow-lg backdrop-blur-xl"
       >
         <input
           type="file"
@@ -131,19 +166,32 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading, 
           type="button"
           onClick={handleImageUploadClick}
           disabled={isLoading}
-          className="flex items-center justify-center p-2 sm:p-2.5 md:p-3 rounded-full bg-slate-100/80 dark:bg-slate-700/60 shadow hover:bg-slate-200 dark:hover:bg-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-400 dark:focus:ring-sky-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px] min-w-[44px]"
+          className="p-2 rounded-full hover:bg-black/10 dark:hover:bg-white/10 text-slate-600 dark:text-slate-300
+                     focus:outline-none focus:ring-2 focus:ring-sky-500
+                     transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           aria-label="Attach image"
         >
-          <span className="material-symbols-outlined text-lg sm:text-xl md:text-2xl text-blue-500 dark:text-sky-400">add_photo_alternate</span>
+          <span className="material-symbols-outlined text-2xl">add_photo_alternate</span>
+        </button>
+        <button
+          type="button"
+          onClick={handleVoiceInputClick}
+          disabled={isLoading}
+          className="p-2 rounded-full hover:bg-black/10 dark:hover:bg-white/10 text-slate-600 dark:text-slate-300
+                     focus:outline-none focus:ring-2 focus:ring-sky-500
+                     transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          aria-label="Use voice input"
+        >
+          <span className="material-symbols-outlined text-2xl">mic</span>
         </button>
         <textarea
           ref={inputRef}
           value={currentText}
           onChange={handleTextChange}
           onKeyDown={handleKeyDown}
-          placeholder={imageFile ? "Describe the image or simply ask a question..." : "Ask me anything about weather..."}
-          className="flex-grow p-2 sm:p-2 md:p-3 bg-transparent border-none focus:ring-0 resize-none overflow-y-auto max-h-32 
-                     text-sm md:text-base text-slate-800 dark:text-slate-100 
+          placeholder={imageFile ? "Describe the image or ask a question..." : "Ask me anything about weather..."}
+          className="flex-grow py-2 bg-transparent border-none focus:ring-0 resize-none overflow-y-auto max-h-32 
+                     text-sm text-slate-800 dark:text-slate-100 
                      placeholder-slate-500 dark:placeholder-slate-400"
           rows={1}
           disabled={isLoading}
@@ -152,13 +200,13 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading, 
         <button
           type="submit"
           disabled={isLoading || (!currentText.trim() && !imageFile)}
-          className="group flex items-center justify-center p-2 sm:p-2.5 md:p-3 rounded-full bg-blue-500 dark:bg-sky-600 shadow-lg text-white 
-                     hover:bg-blue-600 dark:hover:bg-sky-500 
-                     focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-sky-500 focus:ring-offset-1 
+          className="group flex items-center justify-center p-2.5 rounded-full bg-sky-500 shadow-lg text-white 
+                     hover:bg-sky-600 
+                     focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2 
                      dark:focus:ring-offset-slate-800
-                     disabled:bg-slate-400/50 dark:disabled:bg-slate-600/50 
+                     disabled:bg-slate-400/80 dark:disabled:bg-slate-700
                      disabled:text-slate-500 dark:disabled:text-slate-400
-                     disabled:cursor-not-allowed transition-colors duration-150 min-h-[44px] min-w-[44px]"
+                     disabled:cursor-not-allowed transition-all duration-200"
           aria-label="Send message"
         >
           <SendIcon isLoading={isLoading} />

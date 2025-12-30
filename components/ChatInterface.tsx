@@ -31,19 +31,19 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
   return (
     <div 
-      className="flex flex-col flex-grow h-full overflow-hidden 
-                 bg-white/20 dark:bg-slate-800/20 backdrop-blur-xl 
-                 rounded-xl shadow-2xl border border-white/30 dark:border-slate-700/40"
+      className="flex flex-col flex-grow h-full overflow-hidden"
     >
       <MessageList messages={messages} isLoading={isLoading} error={error} />
-      {showSampleQuestions && <SampleQuestions onQuestionSelect={onSampleQuestion} />}
-      <ChatInput 
-        onSendMessage={onSendMessage} 
-        isLoading={isLoading} 
-        currentInputState={currentInputState}       // Changed
-        setCurrentInputState={setCurrentInputState} // Changed
-        inputRef={inputRef} // Pass inputRef to ChatInput
-      />
+      <div className="w-full max-w-6xl mx-auto px-2">
+        {showSampleQuestions && <SampleQuestions onQuestionSelect={onSampleQuestion} />}
+        <ChatInput 
+          onSendMessage={onSendMessage} 
+          isLoading={isLoading} 
+          currentInputState={currentInputState}       // Changed
+          setCurrentInputState={setCurrentInputState} // Changed
+          inputRef={inputRef} // Pass inputRef to ChatInput
+        />
+      </div>
     </div>
   );
 };

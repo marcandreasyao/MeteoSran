@@ -5,14 +5,14 @@ export const Footer: React.FC = () => {
 
   return (
     <footer 
-      className="p-2 sm:p-3 text-center text-xs w-full 
+      className="p-2 sm:p-3 text-center text-[10px] sm:text-xs w-full 
                  bg-white/20 dark:bg-slate-800/60 backdrop-blur-md 
                  border-t border-white/40 dark:border-slate-700/60
                  text-slate-700 dark:text-slate-100"
       role="contentinfo"
     >
       <div className="container mx-auto">
-        <p>&copy; {year} MeteoSran 1.2 by Marc Andréas Yao. </p>
+        <p>&copy; {year} MeteoSran 1.3 by Marc Andréas Yao. </p>
         {/* <p>Powered by Gemini.</p> */}
       </div>
     </footer>
