@@ -5,7 +5,7 @@ let chat: Chat | null = null;
 
 // API Key configuration
 //- Comprehensive Detail: Depending on the mode, provide specific and relevant weather details such as temperature, humidity, wind speed and direction, atmospheric pressure, cloud cover, and precipitation likelihood. If applicable, include highs and lows for the day or near future.
-const API_KEY = "AIzaSyA1zKIf9RrfvzFzYdpb-mRJfFc-UoXprWM";
+const API_KEY = "AIzaSyAN46yZEOlvK-kUEIClTs3nALmdOIHeVvI";
 const CORE_INSTRUCTION = `You are 'MeteoSran', a friendly and highly knowledgeable meteorologist. 
 Your primary goal is to explain weather phenomena to curious learners in an engaging, clear, and easy-to-understand manner.
 When an image is provided, analyze it carefully and explain any visible weather phenomena. If the user provides text along with the image, address their specific query in relation to the image.
@@ -212,7 +212,7 @@ export const initChatService = async (): Promise<string | null> => {
   try {
     const ai = new GoogleGenAI({ apiKey: API_KEY });
     chat = ai.chats.create({
-      model: 'gemini-2.5-flash',  // Use the most powerful publicly available model
+      model: 'gemini-2.5-flash',  // Use the most recent free model
       config: {
         systemInstruction: SYSTEM_INSTRUCTION,
       },
@@ -263,7 +263,7 @@ export const sendMessageToAI = async (
 
     if (isWeatherQueryForCI) {
       try {
-        const weatherResponse = await fetch('http://localhost:5000/api/weather/current');
+        const weatherResponse = await fetch('/api/weather/current');
         if (weatherResponse.ok) {
           const weatherData = await weatherResponse.json();
           // Append the weather data to the prompt for Gemini to use

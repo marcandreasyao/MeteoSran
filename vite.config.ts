@@ -15,6 +15,18 @@ export default defineConfig(({ mode }) => {
           '@': path.resolve(__dirname, '.'),
         }
       },
+      server: {
+        proxy: {
+          '/api': {
+            target: 'http://localhost:5001',
+            changeOrigin: true,
+            secure: false,
+          },
+        },
+        host: true, // Allow external connections for testing PWA
+        port: 5173,
+        cors: true
+      },
       build: {
         rollupOptions: {
           output: {
@@ -36,11 +48,6 @@ export default defineConfig(({ mode }) => {
             drop_debugger: mode === 'production'
           }
         }
-      },
-      server: {
-        host: true, // Allow external connections for testing PWA
-        port: 5173,
-        cors: true
       },
       preview: {
         host: true,

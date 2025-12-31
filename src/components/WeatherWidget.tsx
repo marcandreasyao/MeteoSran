@@ -23,7 +23,7 @@ const WeatherWidget: React.FC<WeatherWidgetProps> = ({ userLocation }) => {
   useEffect(() => {
     const fetchWeather = async () => {
       try {
-        let url = 'http://localhost:5000/api/weather/current';
+        let url = '/api/weather/current';
         const locationMode = localStorage.getItem('locationMode') || 'auto';
         if ((locationMode === 'auto' || locationMode === 'manual') && userLocation && userLocation.lat && userLocation.lon) {
           url += `?lat=${userLocation.lat}&lon=${userLocation.lon}`;
