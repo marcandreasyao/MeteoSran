@@ -1,5 +1,7 @@
 import React, { useRef, useState, useEffect, RefObject } from 'react';
-import { CurrentInputState } from '../App'; // Import CurrentInputState
+import { CurrentInputState } from '../App';
+import { useSpeechRecognition } from '../src/hooks/useSpeechRecognition';
+import { AudioVisualizer } from './AudioVisualizer';
 
 interface ChatInputProps {
   onSendMessage: (text: string, imageFile?: File | null) => void;
@@ -9,11 +11,11 @@ interface ChatInputProps {
   inputRef: RefObject<HTMLTextAreaElement | null>;
 }
 
-const SendIcon: React.FC<{isLoading: boolean}> = ({isLoading}) => (
- <svg 
-    xmlns="http://www.w3.org/2000/svg" 
-    viewBox="0 0 24 24" 
-    fill="currentColor" 
+const SendIcon: React.FC<{ isLoading: boolean }> = ({ isLoading }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 24 24"
+    fill="currentColor"
     className={`w-5 h-5 md:w-6 md:h-6 transform transition-transform duration-150 ${isLoading ? 'animate-pulse' : 'group-hover:scale-110'}`}
   >
     <path d="M3.478 2.404a.75.75 0 0 0-.926.941l2.432 7.905H13.5a.75.75 0 0 1 0 1.5H4.984l-2.432 7.905a.75.75 0 0 0 .926.94 60.519 60.519 0 0 0 18.445-8.986.75.75 0 0 0 0-1.218A60.517 60.517 0 0 0 3.478 2.404Z" />
@@ -27,9 +29,35 @@ const CloseIcon: React.FC = () => (
 export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading, currentInputState, setCurrentInputState, inputRef }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
-  const [showVoiceNotification, setShowVoiceNotification] = useState<boolean>(false);
 
   const { text: currentText, imageFile } = currentInputState;
+  const textBeforeDictationRef = useRef<string>('');
+
+  const handleSpeechResult = React.useCallback((transcript: string, _isFinal: boolean) => {
+    const prefix = textBeforeDictationRef.current ? textBeforeDictationRef.current + ' ' : '';
+    setCurrentInputState({ ...currentInputState, text: prefix + transcript });
+  }, [currentInputState, setCurrentInputState]);
+
+  const {
+    isListening,
+    supported: speechSupported,
+    audioData,
+    language,
+    startListening,
+    stopListening,
+    toggleLanguage
+  } = useSpeechRecognition({
+    onResult: handleSpeechResult,
+  });
+
+  const toggleDictation = () => {
+    if (isListening) {
+      stopListening();
+    } else {
+      textBeforeDictationRef.current = currentText;
+      startListening();
+    }
+  };
 
   useEffect(() => {
     if (imageFile) {
@@ -48,7 +76,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading, 
     if ((currentText.trim() || imageFile) && !isLoading) {
       onSendMessage(currentText.trim(), imageFile);
       if (inputRef.current) {
-        inputRef.current.style.height = 'auto'; 
+        inputRef.current.style.height = 'auto';
       }
     }
   };
@@ -60,7 +88,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading, 
       inputRef.current.style.height = `${Math.min(inputRef.current.scrollHeight, 128)}px`;
     }
   };
-  
+
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
@@ -77,13 +105,13 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading, 
     if (file) {
       if (!file.type.startsWith('image/')) {
         alert('Please select an image file (e.g., PNG, JPG, WEBP).');
-        if(fileInputRef.current) fileInputRef.current.value = "";
+        if (fileInputRef.current) fileInputRef.current.value = "";
         return;
       }
-      const maxSize = 4 * 1024 * 1024; 
+      const maxSize = 4 * 1024 * 1024;
       if (file.size > maxSize) {
-        alert(`File is too large. Maximum size is ${maxSize / (1024*1024)}MB.`);
-        if(fileInputRef.current) fileInputRef.current.value = "";
+        alert(`File is too large. Maximum size is ${maxSize / (1024 * 1024)}MB.`);
+        if (fileInputRef.current) fileInputRef.current.value = "";
         return;
       }
       setCurrentInputState({ ...currentInputState, imageFile: file });
@@ -96,11 +124,6 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading, 
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
-  };
-
-  const handleVoiceInputClick = () => {
-    setShowVoiceNotification(true);
-    setTimeout(() => setShowVoiceNotification(false), 5000); // Hide after 3 seconds
   };
 
   return (
@@ -118,34 +141,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading, 
           </button>
         </div>
       )}
-      
-      {/* Voice Input Notification */}
-      {showVoiceNotification && (
-        <div className={`mb-2 p-3 bg-sky-500/20 dark:bg-sky-600/30 backdrop-blur-sm 
-                        border border-sky-300/50 dark:border-sky-500/50 rounded-lg 
-                        transform transition-all duration-300 ease-out
-                        ${showVoiceNotification ? 'translate-y-0 opacity-100' : 'translate-y-2 opacity-0'}`}>
-          <div className="flex items-center gap-2">
-            <span className="material-symbols-outlined text-sky-600 dark:text-sky-400 text-lg">mic</span>
-            <div className="flex-1">
-              <p className="text-sm font-medium text-sky-800 dark:text-sky-200">
-                🎤 Voice Input Coming Soon!
-              </p>
-              <p className="text-xs text-sky-700 dark:text-sky-300 mt-1">
-                We're working on adding voice input functionality to make your MeteoSran experience even better.
-              </p>
-            </div>
-            <button
-              onClick={() => setShowVoiceNotification(false)}
-              className="text-sky-600 dark:text-sky-400 hover:text-sky-800 dark:hover:text-sky-200 
-                        transition-colors p-1 rounded-full hover:bg-sky-200/30 dark:hover:bg-sky-700/30"
-              aria-label="Close notification"
-            >
-              <span className="material-symbols-outlined text-sm">close</span>
-            </button>
-          </div>
-        </div>
-      )}
+
       <form onSubmit={handleSubmit} className="flex items-center gap-1.5 sm:gap-2 
                      bg-white/60 dark:bg-slate-800/70 
                      rounded-2xl p-1.5 sm:p-2 
@@ -173,40 +169,67 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading, 
         >
           <span className="material-symbols-outlined text-2xl">add_photo_alternate</span>
         </button>
-        <button
-          type="button"
-          onClick={handleVoiceInputClick}
-          disabled={isLoading}
-          className="p-2 rounded-full hover:bg-black/10 dark:hover:bg-white/10 text-slate-600 dark:text-slate-300
-                     focus:outline-none focus:ring-2 focus:ring-sky-500
-                     transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          aria-label="Use voice input"
-        >
-          <span className="material-symbols-outlined text-2xl">mic</span>
-        </button>
-        <textarea
-          ref={inputRef}
-          value={currentText}
-          onChange={handleTextChange}
-          onKeyDown={handleKeyDown}
-          placeholder={imageFile ? "Describe the image or ask a question..." : "Ask me anything about weather..."}
-          className="flex-grow py-2 bg-transparent border-none focus:ring-0 resize-none overflow-y-auto max-h-32 
-                     text-sm text-slate-800 dark:text-slate-100 
-                     placeholder-slate-500 dark:placeholder-slate-400"
-          rows={1}
-          disabled={isLoading}
-          aria-label="Chat message input"
-        />
+
+        {speechSupported && (
+          <div className="flex items-center gap-1 border-l border-slate-300/50 dark:border-slate-600/50 pl-1 pr-1">
+            <button
+              type="button"
+              onClick={toggleLanguage}
+              className="text-xs font-bold px-1.5 py-1 rounded bg-slate-200/50 dark:bg-slate-700/50 text-slate-500 dark:text-slate-400 hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors"
+              title="Switch dictation language"
+              disabled={isLoading || isListening}
+            >
+              {language === 'fr-FR' ? 'FR' : 'EN'}
+            </button>
+            <button
+              type="button"
+              onClick={toggleDictation}
+              disabled={isLoading}
+              className={`p-2 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-sky-500 disabled:opacity-50 disabled:cursor-not-allowed ${isListening
+                ? 'bg-red-100/80 dark:bg-red-900/40 text-red-500 dark:text-red-400 animate-pulse shadow-[0_0_10px_rgba(239,68,68,0.5)]'
+                : 'hover:bg-black/10 dark:hover:bg-white/10 text-slate-600 dark:text-slate-300'
+                }`}
+              aria-label={isListening ? "Stop listening" : "Start voice input"}
+            >
+              <span className="material-symbols-outlined text-2xl">
+                {isListening ? 'mic_off' : 'mic'}
+              </span>
+            </button>
+          </div>
+        )}
+
+        {isListening ? (
+          <div className="flex-grow flex flex-col items-center justify-center overflow-hidden animate-[pulse_2s_ease-in-out_infinite] relative px-2 min-h-[40px]">
+            <AudioVisualizer audioData={audioData} isListening={isListening} />
+            <div className="absolute bottom-[-4px] text-xs font-medium text-sky-600 dark:text-sky-400 truncate w-full text-center opacity-80 pb-1">
+              {currentText || "Listening..."}
+            </div>
+          </div>
+        ) : (
+          <textarea
+            ref={inputRef}
+            value={currentText}
+            onChange={handleTextChange}
+            onKeyDown={handleKeyDown}
+            placeholder={imageFile ? "Describe the image or ask a question..." : "Ask me anything about weather..."}
+            className="flex-grow py-2 bg-transparent border-none focus:ring-0 resize-none overflow-y-auto max-h-32 
+                         text-sm text-slate-800 dark:text-slate-100 
+                         placeholder-slate-500 dark:placeholder-slate-400"
+            rows={1}
+            disabled={isLoading}
+            aria-label="Chat message input"
+          />
+        )}
         <button
           type="submit"
           disabled={isLoading || (!currentText.trim() && !imageFile)}
           className="group flex items-center justify-center p-2.5 rounded-full bg-sky-500 shadow-lg text-white 
-                     hover:bg-sky-600 
-                     focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2 
-                     dark:focus:ring-offset-slate-800
-                     disabled:bg-slate-400/80 dark:disabled:bg-slate-700
-                     disabled:text-slate-500 dark:disabled:text-slate-400
-                     disabled:cursor-not-allowed transition-all duration-200"
+                       hover:bg-sky-600 
+                       focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2 
+                       dark:focus:ring-offset-slate-800
+                       disabled:bg-slate-400/80 dark:disabled:bg-slate-700
+                       disabled:text-slate-500 dark:disabled:text-slate-400
+                       disabled:cursor-not-allowed transition-all duration-200"
           aria-label="Send message"
         >
           <SendIcon isLoading={isLoading} />

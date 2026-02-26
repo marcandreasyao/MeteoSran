@@ -36,8 +36,13 @@ app.get('/api/weather/current', async (req, res) => {
             lat = req.query.lat;
             lon = req.query.lon;
             try {
-                const geoUrl = `http://dataservice.accuweather.com/locations/v1/cities/geoposition/search?apikey=${ACCUWEATHER_API_KEY}&q=${lat},${lon}`;
-                const geoResp = await fetch(geoUrl);
+                const isNewKey = ACCUWEATHER_API_KEY.startsWith('zpka_');
+                const authHeader = isNewKey ? { 'Authorization': `Bearer ${ACCUWEATHER_API_KEY}` } : {};
+                const geoUrl = isNewKey
+                    ? `https://dataservice.accuweather.com/locations/v1/cities/geoposition/search?q=${lat},${lon}`
+                    : `http://dataservice.accuweather.com/locations/v1/cities/geoposition/search?apikey=${ACCUWEATHER_API_KEY}&q=${lat},${lon}`;
+
+                const geoResp = await fetch(geoUrl, { headers: authHeader });
                 if (geoResp.ok) {
                     const geoData = await geoResp.json();
                     if (geoData && geoData.Key) {
@@ -63,8 +68,13 @@ app.get('/api/weather/current', async (req, res) => {
                         lat = ipGeoData.lat;
                         lon = ipGeoData.lon;
                         // Now get AccuWeather location key for these coords
-                        const geoUrl = `http://dataservice.accuweather.com/locations/v1/cities/geoposition/search?apikey=${ACCUWEATHER_API_KEY}&q=${lat},${lon}`;
-                        const geoResp = await fetch(geoUrl);
+                        const isNewKey = ACCUWEATHER_API_KEY.startsWith('zpka_');
+                        const authHeader = isNewKey ? { 'Authorization': `Bearer ${ACCUWEATHER_API_KEY}` } : {};
+                        const geoUrl = isNewKey
+                            ? `https://dataservice.accuweather.com/locations/v1/cities/geoposition/search?q=${lat},${lon}`
+                            : `http://dataservice.accuweather.com/locations/v1/cities/geoposition/search?apikey=${ACCUWEATHER_API_KEY}&q=${lat},${lon}`;
+
+                        const geoResp = await fetch(geoUrl, { headers: authHeader });
                         if (geoResp.ok) {
                             const geoData = await geoResp.json();
                             if (geoData && geoData.Key) {
@@ -86,10 +96,14 @@ app.get('/api/weather/current', async (req, res) => {
         }
     }
 
-    const accuweatherUrl = `http://dataservice.accuweather.com/currentconditions/v1/${locationKey}?apikey=${ACCUWEATHER_API_KEY}&details=true&metric=true`;
+    const isNewKey = ACCUWEATHER_API_KEY.startsWith('zpka_');
+    const authHeader = isNewKey ? { 'Authorization': `Bearer ${ACCUWEATHER_API_KEY}` } : {};
+    const accuweatherUrl = isNewKey
+        ? `https://dataservice.accuweather.com/currentconditions/v1/${locationKey}?details=true&metric=true`
+        : `http://dataservice.accuweather.com/currentconditions/v1/${locationKey}?apikey=${ACCUWEATHER_API_KEY}&details=true&metric=true`;
 
     try {
-        const response = await fetch(accuweatherUrl);
+        const response = await fetch(accuweatherUrl, { headers: authHeader });
         if (!response.ok) {
             const errorBody = await response.text();
             console.error(`AccuWeather API error: ${response.status} - ${response.statusText}`, errorBody);
@@ -143,7 +157,7 @@ app.use(express.static(path.join(__dirname, '../dist')));
 // The "catchall" handler: for any request that doesn't
 // match one above, send back React's index.html file.
 app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, '../dist/index.html'));
+    res.sendFile(path.join(__dirname, '../dist/index.html'));
 });
 
 // Start the server
