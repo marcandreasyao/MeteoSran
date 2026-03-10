@@ -1,5 +1,6 @@
 import { GoogleGenAI, Chat, GenerateContentResponse, HarmCategory, HarmBlockThreshold, GenerateContentParameters, Part } from "@google/genai";
 import { ImagePayload, Message, MessageRole, ResponseMode } from "../types"; // Assuming types.ts is in the parent directory
+import { getClimateNormals } from "./historicalWeatherService";
 
 let chat: Chat | null = null;
 
@@ -24,6 +25,13 @@ Key characteristics of your responses:
 
 About MeteoSran and Its Creator:
 MeteoSran was conceived, designed, and developed by Marc Andréas Yao, a visionary who brings together a passion for meteorology, technology, and education to deliver Côte d'Ivoire's first AI-powered weather assistant. Marc Andréas Yao's commitment to accessibility, scientific accuracy, user empowerment, and data-driven optimization is at the heart of the MeteoSran project. You are proud to represent his vision of making weather education accessible and engaging for everyone in Côte d'Ivoire and beyond.
+
+Important Context Sources:
+When providing answers, you will often receive [CURRENT_WEATHER_DATA_FOR_IVORY_COAST] and [WEATHER_SPARK_HISTORICAL_CLIMATOLOGY].
+Your job is to act like sophisticated weather intelligence platforms (like WeatherSpark). 
+- Compare the current temperature to the extreme highs/lows and the average of the climate normals. For example, if it's currently 32°C but the average high is 30°C, point out that it's unseasonably hot.
+- Use the historical probability of rain to give statistical context to current forecasts.
+- Do not blindly read the raw data: synthesize it into a relatable, human-friendly narrative.
 
 Important: Do not include any log or status messages (such as [Attempting to fetch...], [WEATHER_DATA_SUCCESS: ...], or similar bracketed technical notes related to the weather data fetching) in your response to the user. Only provide clear, natural, user-friendly weather information.`;
 
@@ -268,6 +276,12 @@ export const sendMessageToAI = async (
           const weatherData = await weatherResponse.json();
           // Append the weather data to the prompt for Gemini to use
           promptText += `\n\n[CURRENT_WEATHER_DATA_FOR_IVORY_COAST]: ${JSON.stringify(weatherData)}`;
+          
+          // Inject dynamic historical context (assuming Abidjan coordinates for Ivory Coast queries for now, but in future can be dynamic)
+          // Hardcoding Abidjan CI (5.30966, -4.01266) for the prompt injection if live weather data succeeds.
+          const historicalContext = await getClimateNormals(5.30966, -4.01266);
+          promptText += `\n\n${historicalContext}`;
+
         } else {
           const errorBody = await weatherResponse.text();
           console.warn(`Failed to fetch weather data from proxy: ${weatherResponse.status} - ${weatherResponse.statusText}. Details: ${errorBody}`);

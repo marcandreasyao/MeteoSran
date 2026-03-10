@@ -9,7 +9,7 @@ import { Footer } from './components/Footer';
 import { LoadingProgress } from './components/LoadingProgress';
 import { PWAInstallPrompt } from './components/PWAInstallPrompt';
 import WeatherWidget from './src/components/WeatherWidget';
-
+import { useGeolocation } from './src/hooks/useGeolocation';
 export type Theme = 'light' | 'dark';
 
 export interface CurrentInputState {
@@ -103,27 +103,20 @@ const App: React.FC = () => {
     initializeChat();
   }, []);
 
-  // Geolocation logic
+  // Advanced Geolocation hook handling Android best practices (high accuracy, cache, timeout, permissions)
+  const { location: geoLoc, error: geoErr, permissionState } = useGeolocation(true);
+
   useEffect(() => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          setUserLocation({
-            lat: position.coords.latitude,
-            lon: position.coords.longitude,
-          });
-          setLocationError(null);
-        },
-        (error) => {
-          setLocationError('Location access denied. Please enter your location manually.');
-          setLocationPrompt(true);
-        }
-      );
-    } else {
-      setLocationError('Geolocation is not supported by your browser. Please enter your location manually.');
+    if (geoLoc) {
+      setUserLocation({ lat: geoLoc.lat, lon: geoLoc.lon });
+      setLocationError(null);
+      setLocationPrompt(false);
+    }
+    if (geoErr) {
+      setLocationError(geoErr);
       setLocationPrompt(true);
     }
-  }, []);
+  }, [geoLoc, geoErr]);
 
   // Handler for manual location entry (simple prompt for now)
   const handleManualLocation = () => {
