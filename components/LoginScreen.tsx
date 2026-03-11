@@ -82,10 +82,7 @@ export const LoginScreen: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center p-4 relative overflow-hidden font-sans">
-      {/* Background Orbs */}
-      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-500/20 rounded-full blur-[100px] pointer-events-none" />
-      <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-purple-500/20 rounded-full blur-[100px] pointer-events-none" />
+    <div className="min-h-screen flex flex-col items-center justify-center p-4 relative overflow-hidden">
 
       {/* Main Container */}
       <div className="w-full max-w-md bg-slate-800/60 backdrop-blur-xl border border-slate-700/50 rounded-3xl shadow-2xl p-8 relative z-10 animate-fade-up-soft">

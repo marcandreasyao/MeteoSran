@@ -11,6 +11,7 @@ interface HeaderProps {
   messages: Message[]; // Pass messages to determine if download is possible and to pass to PDF generator
   selectedMode: ResponseMode;
   onModeChange: (mode: ResponseMode) => void;
+  onToggleSidebar?: () => void;
 }
 
 const ResponseModeDetails = {
@@ -46,7 +47,7 @@ const ResponseModeDetails = {
   }
 };
 
-export const Header: React.FC<HeaderProps> = ({ theme, toggleTheme, messages, selectedMode, onModeChange }) => {
+export const Header: React.FC<HeaderProps> = ({ theme, toggleTheme, messages, selectedMode, onModeChange, onToggleSidebar }) => {
   const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
   const [isModeDropdownOpen, setIsModeDropdownOpen] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
@@ -145,6 +146,16 @@ export const Header: React.FC<HeaderProps> = ({ theme, toggleTheme, messages, se
     >
       <div className="container mx-auto flex items-center justify-between">
         <div className="flex items-center space-x-2 sm:space-x-4">
+          {onToggleSidebar && (
+            <button
+              onClick={onToggleSidebar}
+              className="p-1.5 sm:p-2 rounded-full hover:bg-black/10 dark:hover:bg-white/10 text-slate-700 dark:text-slate-200 focus:outline-none transition-colors"
+              aria-label="Toggle sidebar"
+              title="Toggle sidebar"
+            >
+              <span className="material-symbols-outlined text-xl sm:text-2xl">menu</span>
+            </button>
+          )}
           {/* <img src="./Meteosran-logo.png" alt="MeteoSran-Logo" className="h-8 sm:h-10 w-auto mr-1 sm:mr-2" /> */}
           <span className="text-xl sm:text-2xl font-bold tracking-tight text-slate-800 dark:text-slate-100">
             MeteoSran

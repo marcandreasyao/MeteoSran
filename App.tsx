@@ -12,7 +12,8 @@ import WeatherWidget from './src/components/WeatherWidget';
 import { useGeolocation } from './src/hooks/useGeolocation';
 import { useAuth } from './src/contexts/AuthContext';
 import { LoginScreen } from './components/LoginScreen';
-import { saveMessageToDB, fetchUserMessages } from './src/services/dbService';
+import { saveMessageToDB, fetchUserMessages, fetchChatSessions, createChatSession, ChatSession } from './src/services/dbService';
+import { Sidebar } from './components/Sidebar';
 export type Theme = 'light' | 'dark';
 
 export interface CurrentInputState {
@@ -66,21 +67,35 @@ const App: React.FC = () => {
   const [locationError, setLocationError] = useState<string | null>(null);
   const [locationPrompt, setLocationPrompt] = useState(false);
   const { user, loading: authLoading } = useAuth();
+  
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [chatSessions, setChatSessions] = useState<ChatSession[]>([]);
+  const [activeChatId, setActiveChatId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
 
   // Fetch messages when user logs in
   useEffect(() => {
     if (user && isInitialized) {
       setIsLoading(true);
-      fetchUserMessages(user.uid).then(history => {
-        if (history.length > 0) {
-          setMessages(history);
+      fetchChatSessions(user.uid).then(async sessions => {
+        setChatSessions(sessions);
+        if (sessions.length > 0) {
+          const latestChat = sessions[0];
+          setActiveChatId(latestChat.id);
+          const history = await fetchUserMessages(user.uid, latestChat.id);
+          setMessages(history.length > 0 ? history : [initialWelcomeMessage]);
         } else {
-          // Save the initial welcome message for a first-time user
-          saveMessageToDB(user.uid, initialWelcomeMessage);
+          // No chats exist at all. Create the very first one!
+          const newChatId = await createChatSession(user.uid, "New Chat");
+          if (newChatId) {
+            setActiveChatId(newChatId);
+            setChatSessions([{ id: newChatId, title: "New Chat", createdAt: new Date(), updatedAt: new Date() }]);
+            saveMessageToDB(user.uid, newChatId, initialWelcomeMessage);
+          }
           setMessages([initialWelcomeMessage]);
         }
       }).catch(err => {
-         console.error("Failed to load chat history:", err);
+         console.error("Failed to load chat sessions:", err);
       }).finally(() => {
          setIsLoading(false);
       });
@@ -168,6 +183,30 @@ const App: React.FC = () => {
     }
   };
 
+  const handleSelectChat = async (chatId: string) => {
+    if (chatId === activeChatId) return;
+    setActiveChatId(chatId);
+    if (user) {
+      setIsLoading(true);
+      const history = await fetchUserMessages(user.uid, chatId);
+      setMessages(history.length > 0 ? history : [initialWelcomeMessage]);
+      setIsLoading(false);
+    }
+  };
+
+  const handleNewChat = async () => {
+    if (user) {
+      const newChatId = await createChatSession(user.uid, "New Chat");
+      if (newChatId) {
+        setActiveChatId(newChatId);
+        const newSession = { id: newChatId, title: "New Chat", createdAt: new Date(), updatedAt: new Date() };
+        setChatSessions(prev => [newSession, ...prev]);
+        setMessages([initialWelcomeMessage]);
+        saveMessageToDB(user.uid, newChatId, initialWelcomeMessage);
+        if (window.innerWidth < 768) setIsSidebarOpen(false);
+      }
+    }
+  };
 
   const triggerGlassFade = () => {
     setShowGlassFade(true);
@@ -229,9 +268,9 @@ const App: React.FC = () => {
       const response = await sendMessageToAI([...messages, userMessage], selectedMode, false, user?.displayName || null);
       setMessages(prev => [...prev, response]);
       
-      if (user) {
-        saveMessageToDB(user.uid, userMessage);
-        saveMessageToDB(user.uid, response);
+      if (user && activeChatId) {
+        saveMessageToDB(user.uid, activeChatId, userMessage);
+        saveMessageToDB(user.uid, activeChatId, response);
       }
     } catch (err) {
       console.error('Error sending message:', err);
@@ -273,8 +312,8 @@ const App: React.FC = () => {
         
         newMessages[msgIndex] = targetMsg;
         
-        if (user) {
-          saveMessageToDB(user.uid, targetMsg);
+        if (user && activeChatId) {
+          saveMessageToDB(user.uid, activeChatId, targetMsg);
         }
         
         return newMessages;
@@ -309,8 +348,8 @@ const App: React.FC = () => {
       targetMsg.text = alts[currIdx];
       newMessages[msgIndex] = targetMsg;
       
-      if (user) {
-        saveMessageToDB(user.uid, targetMsg);
+      if (user && activeChatId) {
+        saveMessageToDB(user.uid, activeChatId, targetMsg);
       }
       
       return newMessages;
@@ -351,31 +390,47 @@ const App: React.FC = () => {
   }
 
   return (
-    <div className={`flex flex-col h-screen transition-opacity duration-500 ${showGlassFade ? 'opacity-70' : 'opacity-100'} ${theme === 'dark' ? 'dark' : ''}`}>
+    <div className={`flex w-full h-[100dvh] transition-opacity duration-500 overflow-hidden ${showGlassFade ? 'opacity-70' : 'opacity-100'} ${theme === 'dark' ? 'dark text-white' : 'text-slate-900'}`}>
       {showGlassFade && (
         <div className="fixed inset-0 z-[9999] pointer-events-none">
           <div className="glass-fade-overlay"></div>
         </div>
       )}
 
-      {/* Location error and manual entry */}
-      {locationError && (
-        <div className="bg-yellow-100 text-yellow-800 p-2 text-center text-xs sm:text-sm">
-          {locationError} {locationPrompt && <button className="ml-1 sm:ml-2 underline" onClick={handleManualLocation}>Enter manually</button>}
-        </div>
+      {user && (
+        <Sidebar 
+          isOpen={isSidebarOpen}
+          onClose={() => setIsSidebarOpen(false)}
+          chatSessions={chatSessions}
+          activeChatId={activeChatId}
+          onSelectChat={handleSelectChat}
+          onNewChat={handleNewChat}
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
+        />
       )}
-      <div className="flex-grow flex flex-col overflow-hidden">
+
+      <div className="flex-1 flex flex-col h-full w-full relative overflow-hidden transition-all duration-300">
+        {/* Location error and manual entry */}
+        {locationError && (
+          <div className="bg-yellow-100 text-yellow-800 p-2 text-center text-xs sm:text-sm z-30">
+            {locationError} {locationPrompt && <button className="ml-1 sm:ml-2 underline" onClick={handleManualLocation}>Enter manually</button>}
+          </div>
+        )}
+        
         <Header 
           theme={theme} 
           toggleTheme={toggleTheme} 
           messages={messages}
           selectedMode={selectedMode}
           onModeChange={handleModeChange}
+          onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
         />
-        <main className="flex-grow flex flex-col overflow-hidden p-1 sm:p-2 md:p-4">
+        
+        <main className="flex-grow flex flex-col overflow-hidden p-1 sm:p-2 md:p-4 relative">
           {error && <ErrorMessage message={error} />}
           {showWeatherWidget && (
-            <div className="my-2 sm:my-4 flex justify-center px-1 sm:px-0">
+            <div className="my-2 sm:my-4 flex justify-center px-1 sm:px-0 z-10">
               <WeatherWidget userLocation={userLocation} />
             </div>
           )}
