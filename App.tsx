@@ -33,13 +33,6 @@ const readFileAsBase64 = (file: File): Promise<string> => {
 
 // ms
 
-const initialWelcomeMessage: Message = {
-  id: crypto.randomUUID(),
-  role: MessageRole.MODEL,
-  text: "Hello! I'm MeteoSran. Ask me anything about the weather in Ivory Coast or anywhere else in the world! You can also upload a weather image for me to analyze.",
-  timestamp: new Date(),
-};
-
 const App: React.FC = () => {
   const [theme, setTheme] = useState<Theme>(() => {
     const savedTheme = localStorage.getItem('theme');
@@ -78,7 +71,7 @@ const App: React.FC = () => {
   // Fetch messages when user logs in
   useEffect(() => {
     if (user && isInitialized) {
-      setIsLoading(true);
+      
       fetchChatSessions(user.uid).then(async sessions => {
         setChatSessions(sessions);
         if (sessions.length > 0) {
@@ -93,8 +86,6 @@ const App: React.FC = () => {
         }
       }).catch(err => {
          console.error("Failed to load chat sessions:", err);
-      }).finally(() => {
-         setIsLoading(false);
       });
     }
   }, [user, isInitialized]);
@@ -184,10 +175,13 @@ const App: React.FC = () => {
     if (chatId === activeChatId) return;
     setActiveChatId(chatId);
     if (user) {
-      setIsLoading(true);
-      const history = await fetchUserMessages(user.uid, chatId);
-      setMessages(history.length > 0 ? history : [initialWelcomeMessage]);
-      setIsLoading(false);
+      
+      try {
+        const history = await fetchUserMessages(user.uid, chatId);
+        setMessages(history.length > 0 ? history : []);
+      } catch (err) {
+        console.error("Failed to load chat history", err);
+      } 
     }
   };
 
@@ -259,22 +253,26 @@ const App: React.FC = () => {
       
       let finalChatId = activeChatId;
 
-      if (!finalChatId && user) {
-        // First message of a new chat session! Let's create the session and generate a title
-        const promptText = userMessage.text;
-        const newTitle = promptText ? promptText.split(" ").slice(0, 5).join(" ") + "..." : "Image Analysis...";
-        finalChatId = await createChatSession(user.uid, newTitle);
-        
-        if (finalChatId) {
-          setActiveChatId(finalChatId);
-          setChatSessions(prev => [{ id: finalChatId!, title: newTitle, createdAt: new Date(), updatedAt: new Date() }, ...prev]);
+      // Do database writes asynchronously without awaiting so the UI updates instantly
+      (async () => {
+        if (!finalChatId && user) {
+          // First message of a new chat session! Let's create the session and generate a title
+          const promptText = userMessage.text;
+          const newTitle = promptText ? promptText.split(" ").slice(0, 5).join(" ") + "..." : "Image Analysis...";
+          finalChatId = await createChatSession(user.uid, newTitle);
+          
+          if (finalChatId) {
+            setActiveChatId(finalChatId);
+            setChatSessions(prev => [{ id: finalChatId!, title: newTitle, createdAt: new Date(), updatedAt: new Date() }, ...prev]);
+          }
         }
-      }
 
-      if (user && finalChatId) {
-        await saveMessageToDB(user.uid, finalChatId, userMessage);
-        await saveMessageToDB(user.uid, finalChatId, response);
-      }
+        if (user && finalChatId) {
+          await saveMessageToDB(user.uid, finalChatId, userMessage);
+          await saveMessageToDB(user.uid, finalChatId, response);
+        }
+      })().catch(err => console.error("Background DB save failed:", err));
+
     } catch (err) {
       console.error('Error sending message:', err);
       setError(err instanceof Error ? err.message : 'Failed to send message');

@@ -1,7 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { Message } from '../types';
 import { MessageBubble } from './MessageBubble';
-import { LoadingSpinner } from './LoadingSpinner';
 import { ErrorMessage } from './ErrorMessage';
 
 
@@ -23,7 +22,11 @@ export const MessageList: React.FC<MessageListProps> = ({ messages, isLoading, e
   useEffect(scrollToBottom, [messages, isLoading, error]);
 
   return (
-    <div className="flex-grow p-4 md:p-6 space-y-4 overflow-y-auto">
+    <div className="flex-grow p-4 md:p-6 space-y-4 overflow-y-auto"
+         style={{
+           WebkitMaskImage: 'linear-gradient(to bottom, black 0%, black calc(100% - 40px), transparent 100%)',
+           maskImage: 'linear-gradient(to bottom, black 0%, black calc(100% - 40px), transparent 100%)'
+         }}>
       {messages.map((msg) => (
         <MessageBubble 
           key={msg.id} 
@@ -34,9 +37,12 @@ export const MessageList: React.FC<MessageListProps> = ({ messages, isLoading, e
       ))}
       {isLoading && (
         <div className="flex justify-start">
-            <div className="flex items-center space-x-2 bg-slate-200/70 dark:bg-slate-700/70 text-slate-700 dark:text-slate-200 p-3 rounded-xl max-w-lg shadow-md backdrop-blur-sm">
-                <LoadingSpinner size="sm" />
-                <span>MeteoSran is thinking...</span>
+            <div className="flex items-center space-x-3 bg-slate-200/70 dark:bg-slate-700/70 text-slate-700 dark:text-slate-200 px-4 py-3 rounded-2xl max-w-lg shadow-md backdrop-blur-sm rounded-bl-sm">
+                <div className="flex space-x-1 items-center justify-center">
+                  <div className="w-[6px] h-[6px] rounded-full bg-sky-500 animate-[bounce_1s_infinite] [animation-delay:-0.3s]"></div>
+                  <div className="w-[6px] h-[6px] rounded-full bg-sky-500 animate-[bounce_1s_infinite] [animation-delay:-0.15s]"></div>
+                  <div className="w-[6px] h-[6px] rounded-full bg-sky-500 animate-[bounce_1s_infinite]"></div>
+                </div>
             </div>
         </div>
       )}

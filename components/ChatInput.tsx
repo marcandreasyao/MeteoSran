@@ -128,8 +128,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading, 
   };
 
   return (
-    <div className="p-2 sm:p-3 md:p-4 border-t border-white/20 dark:border-slate-700/30 
-                    bg-white/10 dark:bg-slate-900/10 backdrop-blur-sm">
+    <div className="p-2 sm:p-3 md:p-4 w-full relative z-10">
       {imagePreviewUrl && (
         <div className="mb-2 p-2 bg-white/20 dark:bg-slate-700/30 rounded-lg relative w-fit max-w-[120px] sm:max-w-[200px]">
           <img src={imagePreviewUrl} alt="Selected preview" className="max-h-20 sm:max-h-32 rounded object-contain" />
@@ -143,14 +142,9 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading, 
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="flex items-center gap-1.5 sm:gap-2 
-                     bg-white/60 dark:bg-slate-800/70 
-                     rounded-2xl p-1.5 sm:p-2 
-                     border border-slate-300/70 dark:border-slate-700/60
-                     focus-within:ring-2 focus-within:ring-sky-500
-                     transition-all duration-200 shadow-lg backdrop-blur-xl"
-      >
-        <input
+      <form onSubmit={handleSubmit} className="flex items-end gap-2 w-full">
+        <div className="flex items-end flex-grow gap-1.5 sm:gap-2 bg-slate-100 dark:bg-[#1e1f20] rounded-[32px] p-2 sm:px-4 sm:py-2 transition-all duration-200">
+          <input
           type="file"
           ref={fileInputRef}
           onChange={handleFileChange}
@@ -176,7 +170,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading, 
           type="button"
           onClick={onStartLiveSession}
           disabled={isLoading}
-          className="p-1 sm:p-2 rounded-full text-indigo-500 hover:bg-indigo-500/10 dark:text-indigo-400 dark:hover:bg-indigo-400/10 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed relative group flex items-center justify-center mr-1"
+          className="p-2 rounded-full text-slate-500 dark:text-slate-400 hover:bg-black/10 dark:hover:bg-white/10 transition-all disabled:opacity-50 disabled:cursor-not-allowed relative group flex items-center justify-center shrink-0"
           title="Start Live Conversational Audio"
           aria-label="Start Live Session"
         >
@@ -218,37 +212,43 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading, 
         )}
 
         {isListening ? (
-          <div className="flex-grow flex flex-col items-center justify-center overflow-hidden animate-[pulse_2s_ease-in-out_infinite] relative px-2 min-h-[40px]">
+          <div className="flex-grow flex flex-col items-center justify-center overflow-hidden animate-[pulse_2s_ease-in-out_infinite] relative px-2 min-h-[40px] my-auto">
             <AudioVisualizer audioData={audioData} isListening={isListening} />
             <div className="absolute bottom-[-4px] text-xs font-medium text-sky-600 dark:text-sky-400 truncate w-full text-center opacity-80 pb-1">
               {currentText || "Listening..."}
             </div>
           </div>
         ) : (
-          <textarea
-            ref={inputRef}
-            value={currentText}
-            onChange={handleTextChange}
-            onKeyDown={handleKeyDown}
-            placeholder={imageFile ? "Describe the image or ask a question..." : "Ask me anything about weather..."}
-            className="flex-grow py-2 bg-transparent border-none focus:ring-0 resize-none overflow-y-auto max-h-32 
-                         text-sm text-slate-800 dark:text-slate-100 
-                         placeholder-slate-500 dark:placeholder-slate-400"
-            rows={1}
-            disabled={isLoading}
-            aria-label="Chat message input"
-          />
+          <div className="flex-grow relative flex items-center my-auto overflow-hidden"
+               style={{ 
+                 WebkitMaskImage: 'linear-gradient(to right, transparent 0%, black 5%, black 95%, transparent 100%)', 
+                 maskImage: 'linear-gradient(to right, transparent 0%, black 5%, black 95%, transparent 100%)' 
+               }}>
+            <textarea
+              ref={inputRef}
+              value={currentText}
+              onChange={handleTextChange}
+              onKeyDown={handleKeyDown}
+              placeholder={imageFile ? "Describe the image or ask a question..." : "Ask me anything about weather..."}
+              className="w-full py-2 px-2 bg-transparent border-none focus:ring-0 resize-none overflow-y-auto max-h-32 
+                           text-[15px] sm:text-[16px] text-slate-800 dark:text-slate-100 
+                           placeholder-slate-500 dark:placeholder-slate-400 hide-scrollbar"
+              rows={1}
+              disabled={isLoading}
+              aria-label="Chat message input"
+            />
+          </div>
         )}
+        </div>
         <button
           type="submit"
           disabled={isLoading || (!currentText.trim() && !imageFile)}
-          className="group flex items-center justify-center p-2.5 rounded-full bg-sky-500 shadow-lg text-white 
-                       hover:bg-sky-600 
-                       focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2 
-                       dark:focus:ring-offset-slate-800
-                       disabled:bg-slate-400/80 dark:disabled:bg-slate-700
-                       disabled:text-slate-500 dark:disabled:text-slate-400
-                       disabled:cursor-not-allowed transition-all duration-200"
+          className="group flex items-center justify-center p-3 rounded-full bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-200 
+                       hover:bg-slate-300 dark:hover:bg-slate-700 
+                       focus:outline-none focus:ring-2 focus:ring-slate-400 
+                       disabled:bg-slate-100 dark:disabled:bg-slate-800/50
+                       disabled:text-slate-400 dark:disabled:text-slate-600
+                       disabled:cursor-not-allowed transition-all duration-200 shrink-0 mb-[2px] ml-1"
           aria-label="Send message"
         >
           <SendIcon isLoading={isLoading} />
