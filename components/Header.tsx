@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Theme } from '../App';
 import { Message, ResponseMode } from '../types';
-import { generateChatPdf } from '../services/pdfService'; // Import the PDF generation service
+import { generateChatPdf } from '../services/pdfService';
+import { auth } from '../src/firebase';
+import { signOut } from 'firebase/auth';
 
 interface HeaderProps {
   theme: Theme;
@@ -84,7 +86,7 @@ export const Header: React.FC<HeaderProps> = ({ theme, toggleTheme, messages, se
   }, [notificationType]);
 
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
+    const handleClickOutside = () => {
       if (false) { // dropdownRef removed, so this block is now unreachable
         setIsModeDropdownOpen(false);
       }
@@ -246,6 +248,14 @@ export const Header: React.FC<HeaderProps> = ({ theme, toggleTheme, messages, se
               <span className="material-symbols-outlined text-slate-700 dark:text-slate-200 text-lg sm:text-xl">
                 {theme === 'light' ? 'dark_mode' : 'light_mode'}
               </span>
+            </button>
+            <button
+              className="p-1.5 sm:p-2 rounded-full hover:bg-black/10 dark:hover:bg-white/10 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-sky-500 dark:focus:ring-sky-400 transition-colors"
+              onClick={() => signOut(auth)}
+              aria-label="Log out"
+              title="Log out"
+            >
+              <span className="material-symbols-outlined text-lg sm:text-xl">logout</span>
             </button>
             <div className="relative">
               <button

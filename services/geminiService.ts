@@ -235,7 +235,8 @@ export const initChatService = async (): Promise<string | null> => {
 export const sendMessageToAI = async (
   messages: Message[],
   mode: ResponseMode = ResponseMode.DEFAULT,
-  includeTimeContext: boolean = false
+  includeTimeContext: boolean = false,
+  userName: string | null = null
 ): Promise<Message> => {
   // [1] Chat Initialization Check: If chat isn't initialized, you'll see "Chat service not initialized" error.
   if (!chat) {
@@ -263,6 +264,10 @@ export const sendMessageToAI = async (
       if (lastMessage.text.toLowerCase().match(/\b(hi|hello|hey|good morning|good afternoon|good evening|how are you|greetings)\b/)) {
         promptText += `\n\n[GREETING_CONTEXT]: ${getTimeBasedGreeting()}`;
       }
+    }
+
+    if (userName) {
+      promptText += `\n\n[USER_CONTEXT]: You are currently talking to ${userName}. Address them warmly by their name occasionally.`;
     }
 
     // Detect if the user's message is a weather query for Ivory Coast/Abidjan

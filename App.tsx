@@ -10,6 +10,9 @@ import { LoadingProgress } from './components/LoadingProgress';
 import { PWAInstallPrompt } from './components/PWAInstallPrompt';
 import WeatherWidget from './src/components/WeatherWidget';
 import { useGeolocation } from './src/hooks/useGeolocation';
+import { useAuth } from './src/contexts/AuthContext';
+import { LoginScreen } from './components/LoginScreen';
+import { saveMessageToDB, fetchUserMessages } from './src/services/dbService';
 export type Theme = 'light' | 'dark';
 
 export interface CurrentInputState {
@@ -62,6 +65,27 @@ const App: React.FC = () => {
   const [userLocation, setUserLocation] = useState<{ lat: number; lon: number } | null>(null);
   const [locationError, setLocationError] = useState<string | null>(null);
   const [locationPrompt, setLocationPrompt] = useState(false);
+  const { user, loading: authLoading } = useAuth();
+
+  // Fetch messages when user logs in
+  useEffect(() => {
+    if (user && isInitialized) {
+      setIsLoading(true);
+      fetchUserMessages(user.uid).then(history => {
+        if (history.length > 0) {
+          setMessages(history);
+        } else {
+          // Save the initial welcome message for a first-time user
+          saveMessageToDB(user.uid, initialWelcomeMessage);
+          setMessages([initialWelcomeMessage]);
+        }
+      }).catch(err => {
+         console.error("Failed to load chat history:", err);
+      }).finally(() => {
+         setIsLoading(false);
+      });
+    }
+  }, [user, isInitialized]);
 
   useEffect(() => {
     if (theme === 'dark') {
@@ -202,8 +226,13 @@ const App: React.FC = () => {
     setError(null);
 
     try {
-      const response = await sendMessageToAI([...messages, userMessage], selectedMode);
+      const response = await sendMessageToAI([...messages, userMessage], selectedMode, false, user?.displayName || null);
       setMessages(prev => [...prev, response]);
+      
+      if (user) {
+        saveMessageToDB(user.uid, userMessage);
+        saveMessageToDB(user.uid, response);
+      }
     } catch (err) {
       console.error('Error sending message:', err);
       setError(err instanceof Error ? err.message : 'Failed to send message');
@@ -229,7 +258,7 @@ const App: React.FC = () => {
     setError(null);
 
     try {
-      const response = await sendMessageToAI(historyToResend, selectedMode);
+      const response = await sendMessageToAI(historyToResend, selectedMode, false, user?.displayName || null);
       
       setMessages(prev => {
         const newMessages = [...prev];
@@ -243,6 +272,11 @@ const App: React.FC = () => {
         targetMsg.text = response.text;
         
         newMessages[msgIndex] = targetMsg;
+        
+        if (user) {
+          saveMessageToDB(user.uid, targetMsg);
+        }
+        
         return newMessages;
       });
     } catch (err) {
@@ -275,6 +309,10 @@ const App: React.FC = () => {
       targetMsg.text = alts[currIdx];
       newMessages[msgIndex] = targetMsg;
       
+      if (user) {
+        saveMessageToDB(user.uid, targetMsg);
+      }
+      
       return newMessages;
     });
   };
@@ -304,8 +342,12 @@ const App: React.FC = () => {
     setSelectedMode(mode);
   };
 
-  if (!isInitialized) {
-    return <LoadingProgress progress={initProgress} message={initMessage} />;
+  if (authLoading || !isInitialized) {
+    return <LoadingProgress progress={initProgress} message={authLoading ? "Authenticating session..." : initMessage} />;
+  }
+
+  if (!user) {
+    return <LoginScreen />;
   }
 
   return (
