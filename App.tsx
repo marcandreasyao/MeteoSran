@@ -58,7 +58,7 @@ const App: React.FC = () => {
   const [isInitialized, setIsInitialized] = useState(false);
   const [initProgress, setInitProgress] = useState(0);
   const [initMessage, setInitMessage] = useState("Initializing MeteoSran...");
-  const [messages, setMessages] = useState<Message[]>([initialWelcomeMessage]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedMode, setSelectedMode] = useState<ResponseMode>(ResponseMode.CONCISE);
@@ -85,11 +85,11 @@ const App: React.FC = () => {
           const latestChat = sessions[0];
           setActiveChatId(latestChat.id);
           const history = await fetchUserMessages(user.uid, latestChat.id);
-          setMessages(history.length > 0 ? history : [initialWelcomeMessage]);
+          setMessages(history.length > 0 ? history : []);
         } else {
           // No chats exist at all. Don't create one yet until the user sends a message.
           setActiveChatId(null);
-          setMessages([initialWelcomeMessage]);
+          setMessages([]);
         }
       }).catch(err => {
          console.error("Failed to load chat sessions:", err);
@@ -193,7 +193,7 @@ const App: React.FC = () => {
 
   const handleNewChat = () => {
     setActiveChatId(null);
-    setMessages([initialWelcomeMessage]);
+    setMessages([]);
     if (window.innerWidth < 768) setIsSidebarOpen(false);
   };
 
@@ -268,8 +268,6 @@ const App: React.FC = () => {
         if (finalChatId) {
           setActiveChatId(finalChatId);
           setChatSessions(prev => [{ id: finalChatId!, title: newTitle, createdAt: new Date(), updatedAt: new Date() }, ...prev]);
-          // Must save the welcome message for consistency in history
-          await saveMessageToDB(user.uid, finalChatId, initialWelcomeMessage);
         }
       }
 
@@ -451,6 +449,7 @@ const App: React.FC = () => {
             setCurrentInputState={setCurrentInput}
             inputRef={inputRef}
             onStartLiveSession={() => setIsLiveSessionActive(true)}
+            userFirstName={user?.displayName ? user.displayName.split(' ')[0] : ''}
           />
         </main>
         <Footer />
