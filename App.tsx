@@ -60,7 +60,7 @@ const App: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([initialWelcomeMessage]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [selectedMode, setSelectedMode] = useState<ResponseMode>(ResponseMode.DEFAULT);
+  const [selectedMode, setSelectedMode] = useState<ResponseMode>(ResponseMode.CONCISE);
   const [currentInput, setCurrentInput] = useState<CurrentInputState>({ text: '', imageFile: null });
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const [userLocation, setUserLocation] = useState<{ lat: number; lon: number } | null>(null);

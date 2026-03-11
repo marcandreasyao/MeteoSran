@@ -46,7 +46,7 @@ const isTimeRelatedQuery = (text: string): boolean => {
     'greeting', 'hello', 'hi', 'good morning', 'good afternoon', 'good evening',
     'good night', 'how are you', 'howdy', 'hey there', 'sup', 'yo'
   ];
-  
+
   const lowerText = text.toLowerCase();
   return timeKeywords.some(keyword => lowerText.includes(keyword));
 };
@@ -54,9 +54,9 @@ const isTimeRelatedQuery = (text: string): boolean => {
 // Enhanced function to get comprehensive time context
 const getCurrentTimeContext = (): string => {
   const now = new Date();
-  const timeString = now.toLocaleTimeString('en-US', { 
-    hour12: true, 
-    hour: 'numeric', 
+  const timeString = now.toLocaleTimeString('en-US', {
+    hour12: true,
+    hour: 'numeric',
     minute: '2-digit',
     second: '2-digit'
   });
@@ -67,7 +67,7 @@ const getCurrentTimeContext = (): string => {
     day: 'numeric'
   });
   const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-  
+
   // Get time of day
   const hour = now.getHours();
   let timeOfDay = '';
@@ -75,7 +75,7 @@ const getCurrentTimeContext = (): string => {
   else if (hour >= 12 && hour < 17) timeOfDay = 'afternoon';
   else if (hour >= 17 && hour < 21) timeOfDay = 'evening';
   else timeOfDay = 'night';
-  
+
   // Get season
   const month = now.getMonth();
   let season = '';
@@ -83,7 +83,7 @@ const getCurrentTimeContext = (): string => {
   else if (month >= 5 && month <= 7) season = 'summer';
   else if (month >= 8 && month <= 10) season = 'autumn';
   else season = 'winter';
-  
+
   // Approximate sunrise/sunset times (simplified)
   let sunriseTime = '6:00 AM';
   let sunsetTime = '6:00 PM';
@@ -94,7 +94,7 @@ const getCurrentTimeContext = (): string => {
     sunriseTime = '7:00 AM';
     sunsetTime = '5:00 PM';
   }
-  
+
   return `[CURRENT_DEVICE_TIME]: ${timeString} on ${dateString} (${timezone})
 [TIME_OF_DAY]: ${timeOfDay}
 [SEASON]: ${season}
@@ -109,7 +109,7 @@ const getTimeBasedGreeting = (): string => {
   const now = new Date();
   const hour = now.getHours();
   const timeOfDay = now.toLocaleTimeString('en-US', { hour12: true, hour: 'numeric', minute: '2-digit' });
-  
+
   let greeting = '';
   if (hour >= 5 && hour < 12) {
     greeting = `Good morning! It's ${timeOfDay} and I'm ready to explore the weather with you!`;
@@ -120,7 +120,7 @@ const getTimeBasedGreeting = (): string => {
   } else {
     greeting = `Good night! It's ${timeOfDay} and I'm still here to answer your weather questions!`;
   }
-  
+
   return greeting;
 };
 
@@ -130,7 +130,7 @@ const getSeasonalContext = (): string => {
   const month = now.getMonth();
   let season = '';
   let seasonalInfo = '';
-  
+
   if (month >= 2 && month <= 4) {
     season = 'spring';
     seasonalInfo = 'Spring brings warming temperatures, blooming flowers, and increased rainfall. Perfect time for studying cloud formation and precipitation patterns!';
@@ -144,7 +144,7 @@ const getSeasonalContext = (): string => {
     season = 'winter';
     seasonalInfo = 'Winter brings cold temperatures, snow, and clear, crisp air. Perfect for studying precipitation types and atmospheric conditions!';
   }
-  
+
   return `[SEASONAL_CONTEXT]: It's ${season} - ${seasonalInfo}`;
 };
 
@@ -220,7 +220,7 @@ export const initChatService = async (): Promise<string | null> => {
   try {
     const ai = new GoogleGenAI({ apiKey: API_KEY });
     chat = ai.chats.create({
-      model: 'gemini-2.5-flash',  // Use the most recent free model
+      model: 'gemini-3.1-flash-lite-preview',  // Flash Lite: High RPM and RPD limits
       config: {
         systemInstruction: SYSTEM_INSTRUCTION,
       },
@@ -259,7 +259,7 @@ export const sendMessageToAI = async (
     // Add comprehensive time context if explicitly requested or if the query is time-related
     if (includeTimeContext || isTimeRelatedQuery(lastMessage.text)) {
       promptText += `\n\n${getCurrentTimeContext()}\n${getSeasonalContext()}`;
-      
+
       // Add time-based greeting for greeting queries
       if (lastMessage.text.toLowerCase().match(/\b(hi|hello|hey|good morning|good afternoon|good evening|how are you|greetings)\b/)) {
         promptText += `\n\n[GREETING_CONTEXT]: ${getTimeBasedGreeting()}`;
@@ -271,8 +271,8 @@ export const sendMessageToAI = async (
     }
 
     // Detect if the user's message is a weather query for Ivory Coast/Abidjan
-    const isWeatherQueryForCI = lastMessage.text.toLowerCase().includes('weather') && 
-                                (lastMessage.text.toLowerCase().includes('ivory coast') || lastMessage.text.toLowerCase().includes('abidjan'));
+    const isWeatherQueryForCI = lastMessage.text.toLowerCase().includes('weather') &&
+      (lastMessage.text.toLowerCase().includes('ivory coast') || lastMessage.text.toLowerCase().includes('abidjan'));
 
     if (isWeatherQueryForCI) {
       try {
@@ -281,7 +281,7 @@ export const sendMessageToAI = async (
           const weatherData = await weatherResponse.json();
           // Append the weather data to the prompt for Gemini to use
           promptText += `\n\n[CURRENT_WEATHER_DATA_FOR_IVORY_COAST]: ${JSON.stringify(weatherData)}`;
-          
+
           // Inject dynamic historical context (assuming Abidjan coordinates for Ivory Coast queries for now, but in future can be dynamic)
           // Hardcoding Abidjan CI (5.30966, -4.01266) for the prompt injection if live weather data succeeds.
           const historicalContext = await getClimateNormals(5.30966, -4.01266);
@@ -365,7 +365,7 @@ export const sendMessageToAI = async (
 
   } catch (error: any) {
     console.error('Error sending message to AI:', error);
-    
+
     // API-specific error handling
     if (error.message?.includes("API key not valid")) {
       throw new Error("The API key is not valid. Please check your configuration.");
@@ -382,7 +382,7 @@ export const sendMessageToAI = async (
     if (error.message?.includes("timeout")) {
       throw new Error("Request timed out. Please try again.");
     }
-    
+
     // Response validation errors
     if (error.response?.promptFeedback?.blockReason) {
       return {
@@ -402,7 +402,7 @@ export const sendMessageToAI = async (
         timestamp: new Date()
       };
     }
-    
+
     // If we get here, it's an unexpected error
     console.error('Unexpected Gemini API error:', {
       error: error.message,
