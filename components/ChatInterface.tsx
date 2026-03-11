@@ -14,8 +14,9 @@ interface ChatInterfaceProps {
   onRegenerate: (messageId: string) => void;
   onSwitchAlternative: (messageId: string, direction: 'prev' | 'next') => void;
   currentInputState: CurrentInputState; // Changed from currentInput
-  setCurrentInputState: (value: CurrentInputState) => void; // Changed from setCurrentInput
-  inputRef: RefObject<HTMLTextAreaElement | null>; // Changed to allow null
+  setCurrentInputState: (value: CurrentInputState) => void;
+  inputRef: RefObject<HTMLTextAreaElement | null>;
+  onStartLiveSession?: () => void;
 }
 
 export const ChatInterface: React.FC<ChatInterfaceProps> = ({
@@ -26,9 +27,10 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
   onSampleQuestion,
   onRegenerate,
   onSwitchAlternative,
-  currentInputState,     // Changed
-  setCurrentInputState, // Changed
-  inputRef, // Destructure inputRef
+  currentInputState,
+  setCurrentInputState,
+  inputRef,
+  onStartLiveSession,
 }) => {
   const showSampleQuestions = messages.length <= 1 && !isLoading && !error && !currentInputState.imageFile;
 
@@ -51,6 +53,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
           currentInputState={currentInputState}       // Changed
           setCurrentInputState={setCurrentInputState} // Changed
           inputRef={inputRef} // Pass inputRef to ChatInput
+          onStartLiveSession={onStartLiveSession}
         />
       </div>
     </div>

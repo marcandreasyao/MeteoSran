@@ -14,6 +14,7 @@ import { useAuth } from './src/contexts/AuthContext';
 import { LoginScreen } from './components/LoginScreen';
 import { saveMessageToDB, fetchUserMessages, fetchChatSessions, createChatSession, ChatSession } from './src/services/dbService';
 import { Sidebar } from './components/Sidebar';
+import { LiveSessionOverlay } from './components/LiveSessionOverlay';
 export type Theme = 'light' | 'dark';
 
 export interface CurrentInputState {
@@ -62,6 +63,7 @@ const App: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [selectedMode, setSelectedMode] = useState<ResponseMode>(ResponseMode.CONCISE);
   const [currentInput, setCurrentInput] = useState<CurrentInputState>({ text: '', imageFile: null });
+  const [isLiveSessionActive, setIsLiveSessionActive] = useState(false);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const [userLocation, setUserLocation] = useState<{ lat: number; lon: number } | null>(null);
   const [locationError, setLocationError] = useState<string | null>(null);
@@ -85,13 +87,8 @@ const App: React.FC = () => {
           const history = await fetchUserMessages(user.uid, latestChat.id);
           setMessages(history.length > 0 ? history : [initialWelcomeMessage]);
         } else {
-          // No chats exist at all. Create the very first one!
-          const newChatId = await createChatSession(user.uid, "New Chat");
-          if (newChatId) {
-            setActiveChatId(newChatId);
-            setChatSessions([{ id: newChatId, title: "New Chat", createdAt: new Date(), updatedAt: new Date() }]);
-            saveMessageToDB(user.uid, newChatId, initialWelcomeMessage);
-          }
+          // No chats exist at all. Don't create one yet until the user sends a message.
+          setActiveChatId(null);
           setMessages([initialWelcomeMessage]);
         }
       }).catch(err => {
@@ -194,18 +191,10 @@ const App: React.FC = () => {
     }
   };
 
-  const handleNewChat = async () => {
-    if (user) {
-      const newChatId = await createChatSession(user.uid, "New Chat");
-      if (newChatId) {
-        setActiveChatId(newChatId);
-        const newSession = { id: newChatId, title: "New Chat", createdAt: new Date(), updatedAt: new Date() };
-        setChatSessions(prev => [newSession, ...prev]);
-        setMessages([initialWelcomeMessage]);
-        saveMessageToDB(user.uid, newChatId, initialWelcomeMessage);
-        if (window.innerWidth < 768) setIsSidebarOpen(false);
-      }
-    }
+  const handleNewChat = () => {
+    setActiveChatId(null);
+    setMessages([initialWelcomeMessage]);
+    if (window.innerWidth < 768) setIsSidebarOpen(false);
   };
 
   const triggerGlassFade = () => {
@@ -268,9 +257,25 @@ const App: React.FC = () => {
       const response = await sendMessageToAI([...messages, userMessage], selectedMode, false, user?.displayName || null);
       setMessages(prev => [...prev, response]);
       
-      if (user && activeChatId) {
-        saveMessageToDB(user.uid, activeChatId, userMessage);
-        saveMessageToDB(user.uid, activeChatId, response);
+      let finalChatId = activeChatId;
+
+      if (!finalChatId && user) {
+        // First message of a new chat session! Let's create the session and generate a title
+        const promptText = userMessage.text;
+        const newTitle = promptText ? promptText.split(" ").slice(0, 5).join(" ") + "..." : "Image Analysis...";
+        finalChatId = await createChatSession(user.uid, newTitle);
+        
+        if (finalChatId) {
+          setActiveChatId(finalChatId);
+          setChatSessions(prev => [{ id: finalChatId!, title: newTitle, createdAt: new Date(), updatedAt: new Date() }, ...prev]);
+          // Must save the welcome message for consistency in history
+          await saveMessageToDB(user.uid, finalChatId, initialWelcomeMessage);
+        }
+      }
+
+      if (user && finalChatId) {
+        await saveMessageToDB(user.uid, finalChatId, userMessage);
+        await saveMessageToDB(user.uid, finalChatId, response);
       }
     } catch (err) {
       console.error('Error sending message:', err);
@@ -445,11 +450,18 @@ const App: React.FC = () => {
             currentInputState={currentInput}
             setCurrentInputState={setCurrentInput}
             inputRef={inputRef}
+            onStartLiveSession={() => setIsLiveSessionActive(true)}
           />
         </main>
         <Footer />
       </div>
       
+      {/* Live Voice API Overlay */}
+      <LiveSessionOverlay 
+        isActive={isLiveSessionActive} 
+        onClose={() => setIsLiveSessionActive(false)} 
+      />
+
       {/* PWA Install Prompt */}
       <PWAInstallPrompt theme={theme} />
     </div>

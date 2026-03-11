@@ -9,6 +9,7 @@ interface ChatInputProps {
   currentInputState: CurrentInputState;
   setCurrentInputState: (value: CurrentInputState) => void;
   inputRef: RefObject<HTMLTextAreaElement | null>;
+  onStartLiveSession?: () => void;
 }
 
 const SendIcon: React.FC<{ isLoading: boolean }> = ({ isLoading }) => (
@@ -26,7 +27,7 @@ const CloseIcon: React.FC = () => (
   <span className="material-symbols-outlined text-xs">close</span>
 );
 
-export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading, currentInputState, setCurrentInputState, inputRef }) => {
+export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading, currentInputState, setCurrentInputState, inputRef, onStartLiveSession }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
 
@@ -168,6 +169,24 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading, 
           aria-label="Attach image"
         >
           <span className="material-symbols-outlined text-2xl">add_photo_alternate</span>
+        </button>
+
+        {/* Live Audio Session Button */}
+        <button
+          type="button"
+          onClick={onStartLiveSession}
+          disabled={isLoading}
+          className="p-1 sm:p-2 rounded-full text-indigo-500 hover:bg-indigo-500/10 dark:text-indigo-400 dark:hover:bg-indigo-400/10 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed relative group flex items-center justify-center mr-1"
+          title="Start Live Conversational Audio"
+          aria-label="Start Live Session"
+        >
+          <span className="material-symbols-outlined text-2xl">
+            graphic_eq
+          </span>
+          <span className="absolute top-0 right-0 flex h-2.5 w-2.5">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-indigo-500"></span>
+          </span>
         </button>
 
         {speechSupported && (
