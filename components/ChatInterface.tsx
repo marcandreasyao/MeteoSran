@@ -3,7 +3,6 @@ import { Message } from '../types';
 import { MessageList } from './MessageList';
 import { ChatInput } from './ChatInput';
 import { SampleQuestions } from './SampleQuestions';
-import { ErrorMessage } from './ErrorMessage';
 import { CurrentInputState } from '../App'; // Import CurrentInputState
 
 interface ChatInterfaceProps {
@@ -12,6 +11,8 @@ interface ChatInterfaceProps {
   error: string | null;
   onSendMessage: (text: string, imageFile?: File | null) => void;
   onSampleQuestion: (question: string) => void;
+  onRegenerate: (messageId: string) => void;
+  onSwitchAlternative: (messageId: string, direction: 'prev' | 'next') => void;
   currentInputState: CurrentInputState; // Changed from currentInput
   setCurrentInputState: (value: CurrentInputState) => void; // Changed from setCurrentInput
   inputRef: RefObject<HTMLTextAreaElement | null>; // Changed to allow null
@@ -23,6 +24,8 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
   error,
   onSendMessage,
   onSampleQuestion,
+  onRegenerate,
+  onSwitchAlternative,
   currentInputState,     // Changed
   setCurrentInputState, // Changed
   inputRef, // Destructure inputRef
@@ -33,7 +36,13 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
     <div 
       className="flex flex-col flex-grow h-full overflow-hidden"
     >
-      <MessageList messages={messages} isLoading={isLoading} error={error} />
+      <MessageList 
+        messages={messages} 
+        isLoading={isLoading} 
+        error={error} 
+        onRegenerate={onRegenerate}
+        onSwitchAlternative={onSwitchAlternative}
+      />
       <div className="w-full max-w-6xl mx-auto px-2">
         {showSampleQuestions && <SampleQuestions onQuestionSelect={onSampleQuestion} />}
         <ChatInput 

@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { track } from '@vercel/analytics';
 import { Header } from './components/Header';
 import { ChatInterface } from './components/ChatInterface';
-import { Message, MessageRole, ImagePayload, ResponseMode } from './types';
+import { Message, MessageRole, ResponseMode } from './types';
 import { initChatService, sendMessageToAI } from './services/geminiService';
 import { ErrorMessage } from './components/ErrorMessage';
 import { Footer } from './components/Footer';
@@ -26,7 +26,14 @@ const readFileAsBase64 = (file: File): Promise<string> => {
   });
 };
 
-const SHOCKWAVE_DURATION = 700; // ms
+// ms
+
+const initialWelcomeMessage: Message = {
+  id: crypto.randomUUID(),
+  role: MessageRole.MODEL,
+  text: "Hello! I'm MeteoSran. Ask me anything about the weather in Ivory Coast or anywhere else in the world! You can also upload a weather image for me to analyze.",
+  timestamp: new Date(),
+};
 
 const App: React.FC = () => {
   const [theme, setTheme] = useState<Theme>(() => {
@@ -39,14 +46,14 @@ const App: React.FC = () => {
     return 'light';
   });
 
-  const [showShockwave, setShowShockwave] = useState(false);
+
   const [showGlassFade, setShowGlassFade] = useState(false);
   const [showWeatherWidget, setShowWeatherWidget] = useState(false);
 
   const [isInitialized, setIsInitialized] = useState(false);
   const [initProgress, setInitProgress] = useState(0);
   const [initMessage, setInitMessage] = useState("Initializing MeteoSran...");
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [messages, setMessages] = useState<Message[]>([initialWelcomeMessage]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedMode, setSelectedMode] = useState<ResponseMode>(ResponseMode.DEFAULT);
@@ -104,7 +111,7 @@ const App: React.FC = () => {
   }, []);
 
   // Advanced Geolocation hook handling Android best practices (high accuracy, cache, timeout, permissions)
-  const { location: geoLoc, error: geoErr, permissionState } = useGeolocation(true);
+  const { location: geoLoc, error: geoErr } = useGeolocation(true);
 
   useEffect(() => {
     if (geoLoc) {
@@ -137,10 +144,6 @@ const App: React.FC = () => {
     }
   };
 
-  const triggerShockwave = () => {
-    setShowShockwave(true);
-    setTimeout(() => setShowShockwave(false), SHOCKWAVE_DURATION);
-  };
 
   const triggerGlassFade = () => {
     setShowGlassFade(true);
@@ -159,13 +162,6 @@ const App: React.FC = () => {
       setTheme(prevTheme => (prevTheme === 'light' ? 'dark' : 'light'));
     }, 450); // switch theme at midpoint of fade
   };
-  
-  // const initialWelcomeMessage: Message = useMemo(() => ({
-  //   id: crypto.randomUUID(),
-  //   role: MessageRole.MODEL,
-  //   text: "Hello! I'm MeteoSran. Ask me anything about clouds, storms, hurricanes, or other weather wonders! You can also upload an image of a weather phenomenon for me to explain.",
-  //   timestamp: new Date(),
-  // }),[]);
 
   const handleSendMessage = async (text: string, imageFile?: File | null) => {
     if (!text.trim() && !imageFile) return;
@@ -220,6 +216,69 @@ const App: React.FC = () => {
     }
   };
 
+  const handleRegenerate = async (messageId: string) => {
+    const msgIndex = messages.findIndex(m => m.id === messageId);
+    if (msgIndex === -1) return;
+    const msg = messages[msgIndex];
+    if (msg.role !== MessageRole.MODEL) return;
+
+    // Send the history up to the message we want to regenerate
+    const historyToResend = messages.slice(0, msgIndex);
+    
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const response = await sendMessageToAI(historyToResend, selectedMode);
+      
+      setMessages(prev => {
+        const newMessages = [...prev];
+        const targetMsg = { ...newMessages[msgIndex] };
+        
+        const alts = targetMsg.alternatives ? [...targetMsg.alternatives] : [targetMsg.text];
+        alts.push(response.text);
+        
+        targetMsg.alternatives = alts;
+        targetMsg.currentAlternativeIndex = alts.length - 1;
+        targetMsg.text = response.text;
+        
+        newMessages[msgIndex] = targetMsg;
+        return newMessages;
+      });
+    } catch (err) {
+      console.error('Error regenerating message:', err);
+      setError(err instanceof Error ? err.message : 'Failed to regenerate message');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSwitchAlternative = (messageId: string, direction: 'prev' | 'next') => {
+    setMessages(prev => {
+      const msgIndex = prev.findIndex(m => m.id === messageId);
+      if (msgIndex === -1) return prev;
+      
+      const newMessages = [...prev];
+      const targetMsg = { ...newMessages[msgIndex] };
+      const alts = targetMsg.alternatives;
+      
+      if (!alts || alts.length <= 1) return prev;
+      
+      let currIdx = targetMsg.currentAlternativeIndex || 0;
+      if (direction === 'prev' && currIdx > 0) {
+        currIdx--;
+      } else if (direction === 'next' && currIdx < alts.length - 1) {
+        currIdx++;
+      }
+      
+      targetMsg.currentAlternativeIndex = currIdx;
+      targetMsg.text = alts[currIdx];
+      newMessages[msgIndex] = targetMsg;
+      
+      return newMessages;
+    });
+  };
+
   const handleSampleQuestion = (question: string) => {
     // Track sample question usage
     track('sample_question_clicked', { 
@@ -256,11 +315,7 @@ const App: React.FC = () => {
           <div className="glass-fade-overlay"></div>
         </div>
       )}
-      {showShockwave && (
-        <div className="fixed inset-0 z-[9999] pointer-events-none flex items-center justify-center">
-          <div className="shockwave-glass"></div>
-        </div>
-      )}
+
       {/* Location error and manual entry */}
       {locationError && (
         <div className="bg-yellow-100 text-yellow-800 p-2 text-center text-xs sm:text-sm">
@@ -288,6 +343,8 @@ const App: React.FC = () => {
             error={error}
             onSendMessage={handleSendMessage}
             onSampleQuestion={handleSampleQuestion}
+            onRegenerate={handleRegenerate}
+            onSwitchAlternative={handleSwitchAlternative}
             currentInputState={currentInput}
             setCurrentInputState={setCurrentInput}
             inputRef={inputRef}

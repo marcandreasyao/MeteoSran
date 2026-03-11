@@ -25,4 +25,6 @@ export interface Message {
   text: string;
   timestamp: Date;
   image?: ImagePayload; // Optional image data
+  alternatives?: string[]; // Array of generated answers for this specific response
+  currentAlternativeIndex?: number; // Index of the currently viewed answer
 }

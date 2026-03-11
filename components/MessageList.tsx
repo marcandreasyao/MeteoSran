@@ -9,9 +9,11 @@ interface MessageListProps {
   messages: Message[];
   isLoading: boolean;
   error: string | null;
+  onRegenerate: (messageId: string) => void;
+  onSwitchAlternative: (messageId: string, direction: 'prev' | 'next') => void;
 }
 
-export const MessageList: React.FC<MessageListProps> = ({ messages, isLoading, error }) => {
+export const MessageList: React.FC<MessageListProps> = ({ messages, isLoading, error, onRegenerate, onSwitchAlternative }) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -23,7 +25,12 @@ export const MessageList: React.FC<MessageListProps> = ({ messages, isLoading, e
   return (
     <div className="flex-grow p-4 md:p-6 space-y-4 overflow-y-auto">
       {messages.map((msg) => (
-        <MessageBubble key={msg.id} message={msg} />
+        <MessageBubble 
+          key={msg.id} 
+          message={msg} 
+          onRegenerate={onRegenerate}
+          onSwitchAlternative={onSwitchAlternative}
+        />
       ))}
       {isLoading && (
         <div className="flex justify-start">
