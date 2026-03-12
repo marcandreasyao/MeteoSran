@@ -230,20 +230,30 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading, 
           </div>
         )}
         </div>
+
         <button
           type="submit"
           disabled={isLoading || (!currentText.trim() && !imageFile)}
-          className="group flex flex-shrink-0 items-center justify-center rounded-full transition-all duration-200 
-                     w-[50px] h-[50px] sm:w-[56px] sm:h-[56px] 
-                     bg-slate-100 dark:bg-[#1e1f20] text-slate-800 dark:text-slate-200 
-                     hover:bg-slate-200 dark:hover:bg-[#2c2d2e] 
-                     focus:outline-none focus:ring-2 focus:ring-slate-400 
-                     disabled:opacity-50 disabled:cursor-not-allowed ml-1"
+          className="group flex flex-shrink-0 items-center justify-center rounded-full transition-all duration-200
+                     w-[44px] h-[44px] self-center
+                     bg-blue-600 hover:bg-blue-500
+                     disabled:bg-slate-300 dark:disabled:bg-slate-700
+                     text-white disabled:text-slate-400 dark:disabled:text-slate-500
+                     shadow-md hover:shadow-blue-500/30
+                     focus:outline-none focus:ring-2 focus:ring-blue-400
+                     disabled:opacity-60 disabled:cursor-not-allowed disabled:shadow-none
+                     ml-2"
           aria-label="Send message"
         >
-          <span className="material-symbols-rounded text-[24px] sm:text-[28px] transform transition-transform group-hover:scale-110">
-            send
-          </span>
+          {isLoading ? (
+            <span className="material-symbols-outlined text-[22px]">
+              stop
+            </span>
+          ) : (
+            <span className="material-symbols-outlined text-[22px] transform transition-transform group-hover:-translate-y-0.5 group-hover:scale-110">
+              arrow_upward
+            </span>
+          )}
         </button>
       </form>
     </div>
