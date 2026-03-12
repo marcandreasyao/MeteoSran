@@ -1,8 +1,15 @@
-import { GoogleGenAI, Chat, GenerateContentResponse, HarmCategory, HarmBlockThreshold, GenerateContentParameters, Part } from "@google/genai";
-import { ImagePayload, Message, MessageRole, ResponseMode } from "../types"; // Assuming types.ts is in the parent directory
+import { GoogleGenAI, Chat, GenerateContentResponse, Part } from "@google/genai";
+import { Message, MessageRole, ResponseMode } from "../types"; // Assuming types.ts is in the parent directory
 import { getClimateNormals } from "./historicalWeatherService";
 
 let chat: Chat | null = null;
+let currentModelIndex = 0;
+const SUPPORTED_MODELS = [
+  'gemini-3.1-flash-lite-preview',
+  'gemini-2.0-flash-lite',
+  'gemini-1.5-flash',
+  'gemini-1.5-pro'
+];
 
 // API Key configuration
 //- Comprehensive Detail: Depending on the mode, provide specific and relevant weather details such as temperature, humidity, wind speed and direction, atmospheric pressure, cloud cover, and precipitation likelihood. If applicable, include highs and lows for the day or near future.
@@ -216,25 +223,19 @@ Remember to:
 
 // - Show genuine interest in helping users understand weather
 
-export const initChatService = async (): Promise<string | null> => {
+export const initChatService = async (modelIndex: number = 0): Promise<string | null> => {
   try {
-    // Route all Gemini API calls through our Express proxy on Render.
-    // This bypasses Google's geo-restriction for users in Côte d'Ivoire
-    // (and similar restricted regions). The server injects the real API key.
-    const proxyBase = `${window.location.origin}/api/gemini`;
-
-    const ai = new GoogleGenAI({
-      apiKey: 'proxy', // Dummy value; the real key is injected server-side
-      httpOptions: {
-        baseUrl: proxyBase,
-      },
-    });
+    currentModelIndex = modelIndex % SUPPORTED_MODELS.length;
+    const modelToUse = SUPPORTED_MODELS[currentModelIndex];
+    
+    const ai = new GoogleGenAI({ apiKey: API_KEY });
     chat = ai.chats.create({
-      model: 'gemini-2.0-flash-lite',  // Flash Lite: High RPM and RPD limits
+      model: modelToUse,
       config: {
         systemInstruction: SYSTEM_INSTRUCTION,
       },
     });
+    console.log(`[MeteoSran] Initialized with model: ${modelToUse}`);
     return null; // Success
   } catch (error) {
     console.error("Error initializing Gemini chat:", error);
@@ -248,12 +249,14 @@ export const sendMessageToAI = async (
   includeTimeContext: boolean = false,
   userName: string | null = null
 ): Promise<Message> => {
-  // [1] Chat Initialization Check: If chat isn't initialized, you'll see "Chat service not initialized" error.
+  // [1] Chat Initialization Check
   if (!chat) {
-    throw new Error("Chat service not initialized. Call initChatService first or wait for initialization.");
+    await initChatService(0);
+    if (!chat) throw new Error("Chat service not initialized.");
   }
 
-  try {
+  const sendMessageInternal = async (retryCount = 0): Promise<Message> => {
+    try {
     const modeInstructions = {
       [ResponseMode.DEFAULT]: "Use the core MeteoSran style with enhanced human-like personality, enthusiasm, and warm conversational tone.",
       [ResponseMode.CONCISE]: "Keep your response brief and to the point, focusing on essential information while maintaining a warm, friendly personality.",
@@ -319,13 +322,13 @@ export const sendMessageToAI = async (
       };
 
       const textPart: Part = { text: promptText };
-      genResponse = await chat.sendMessage({ message: [textPart, imagePart] });
+      genResponse = await chat!.sendMessage({ message: [textPart, imagePart] });
     } else {
-      genResponse = await chat.sendMessage({ message: promptText });
+      genResponse = await chat!.sendMessage({ message: promptText });
     }
 
     // Check for candidate-level blocking (more common with Gemini)
-    if (genResponse.candidates && genResponse.candidates[0] && genResponse.candidates[0].finishReason === "SAFETY") {
+    if (genResponse.candidates?.[0]?.finishReason === "SAFETY") {
       const safetyRatings = genResponse.candidates[0].safetyRatings || [];
       const blockedCategories = safetyRatings.filter(r => r.blocked).map(r => r.category).join(', ');
       return {
@@ -337,7 +340,7 @@ export const sendMessageToAI = async (
     }
 
     // Check for promptFeedback if it exists on the response (might indicate other non-fatal issues)
-    if (genResponse.promptFeedback && genResponse.promptFeedback.blockReason) {
+    if (genResponse.promptFeedback?.blockReason) {
       return {
         id: crypto.randomUUID(),
         role: MessageRole.MODEL,
@@ -349,12 +352,12 @@ export const sendMessageToAI = async (
     const responseText = genResponse.text;
     if (!responseText) {
       console.warn("Gemini API returned an empty or undefined text response.", genResponse);
-      // Check again if the reason for null/undefined text is due to blocking not caught by finishReason 'SAFETY'
-      if (genResponse.candidates && genResponse.candidates[0] && genResponse.candidates[0].finishReason && genResponse.candidates[0].finishReason !== "STOP") {
+      const finishReason = genResponse.candidates?.[0]?.finishReason;
+      if (finishReason && finishReason !== "STOP") {
         return {
           id: crypto.randomUUID(),
           role: MessageRole.MODEL,
-          text: `I'm sorry, the response was not completed as expected (Reason: ${genResponse.candidates[0].finishReason}). Please try again.`,
+          text: `I'm sorry, the response was not completed as expected (Reason: ${finishReason}). Please try again.`,
           timestamp: new Date()
         };
       }
@@ -374,22 +377,34 @@ export const sendMessageToAI = async (
     };
 
   } catch (error: any) {
+    const errorMsg = error.message || "";
+    const isLocationError = errorMsg.includes("User location is not supported") || 
+                           errorMsg.includes("FAILED_PRECONDITION") ||
+                           error.status === 400;
+
+    // Trigger fallback if we hit a location restriction and have more models to try
+    if (isLocationError && retryCount < SUPPORTED_MODELS.length - 1) {
+      console.warn(`[MeteoSran] Auto-switching from ${SUPPORTED_MODELS[currentModelIndex]} to next model due to region block...`);
+      await initChatService(currentModelIndex + 1);
+      return sendMessageInternal(retryCount + 1);
+    }
+
     console.error('Error sending message to AI:', error);
 
     // API-specific error handling
-    if (error.message?.includes("API key not valid")) {
+    if (errorMsg.includes("API key not valid")) {
       throw new Error("The API key is not valid. Please check your configuration.");
     }
-    if (error.message?.toLowerCase().includes("quota")) {
+    if (errorMsg.toLowerCase().includes("quota")) {
       throw new Error("You may have exceeded your API quota. Please check your Gemini API dashboard.");
     }
-    if (error.message?.includes("rate limit")) {
+    if (errorMsg.includes("rate limit")) {
       throw new Error("Too many requests. Please wait a moment before trying again.");
     }
-    if (error.message?.includes("network") || error.message?.includes("Failed to fetch")) {
+    if (errorMsg.includes("network") || errorMsg.includes("Failed to fetch")) {
       throw new Error("Network error. Please check your internet connection.");
     }
-    if (error.message?.includes("timeout")) {
+    if (errorMsg.includes("timeout")) {
       throw new Error("Request timed out. Please try again.");
     }
 
@@ -404,7 +419,7 @@ export const sendMessageToAI = async (
     }
 
     // Image-specific errors
-    if (error.message?.includes("does not support image input")) {
+    if (errorMsg.includes("does not support image input")) {
       return {
         id: crypto.randomUUID(),
         role: MessageRole.MODEL,
@@ -412,15 +427,9 @@ export const sendMessageToAI = async (
         timestamp: new Date()
       };
     }
+      throw new Error(`Gemini API Error: ${errorMsg || 'Unknown error occurred'}`);
+    }
+  };
 
-    // If we get here, it's an unexpected error
-    console.error('Unexpected Gemini API error:', {
-      error: error.message,
-      status: error.status,
-      response: error.response,
-      stack: error.stack
-    });
-
-    throw new Error(`Gemini API Error: ${error.message || 'Unknown error occurred'}`);
-  }
+  return sendMessageInternal();
 };
