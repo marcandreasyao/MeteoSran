@@ -218,9 +218,19 @@ Remember to:
 
 export const initChatService = async (): Promise<string | null> => {
   try {
-    const ai = new GoogleGenAI({ apiKey: API_KEY });
+    // Route all Gemini API calls through our Express proxy on Render.
+    // This bypasses Google's geo-restriction for users in Côte d'Ivoire
+    // (and similar restricted regions). The server injects the real API key.
+    const proxyBase = `${window.location.origin}/api/gemini`;
+
+    const ai = new GoogleGenAI({
+      apiKey: 'proxy', // Dummy value; the real key is injected server-side
+      httpOptions: {
+        baseUrl: proxyBase,
+      },
+    });
     chat = ai.chats.create({
-      model: 'gemini-3.1-flash-lite-preview',  // Flash Lite: High RPM and RPD limits
+      model: 'gemini-2.0-flash-lite',  // Flash Lite: High RPM and RPD limits
       config: {
         systemInstruction: SYSTEM_INSTRUCTION,
       },

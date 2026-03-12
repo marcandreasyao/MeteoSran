@@ -12,15 +12,52 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 const PORT = process.env.PORT || 5001;
-const ACCUWEATHER_API_KEY = process.env.ACCUWEATHER_API_KEY || 'asVYFG19VlqLcJKmDZaz3ASONyZc5wbG'; // Hardcoded API key as requested
+const ACCUWEATHER_API_KEY = process.env.ACCUWEATHER_API_KEY || 'asVYFG19VlqLcJKmDZaz3ASONyZc5wbG';
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY || 'AIzaSyAN46yZEOlvK-kUEIClTs3nALmdOIHeVvI';
 
 // AccuWeather Location Key for Abidjan, Ivory Coast
-// You would typically get this from AccuWeather's Location API (e.g., /locations/v1/cities/search)
-// For now, we'll hardcode it as per the prompt's scope limitation.
-const ABIDJAN_LOCATION_KEY = '223019'; // This is a common location key for Abidjan, CI. (Source: AccuWeather documentation/examples)
+const ABIDJAN_LOCATION_KEY = '223019';
 
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '10mb' }));
+
+// ─── Gemini API Proxy ────────────────────────────────────────────────────────
+// All Gemini requests from the browser come here first, then are forwarded
+// server-side (bypassing geo-restrictions on the client's location).
+app.all('/api/gemini/*', async (req, res) => {
+    // Build the upstream Gemini URL from the path suffix
+    const geminiPath = req.params[0]; // everything after /api/gemini/
+    const upstreamUrl = `https://generativelanguage.googleapis.com/${geminiPath}`;
+
+    // Preserve query params (e.g. ?key=...)
+    const queryParams = new URLSearchParams(req.query);
+    // Always inject the server-side API key, overriding any key the client sends
+    queryParams.set('key', GEMINI_API_KEY);
+
+    const fullUrl = `${upstreamUrl}?${queryParams.toString()}`;
+
+    try {
+        const upstreamResponse = await fetch(fullUrl, {
+            method: req.method,
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: req.method !== 'GET' && req.method !== 'HEAD'
+                ? JSON.stringify(req.body)
+                : undefined,
+        });
+
+        const responseBody = await upstreamResponse.text();
+        res.status(upstreamResponse.status)
+           .set('Content-Type', upstreamResponse.headers.get('content-type') || 'application/json')
+           .send(responseBody);
+    } catch (err) {
+        console.error('Gemini proxy error:', err);
+        res.status(500).json({ error: 'Failed to proxy request to Gemini API' });
+    }
+});
+// ────────────────────────────────────────────────────────────────────────────
+
 
 // Proxy endpoint for current weather
 app.get('/api/weather/current', async (req, res) => {
