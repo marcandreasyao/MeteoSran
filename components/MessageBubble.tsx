@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Message, MessageRole } from '../types';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -28,6 +28,35 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, onRegener
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
+
+  const [displayedText, setDisplayedText] = useState(() => {
+    const isNew = !isUser && !isSystem && (Date.now() - new Date(message.timestamp).getTime() < 2000);
+    return isNew ? '' : message.text;
+  });
+
+  useEffect(() => {
+    if (!isUser && !isSystem) {
+      const isNew = Date.now() - new Date(message.timestamp).getTime() < 2000;
+      if (isNew) {
+        const words = message.text.split(' ');
+        let currentWordIndex = 0;
+        setDisplayedText(words[0] || '');
+        
+        const typingInterval = setInterval(() => {
+          currentWordIndex++;
+          if (currentWordIndex < words.length) {
+            setDisplayedText(prev => prev + ' ' + words[currentWordIndex]);
+          } else {
+            clearInterval(typingInterval);
+            setDisplayedText(message.text);
+          }
+        }, 50);
+        return () => clearInterval(typingInterval);
+      } else {
+        setDisplayedText(message.text);
+      }
+    }
+  }, [message.text, isUser, isSystem, message.timestamp]);
 
   const handleExport = () => {
     const textToExport = message.text;
@@ -125,7 +154,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, onRegener
                   </div>
               }}
             >
-              {message.text}
+              {displayedText}
             </ReactMarkdown>
           </div>
           

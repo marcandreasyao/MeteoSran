@@ -108,16 +108,19 @@ export const fetchUserMessages = async (userId: string, chatId: string): Promise
     querySnapshot.forEach((docSnap) => {
       const data = docSnap.data();
       messages.push({
-        id: data.id,
+        id: data.id || docSnap.id,
         role: data.role,
         text: data.text,
-        timestamp: data.timestamp?.toDate() || new Date(),
+        timestamp: data.timestamp
+          ? (typeof data.timestamp.toDate === 'function' ? data.timestamp.toDate() : new Date(data.timestamp))
+          : new Date(0),
         image: data.image,
         alternatives: data.alternatives,
         currentAlternativeIndex: data.currentAlternativeIndex
       });
     });
 
+    console.log(`Fetched ${messages.length} messages for chat ${chatId}`);
     return messages;
   } catch (error) {
     console.error("Error fetching messages from Firestore:", error);

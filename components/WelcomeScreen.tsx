@@ -34,19 +34,17 @@ const getRandomQuestions = (count: number) => {
 };
 
 export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ firstName, onSuggestionClick }) => {
-  const [greeting, setGreeting] = useState('');
-  
+  const [greeting] = useState(() => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Good morning';
+    if (hour < 18) return 'Good afternoon';
+    return 'Good evening';
+  });
+
   const numQuestions = 4;
   const [questions, setQuestions] = useState(getRandomQuestions(numQuestions));
   const [fadingIndex, setFadingIndex] = useState<number | null>(null);
   const questionIndexToUpdate = useRef(0);
-
-  useEffect(() => {
-    const hour = new Date().getHours();
-    if (hour < 12) setGreeting('Good morning');
-    else if (hour < 18) setGreeting('Good afternoon');
-    else setGreeting('Good evening');
-  }, []);
 
   useEffect(() => {
     const interval = setInterval(() => {

@@ -53,6 +53,8 @@ const App: React.FC = () => {
   const [initMessage, setInitMessage] = useState("Initializing MeteoSran...");
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isFetchingSidebar, setIsFetchingSidebar] = useState(false);
+  const [isFetchingActiveChat, setIsFetchingActiveChat] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedMode, setSelectedMode] = useState<ResponseMode>(ResponseMode.CONCISE);
   const [currentInput, setCurrentInput] = useState<CurrentInputState>({ text: '', imageFile: null });
@@ -71,7 +73,7 @@ const App: React.FC = () => {
   // Fetch messages when user logs in
   useEffect(() => {
     if (user && isInitialized) {
-      
+      setIsFetchingSidebar(true);
       fetchChatSessions(user.uid).then(async sessions => {
         setChatSessions(sessions);
         if (sessions.length > 0) {
@@ -86,6 +88,8 @@ const App: React.FC = () => {
         }
       }).catch(err => {
          console.error("Failed to load chat sessions:", err);
+      }).finally(() => {
+         setIsFetchingSidebar(false);
       });
     }
   }, [user, isInitialized]);
@@ -175,19 +179,24 @@ const App: React.FC = () => {
     if (chatId === activeChatId) return;
     setActiveChatId(chatId);
     if (user) {
-      
+      setMessages([]);
+      setIsFetchingActiveChat(true);
       try {
         const history = await fetchUserMessages(user.uid, chatId);
         setMessages(history.length > 0 ? history : []);
       } catch (err) {
         console.error("Failed to load chat history", err);
-      } 
+      } finally {
+        setIsFetchingActiveChat(false);
+      }
     }
   };
 
   const handleNewChat = () => {
     setActiveChatId(null);
     setMessages([]);
+    setIsLoading(false);
+    setIsFetchingActiveChat(false);
     if (window.innerWidth < 768) setIsSidebarOpen(false);
   };
 
@@ -437,7 +446,7 @@ const App: React.FC = () => {
           )}
           <ChatInterface
             messages={messages}
-            isLoading={isLoading}
+            isLoading={isLoading || isFetchingActiveChat}
             error={error}
             onSendMessage={handleSendMessage}
             onSampleQuestion={handleSampleQuestion}

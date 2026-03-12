@@ -12,16 +12,6 @@ interface ChatInputProps {
   onStartLiveSession?: () => void;
 }
 
-const SendIcon: React.FC<{ isLoading: boolean }> = ({ isLoading }) => (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    viewBox="0 0 24 24"
-    fill="currentColor"
-    className={`w-5 h-5 md:w-6 md:h-6 transform transition-transform duration-150 ${isLoading ? 'animate-pulse' : 'group-hover:scale-110'}`}
-  >
-    <path d="M3.478 2.404a.75.75 0 0 0-.926.941l2.432 7.905H13.5a.75.75 0 0 1 0 1.5H4.984l-2.432 7.905a.75.75 0 0 0 .926.94 60.519 60.519 0 0 0 18.445-8.986.75.75 0 0 0 0-1.218A60.517 60.517 0 0 0 3.478 2.404Z" />
-  </svg>
-);
 
 const CloseIcon: React.FC = () => (
   <span className="material-symbols-outlined text-xs">close</span>
@@ -243,15 +233,17 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading, 
         <button
           type="submit"
           disabled={isLoading || (!currentText.trim() && !imageFile)}
-          className="group flex items-center justify-center p-3 rounded-full bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-200 
-                       hover:bg-slate-300 dark:hover:bg-slate-700 
-                       focus:outline-none focus:ring-2 focus:ring-slate-400 
-                       disabled:bg-slate-100 dark:disabled:bg-slate-800/50
-                       disabled:text-slate-400 dark:disabled:text-slate-600
-                       disabled:cursor-not-allowed transition-all duration-200 shrink-0 mb-[2px] ml-1"
+          className="group flex flex-shrink-0 items-center justify-center rounded-full transition-all duration-200 
+                     w-[50px] h-[50px] sm:w-[56px] sm:h-[56px] 
+                     bg-slate-100 dark:bg-[#1e1f20] text-slate-800 dark:text-slate-200 
+                     hover:bg-slate-200 dark:hover:bg-[#2c2d2e] 
+                     focus:outline-none focus:ring-2 focus:ring-slate-400 
+                     disabled:opacity-50 disabled:cursor-not-allowed ml-1"
           aria-label="Send message"
         >
-          <SendIcon isLoading={isLoading} />
+          <span className="material-symbols-rounded text-[24px] sm:text-[28px] transform transition-transform group-hover:scale-110">
+            send
+          </span>
         </button>
       </form>
     </div>
