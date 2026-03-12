@@ -5,6 +5,7 @@ import { Analytics } from '@vercel/analytics/react';
 import { SpeedInsights } from '@vercel/speed-insights/react';
 import App from './App';
 import { AuthProvider } from './src/contexts/AuthContext';
+import './src/index.css';
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {
