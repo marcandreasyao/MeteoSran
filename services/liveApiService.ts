@@ -1,6 +1,6 @@
 import { SYSTEM_INSTRUCTION } from './geminiService';
 
-const API_KEY = import.meta.env?.VITE_GEMINI_API_KEY || "AIzaSyAN46yZEOlvK-kUEIClTs3nALmdOIHeVvI";
+const API_KEY = import.meta.env?.VITE_GEMINI_API_KEY || "AIzaSyC5knS5kLETmp3grQ1lTMjnZRqbJqm26-M";
 const HOST = 'generativelanguage.googleapis.com';
 const URL = `wss://${HOST}/ws/google.ai.generativelanguage.v1alpha.GenerativeService.BidiGenerateContent?key=${API_KEY}`;
 
@@ -34,31 +34,31 @@ export class LiveApiService {
         // BidiGenerateContent returns a variety of messages:
         // serverContent -> contains model turns and audio parts
         if (data.serverContent) {
-            
-            // Handle Barge-in interruption
-            if (data.serverContent.interrupted) {
-                console.log("[Live API] Model interrupted by user speech.");
-                this.onInterrupted?.();
-            }
 
-            // Handle incoming audio stream from Gemini
-            if (data.serverContent.modelTurn) {
-                const parts = data.serverContent.modelTurn.parts;
-                for (const part of parts) {
-                    if (part.inlineData && part.inlineData.data) {
-                        // Decode base64 audio (24kHz PCM)
-                        const binaryString = window.atob(part.inlineData.data);
-                        const bytes = new Uint8Array(binaryString.length);
-                        for (let i = 0; i < binaryString.length; i++) {
-                            bytes[i] = binaryString.charCodeAt(i);
-                        }
-                        this.onAudioReceived?.(bytes);
-                    }
-                    if (part.text) {
-                        this.onTextReceived?.(part.text);
-                    }
+          // Handle Barge-in interruption
+          if (data.serverContent.interrupted) {
+            console.log("[Live API] Model interrupted by user speech.");
+            this.onInterrupted?.();
+          }
+
+          // Handle incoming audio stream from Gemini
+          if (data.serverContent.modelTurn) {
+            const parts = data.serverContent.modelTurn.parts;
+            for (const part of parts) {
+              if (part.inlineData && part.inlineData.data) {
+                // Decode base64 audio (24kHz PCM)
+                const binaryString = window.atob(part.inlineData.data);
+                const bytes = new Uint8Array(binaryString.length);
+                for (let i = 0; i < binaryString.length; i++) {
+                  bytes[i] = binaryString.charCodeAt(i);
                 }
+                this.onAudioReceived?.(bytes);
+              }
+              if (part.text) {
+                this.onTextReceived?.(part.text);
+              }
             }
+          }
         }
       } catch (e) {
         console.error("[Live API] Error parsing message:", e);
@@ -69,7 +69,7 @@ export class LiveApiService {
       console.log("[Live API] Disconnected", event.code, event.reason);
       this.onDisconnected?.();
     };
-    
+
     this.ws.onerror = (error) => {
       console.error("[Live API] WebSocket Error:", error);
     };
@@ -80,7 +80,7 @@ export class LiveApiService {
     const setupMessage = {
       setup: {
         // Use Gemini 2.5 Flash because it officially supports Native Audio Dialogs
-        model: "models/gemini-2.5-flash", 
+        model: "models/gemini-2.5-flash",
         generationConfig: {
           responseModalities: ["AUDIO"], // We want voice back!
           speechConfig: {
@@ -88,7 +88,7 @@ export class LiveApiService {
               prebuiltVoiceConfig: {
                 // Friendly, engaging voice fits MeteoSran.
                 // Other options: Puck, Charon, Kore, Fenrir, Leto
-                voiceName: "Aoede" 
+                voiceName: "Aoede"
               }
             }
           }

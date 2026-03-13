@@ -1,13 +1,11 @@
-const CACHE_NAME = 'meteosran-v1.0.0';
-const STATIC_CACHE_NAME = 'meteosran-static-v1.0.0';
-const DYNAMIC_CACHE_NAME = 'meteosran-dynamic-v1.0.0';
+const CACHE_NAME = 'meteosran-v1.1.0';
+const STATIC_CACHE_NAME = 'meteosran-static-v1.1.0';
+const DYNAMIC_CACHE_NAME = 'meteosran-dynamic-v1.1.0';
 
 // Files to cache immediately
 const STATIC_ASSETS = [
   '/',
   '/index.html',
-  '/index.tsx',
-  '/App.tsx',
   '/Meteosran-logo.png',
   '/Meteosran-Icon_128x128.ico',
   '/manifest.json',

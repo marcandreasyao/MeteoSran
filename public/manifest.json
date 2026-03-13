@@ -28,7 +28,8 @@
     {
       "src": "/Meteosran-Icon_128x128.ico",
       "sizes": "128x128",
-      "type": "image/x-icon"
+      "type": "image/x-icon",
+      "purpose": "any"
     },
     {
       "src": "/Meteosran-logo.png",
