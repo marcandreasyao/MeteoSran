@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { auth } from '../src/firebase';
-import { 
-  createUserWithEmailAndPassword, 
-  signInWithEmailAndPassword, 
-  signInWithPopup, 
+import {
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  signInWithPopup,
   GoogleAuthProvider,
   OAuthProvider,
   updateProfile
@@ -24,6 +24,32 @@ export const LoginScreen: React.FC = () => {
   const hasUpperCase = /[A-Z]/.test(password);
   const hasSymbol = /[!@#$%^&*(),.?":{}|<>]/.test(password);
   const isPasswordValid = hasMinLength && hasUpperCase && hasSymbol;
+
+  const getFriendlyErrorMessage = (error: any): string => {
+    const code = error?.code || '';
+    switch (code) {
+      case 'auth/invalid-credential':
+        return 'Incorrect email or password. Please try again.';
+      case 'auth/user-not-found':
+        return 'No account found with this email.';
+      case 'auth/wrong-password':
+        return 'Incorrect password. Please try again.';
+      case 'auth/email-already-in-use':
+        return 'This email is already registered. Try logging in instead.';
+      case 'auth/weak-password':
+        return 'Password is too weak. Please use at least 6 characters.';
+      case 'auth/too-many-requests':
+        return 'Too many failed attempts. Please try again later.';
+      case 'auth/popup-closed-by-user':
+        return 'The sign-in window was closed. Please try again.';
+      case 'auth/network-request-failed':
+        return 'Network error. Please check your connection.';
+      case 'auth/operation-not-allowed':
+        return 'This sign-in method is currently disabled.';
+      default:
+        return error.message || 'An unexpected error occurred. Please try again.';
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -46,7 +72,7 @@ export const LoginScreen: React.FC = () => {
         });
       }
     } catch (err: any) {
-      setError(err.message || 'An error occurred during authentication.');
+      setError(getFriendlyErrorMessage(err));
     } finally {
       setLoading(false);
     }
@@ -59,7 +85,7 @@ export const LoginScreen: React.FC = () => {
     try {
       await signInWithPopup(auth, provider);
     } catch (err: any) {
-      setError(err.message || 'Google sign-in failed.');
+      setError(getFriendlyErrorMessage(err));
     } finally {
       setLoading(false);
     }
@@ -69,13 +95,12 @@ export const LoginScreen: React.FC = () => {
     setError(null);
     setLoading(true);
     const provider = new OAuthProvider('apple.com');
-    // Optional: add scopes, e.g., provider.addScope('email'); provider.addScope('name');
     provider.addScope('email');
     provider.addScope('name');
     try {
       await signInWithPopup(auth, provider);
     } catch (err: any) {
-      setError(err.message || 'Apple sign-in failed.');
+      setError(getFriendlyErrorMessage(err));
     } finally {
       setLoading(false);
     }
@@ -83,71 +108,70 @@ export const LoginScreen: React.FC = () => {
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-4 relative overflow-hidden">
-
       {/* Main Container */}
-      <div className="w-full max-w-md bg-slate-800/60 backdrop-blur-xl border border-slate-700/50 rounded-3xl shadow-2xl p-8 relative z-10 animate-fade-up-soft">
-        
+      <div className="w-full max-w-md bg-white/80 dark:bg-slate-800/60 backdrop-blur-xl border border-slate-200/60 dark:border-slate-700/50 rounded-3xl shadow-2xl p-8 relative z-10 animate-fade-up-soft">
+
         {/* Header */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500 to-purple-600 mb-4 shadow-lg shadow-blue-500/20">
             <img src="/Meteosran-logo.png" alt="MeteoSran Logo" className="w-10 h-10 object-contain drop-shadow-md" />
           </div>
-          <h1 className="text-3xl font-bold text-white tracking-tight">MeteoSran</h1>
-          <p className="text-slate-400 mt-2 text-sm font-medium">Next-Level Climate Intelligence</p>
+          <h1 className="text-3xl font-bold text-slate-900 dark:text-white tracking-tight text-glow-none">MeteoSran</h1>
+          <p className="text-slate-500 dark:text-slate-400 mt-2 text-sm font-medium">Next-Level Climate Intelligence</p>
         </div>
 
         {error && (
-          <div className="bg-red-500/10 border border-red-500/50 rounded-xl p-3 mb-6 animate-fade-up-soft text-center">
-            <p className="text-red-400 text-sm font-medium">{error}</p>
+          <div className="bg-red-500/10 border border-red-500/30 dark:border-red-500/50 rounded-xl p-3 mb-6 animate-fade-up-soft text-center">
+            <p className="text-red-500 dark:text-red-400 text-sm font-medium">{error}</p>
           </div>
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
           {!isLogin && (
             <div className="flex gap-3">
-              <input 
-                type="text" 
-                placeholder="First Name" 
+              <input
+                type="text"
+                placeholder="First Name"
                 value={firstName}
                 onChange={(e) => setFirstName(e.target.value)}
                 required={!isLogin}
-                className="w-1/2 bg-slate-900/50 border border-slate-700 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all"
+                className="w-1/2 bg-slate-50/50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all"
               />
-              <input 
-                type="text" 
-                placeholder="Last Name" 
+              <input
+                type="text"
+                placeholder="Last Name"
                 value={lastName}
                 onChange={(e) => setLastName(e.target.value)}
                 required={!isLogin}
-                className="w-1/2 bg-slate-900/50 border border-slate-700 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all"
+                className="w-1/2 bg-slate-50/50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all"
               />
             </div>
           )}
-          
+
           <div>
-            <input 
-              type="email" 
-              placeholder="Email address" 
+            <input
+              type="email"
+              placeholder="Email address"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="w-full bg-slate-900/50 border border-slate-700 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all"
+              className="w-full bg-slate-50/50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all"
             />
           </div>
-          
+
           <div className="relative">
-            <input 
-              type={showPassword ? "text" : "password"} 
-              placeholder="Password" 
+            <input
+              type={showPassword ? "text" : "password"}
+              placeholder="Password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              className="w-full bg-slate-900/50 border border-slate-700 rounded-xl px-4 py-3 pr-12 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all"
+              className="w-full bg-slate-50/50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 pr-12 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all"
             />
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-white transition-colors focus:outline-none"
+              className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-white transition-colors focus:outline-none"
               aria-label={showPassword ? "Hide password" : "Show password"}
             >
               <span className="material-symbols-outlined text-xl">
@@ -158,23 +182,23 @@ export const LoginScreen: React.FC = () => {
 
           {!isLogin && (
             <div className="space-y-2 py-2 text-xs font-medium animate-fade-up-soft">
-              <div className={`flex items-center gap-2 transition-colors ${hasMinLength ? 'text-green-400' : 'text-slate-500'}`}>
+              <div className={`flex items-center gap-2 transition-colors ${hasMinLength ? 'text-green-500 dark:text-green-400' : 'text-slate-400 dark:text-slate-500'}`}>
                 <span className="material-symbols-outlined text-sm">{hasMinLength ? 'check_circle' : 'radio_button_unchecked'}</span>
                 <span>At least 8 characters</span>
               </div>
-              <div className={`flex items-center gap-2 transition-colors ${hasUpperCase ? 'text-green-400' : 'text-slate-500'}`}>
+              <div className={`flex items-center gap-2 transition-colors ${hasUpperCase ? 'text-green-500 dark:text-green-400' : 'text-slate-400 dark:text-slate-500'}`}>
                 <span className="material-symbols-outlined text-sm">{hasUpperCase ? 'check_circle' : 'radio_button_unchecked'}</span>
                 <span>At least 1 uppercase letter</span>
               </div>
-              <div className={`flex items-center gap-2 transition-colors ${hasSymbol ? 'text-green-400' : 'text-slate-500'}`}>
+              <div className={`flex items-center gap-2 transition-colors ${hasSymbol ? 'text-green-500 dark:text-green-400' : 'text-slate-400 dark:text-slate-500'}`}>
                 <span className="material-symbols-outlined text-sm">{hasSymbol ? 'check_circle' : 'radio_button_unchecked'}</span>
                 <span>At least 1 special character (e.g., !@#$%)</span>
               </div>
             </div>
           )}
 
-          <button 
-            type="submit" 
+          <button
+            type="submit"
             disabled={loading}
             className="w-full bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white font-semibold rounded-xl px-4 py-3 transition-all transform active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-blue-500/25"
           >
@@ -183,16 +207,16 @@ export const LoginScreen: React.FC = () => {
         </form>
 
         <div className="mt-6 flex items-center justify-center space-x-4">
-          <div className="h-px bg-slate-700 flex-1"></div>
-          <span className="text-slate-500 text-xs font-semibold uppercase tracking-wider">OR</span>
-          <div className="h-px bg-slate-700 flex-1"></div>
+          <div className="h-px bg-slate-200 dark:bg-slate-700 flex-1"></div>
+          <span className="text-slate-400 dark:text-slate-500 text-xs font-semibold uppercase tracking-wider">OR</span>
+          <div className="h-px bg-slate-200 dark:bg-slate-700 flex-1"></div>
         </div>
 
         <div className="flex flex-col gap-3 mt-6">
-          <button 
+          <button
             onClick={handleGoogleSignIn}
             disabled={loading}
-            className="w-full bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white font-medium rounded-xl px-4 py-3 flex items-center justify-center gap-3 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-white font-medium rounded-xl px-4 py-3 flex items-center justify-center gap-3 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
           >
             <svg className="w-5 h-5" viewBox="0 0 24 24">
               <path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
@@ -203,11 +227,11 @@ export const LoginScreen: React.FC = () => {
             Continue with Google
           </button>
 
-          <button 
+          <button
             type="button"
             onClick={handleAppleSignIn}
             disabled={loading}
-            className="w-full bg-black hover:bg-zinc-900 border border-zinc-800 text-white font-medium rounded-xl px-4 py-3 flex items-center justify-center gap-3 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full bg-black hover:bg-zinc-900 border border-zinc-900 text-white font-medium rounded-xl px-4 py-3 flex items-center justify-center gap-3 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
               <path d="M12.152 6.896c-.948 0-2.415-1.078-3.96-1.04-2.04.027-3.91 1.183-4.961 3.014-2.117 3.675-.546 9.103 1.519 12.09 1.013 1.454 2.208 3.09 3.792 3.039 1.52-.065 2.09-.987 3.935-.987 1.831 0 2.35.987 3.96.948 1.637-.026 2.62-1.48 3.605-2.935 1.156-1.69 1.632-3.326 1.662-3.415-.039-.013-3.182-1.221-3.22-4.857-.026-3.04 2.484-4.524 2.597-4.594-1.425-2.078-3.623-2.364-4.42-2.43-1.896-.2-3.55 1.066-4.51 1.066zm2.42-2.906c.829-1.004 1.385-2.408 1.233-3.806-1.2.052-2.656.805-3.52 1.815-.76.853-1.42 2.296-1.233 3.665 1.35.105 2.684-.663 3.52-1.674z" />
@@ -216,11 +240,11 @@ export const LoginScreen: React.FC = () => {
           </button>
         </div>
 
-        <p className="mt-8 text-center text-slate-400 text-sm">
+        <p className="mt-8 text-center text-slate-500 dark:text-slate-400 text-sm font-medium">
           {isLogin ? "Don't have an account? " : "Already have an account? "}
-          <button 
-            onClick={() => setIsLogin(!isLogin)} 
-            className="text-blue-400 hover:text-blue-300 font-semibold transition-colors"
+          <button
+            onClick={() => setIsLogin(!isLogin)}
+            className="text-blue-600 dark:text-blue-400 hover:text-blue-500 dark:hover:text-blue-300 font-semibold transition-colors"
           >
             {isLogin ? 'Sign up' : 'Log in'}
           </button>
@@ -228,8 +252,8 @@ export const LoginScreen: React.FC = () => {
       </div>
 
       {/* Footer link */}
-      <div className="absolute bottom-6 text-slate-500 text-xs font-medium">
-        Secured by Firebase Auth
+      <div className="absolute bottom-6 text-slate-400 dark:text-slate-500 text-xs font-semibold">
+        Secured by Firebase Auth.
       </div>
     </div>
   );
