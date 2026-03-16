@@ -139,7 +139,7 @@ export const Header: React.FC<HeaderProps> = ({ theme, toggleTheme, messages, se
 
   return (
     <header 
-      className="p-2 sm:p-4 w-full z-20
+      className="p-2 sm:p-4 pt-[calc(0.5rem+env(safe-area-inset-top,0px))] w-full z-20
                  bg-white/30 dark:bg-slate-800/60 backdrop-blur-lg 
                  shadow-lg border-b border-white/20 dark:border-slate-700/60"
       role="banner"

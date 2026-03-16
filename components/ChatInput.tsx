@@ -20,6 +20,7 @@ const CloseIcon: React.FC = () => (
 export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading, currentInputState, setCurrentInputState, inputRef, onStartLiveSession }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
+  const [showToolsDropdown, setShowToolsDropdown] = useState(false);
 
   const { text: currentText, imageFile } = currentInputState;
   const textBeforeDictationRef = useRef<string>('');
@@ -118,7 +119,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading, 
   };
 
   return (
-    <div className="p-2 sm:p-3 md:p-4 w-full relative z-10">
+    <div className="p-2 sm:p-3 md:p-4 pb-[calc(1rem+env(safe-area-inset-bottom,0px))] w-full relative z-10">
       {imagePreviewUrl && (
         <div className="mb-2 p-2 bg-white/20 dark:bg-slate-700/30 rounded-lg relative w-fit max-w-[120px] sm:max-w-[200px]">
           <img src={imagePreviewUrl} alt="Selected preview" className="max-h-20 sm:max-h-32 rounded object-contain" />
@@ -133,102 +134,130 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading, 
       )}
 
       <form onSubmit={handleSubmit} className="flex items-end gap-2 w-full">
-        <div className="flex items-end flex-grow gap-1.5 sm:gap-2 bg-slate-100 dark:bg-[#1e1f20] rounded-[32px] p-2 sm:px-4 sm:py-2 transition-all duration-200">
+        <div className="flex items-center flex-grow gap-1.5 sm:gap-2 bg-slate-100 dark:bg-[#1e1f20] rounded-[28px] sm:rounded-[32px] p-1 sm:p-2 sm:px-4 transition-all duration-200 border border-slate-200/50 dark:border-slate-800/80 shadow-sm relative">
           <input
-          type="file"
-          ref={fileInputRef}
-          onChange={handleFileChange}
-          accept="image/png, image/jpeg, image/webp, image/gif"
-          className="hidden"
-          aria-label="Upload image file"
-          disabled={isLoading}
-        />
-        <button
-          type="button"
-          onClick={handleImageUploadClick}
-          disabled={isLoading}
-          className="p-2 rounded-full hover:bg-black/10 dark:hover:bg-white/10 text-slate-600 dark:text-slate-300
-                     focus:outline-none focus:ring-2 focus:ring-sky-500
-                     transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          aria-label="Attach image"
-        >
-          <span className="material-symbols-outlined text-2xl">add_photo_alternate</span>
-        </button>
-
-        {/* Live Audio Session Button */}
-        <button
-          type="button"
-          onClick={onStartLiveSession}
-          disabled={isLoading}
-          className="p-2 rounded-full text-slate-500 dark:text-slate-400 hover:bg-black/10 dark:hover:bg-white/10 transition-all disabled:opacity-50 disabled:cursor-not-allowed relative group flex items-center justify-center shrink-0"
-          title="Start Live Conversational Audio"
-          aria-label="Start Live Session"
-        >
-          <span className="material-symbols-outlined text-2xl">
-            graphic_eq
-          </span>
-          <span className="absolute top-0 right-0 flex h-2.5 w-2.5">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-indigo-500"></span>
-          </span>
-        </button>
-
-        {speechSupported && (
-          <div className="flex items-center gap-1 border-l border-slate-300/50 dark:border-slate-600/50 pl-1 pr-1">
+            type="file"
+            ref={fileInputRef}
+            onChange={handleFileChange}
+            accept="image/png, image/jpeg, image/webp, image/gif"
+            className="hidden"
+            aria-label="Upload image file"
+            disabled={isLoading}
+          />
+        
+          {/* Tools Menu (Dropdown) on Mobile/Tablet */}
+          <div className="relative flex items-center shrink-0">
             <button
               type="button"
-              onClick={toggleLanguage}
-              className="text-xs font-bold px-1.5 py-1 rounded bg-slate-200/50 dark:bg-slate-700/50 text-slate-500 dark:text-slate-400 hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors"
-              title="Switch dictation language"
-              disabled={isLoading || isListening}
+              onClick={() => setShowToolsDropdown(!showToolsDropdown)}
+              className={`p-1.5 sm:p-2 rounded-full transition-all duration-300 ${showToolsDropdown ? 'bg-blue-600 text-white rotate-45' : 'text-slate-500 hover:bg-black/5 dark:hover:bg-white/5'}`}
+              aria-label="Tools menu"
             >
-              {language === 'fr-FR' ? 'FR' : 'EN'}
+              <span className="material-symbols-outlined text-[24px] sm:text-2xl">{showToolsDropdown ? 'close' : 'add'}</span>
             </button>
+
+            {/* Soft Dropdown Menu */}
+            {showToolsDropdown && (
+              <div className="absolute bottom-full left-0 mb-3 w-40 sm:w-48 bg-white/90 dark:bg-[#1e1f20]/95 backdrop-blur-xl rounded-2xl border border-slate-200 dark:border-slate-700 shadow-2xl overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-300 z-50">
+                <div className="p-1.5 flex flex-col gap-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      handleImageUploadClick();
+                      setShowToolsDropdown(false);
+                    }}
+                    className="flex items-center gap-3 w-full px-3 py-2.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 transition-colors group"
+                  >
+                    <span className="material-symbols-outlined text-[22px] group-hover:scale-110 transition-transform">add_photo_alternate</span>
+                    <span className="text-sm font-medium">Image Upload</span>
+                  </button>
+                  
+                  {onStartLiveSession && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onStartLiveSession();
+                        setShowToolsDropdown(false);
+                      }}
+                      className="flex items-center gap-3 w-full px-3 py-2.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 transition-colors group"
+                    >
+                      <div className="relative">
+                        <span className="material-symbols-outlined text-[22px] group-hover:scale-110 transition-transform">graphic_eq</span>
+                        <span className="absolute -top-0.5 -right-0.5 flex h-2 w-2">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
+                          <span className="relative inline-flex rounded-full h-2 w-2 bg-indigo-500"></span>
+                        </span>
+                      </div>
+                      <span className="text-sm font-medium">Live Session</span>
+                    </button>
+                  )}
+
+                  {speechSupported && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        toggleLanguage();
+                      }}
+                      className="flex items-center gap-3 w-full px-3 py-2.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 transition-colors group"
+                    >
+                      <span className="text-[11px] font-black w-6 text-center border border-slate-400 rounded px-0.5 group-hover:bg-slate-700 group-hover:text-white transition-all">
+                        {language === 'fr-FR' ? 'FR' : 'EN'}
+                      </span>
+                      <span className="text-sm font-medium">Language</span>
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Primary Voice Tool (Always visible for accessibility) */}
+          {speechSupported && (
             <button
               type="button"
               onClick={toggleDictation}
               disabled={isLoading}
-              className={`p-2 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-sky-500 disabled:opacity-50 disabled:cursor-not-allowed ${isListening
-                ? 'bg-red-100/80 dark:bg-red-900/40 text-red-500 dark:text-red-400 animate-pulse shadow-[0_0_10px_rgba(239,68,68,0.5)]'
+              className={`p-1.5 sm:p-2 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-sky-500 disabled:opacity-50 disabled:cursor-not-allowed shrink-0 ${isListening
+                ? 'bg-red-500 text-white animate-pulse shadow-[0_0_15px_rgba(239,68,68,0.5)]'
                 : 'hover:bg-black/10 dark:hover:bg-white/10 text-slate-600 dark:text-slate-300'
                 }`}
               aria-label={isListening ? "Stop listening" : "Start voice input"}
             >
-              <span className="material-symbols-outlined text-2xl">
+              <span className="material-symbols-outlined text-[22px] sm:text-2xl">
                 {isListening ? 'mic_off' : 'mic'}
               </span>
             </button>
-          </div>
-        )}
+          )}
 
-        {isListening ? (
-          <div className="flex-grow flex flex-col items-center justify-center overflow-hidden animate-[pulse_2s_ease-in-out_infinite] relative px-2 min-h-[40px] my-auto">
-            <AudioVisualizer audioData={audioData} isListening={isListening} />
-            <div className="absolute bottom-[-4px] text-xs font-medium text-sky-600 dark:text-sky-400 truncate w-full text-center opacity-80 pb-1">
-              {currentText || "Listening..."}
+          {isListening ? (
+            <div className="flex-grow flex flex-col items-center justify-center overflow-hidden animate-[pulse_2s_ease-in-out_infinite] relative px-2 min-h-[40px] my-auto">
+              <AudioVisualizer audioData={audioData} isListening={isListening} />
+              <div className="absolute bottom-[-4px] text-xs font-medium text-sky-600 dark:text-sky-400 truncate w-full text-center opacity-80 pb-1">
+                {currentText || "Listening..."}
+              </div>
             </div>
-          </div>
-        ) : (
-          <div className="flex-grow relative flex items-center my-auto overflow-hidden"
-               style={{ 
-                 WebkitMaskImage: 'linear-gradient(to right, transparent 0%, black 5%, black 95%, transparent 100%)', 
-                 maskImage: 'linear-gradient(to right, transparent 0%, black 5%, black 95%, transparent 100%)' 
-               }}>
-            <textarea
-              ref={inputRef}
-              value={currentText}
-              onChange={handleTextChange}
-              onKeyDown={handleKeyDown}
-              placeholder={imageFile ? "Describe the image or ask a question..." : "Ask me anything about weather..."}
-              className="w-full py-2 px-2 bg-transparent border-none focus:ring-0 resize-none overflow-y-auto max-h-32 
-                           text-[15px] sm:text-[16px] text-slate-800 dark:text-slate-100 
-                           placeholder-slate-500 dark:placeholder-slate-400 hide-scrollbar"
-              rows={1}
-              disabled={isLoading}
-              aria-label="Chat message input"
-            />
-          </div>
-        )}
+          ) : (
+            <div className="flex-grow relative flex items-center my-auto overflow-hidden"
+                 style={{ 
+                   WebkitMaskImage: 'linear-gradient(to right, transparent 0%, black 5%, black 95%, transparent 100%)', 
+                   maskImage: 'linear-gradient(to right, transparent 0%, black 5%, black 95%, transparent 100%)' 
+                 }}>
+              <textarea
+                ref={inputRef}
+                value={currentText}
+                onChange={handleTextChange}
+                onKeyDown={handleKeyDown}
+                placeholder={imageFile ? "Describe image..." : "Ask me anything about weather..."}
+                style={{ height: '55px' }}
+                className="w-full py-4 px-2 bg-transparent border-none focus:ring-0 resize-none overflow-y-auto hide-scrollbar
+                             text-[16px] text-slate-800 dark:text-slate-100 
+                             placeholder-slate-500 dark:placeholder-slate-400 leading-tight"
+                rows={1}
+                disabled={isLoading}
+                aria-label="Chat message input"
+              />
+            </div>
+          )}
         </div>
 
         <button

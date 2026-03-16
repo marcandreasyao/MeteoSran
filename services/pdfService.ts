@@ -247,7 +247,7 @@ export const generateChatPdf = async (messages: Message[]): Promise<void> => {
             <h1 class="report-title">The Weather<br>Journal</h1>
             <div class="report-meta">
               <div class="meta-item"><b>Date</b> ${currentDate}</div>
-              <div class="meta-item"><b>Platform</b> MeteoSran v1.6.1</div>
+              <div class="meta-item"><b>Platform</b> MeteoSran v1.6.3</div>
               <div class="meta-item"><b>Curated For</b> Personalized User Insights</div>
             </div>
           </header>

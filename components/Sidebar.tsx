@@ -46,7 +46,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         transition-all duration-300 ease-in-out flex flex-col overflow-hidden
         ${isOpen ? 'w-64 translate-x-0' : 'w-0 -translate-x-full md:w-0 md:-translate-x-full'}
       `}>
-        <div className="p-4 flex flex-col h-full w-64">
+        <div className="p-4 pt-[calc(1rem+env(safe-area-inset-top,0px))] pb-[calc(1rem+env(safe-area-inset-bottom,0px))] flex flex-col h-full w-64">
           <button
             onClick={onNewChat}
             className="flex items-center gap-3 w-full bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 p-3 rounded-xl text-sm font-medium transition-all mb-4 border border-blue-500/20 whitespace-nowrap shadow-sm"

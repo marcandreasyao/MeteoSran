@@ -80,7 +80,7 @@ export class LiveApiService {
     const setupMessage = {
       setup: {
         // Use Gemini 2.5 Flash because it officially supports Native Audio Dialogs
-        model: "models/gemini-2.5-flash",
+        model: "models/gemini-2.0-flash",
         generationConfig: {
           responseModalities: ["AUDIO"], // We want voice back!
           speechConfig: {

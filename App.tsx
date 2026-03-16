@@ -31,8 +31,6 @@ const readFileAsBase64 = (file: File): Promise<string> => {
   });
 };
 
-// ms
-
 const App: React.FC = () => {
   const [theme, setTheme] = useState<Theme>(() => {
     const savedTheme = localStorage.getItem('theme');
@@ -44,7 +42,6 @@ const App: React.FC = () => {
     return 'light';
   });
 
-
   const [showGlassFade, setShowGlassFade] = useState(false);
   const [showWeatherWidget, setShowWeatherWidget] = useState(false);
 
@@ -53,7 +50,6 @@ const App: React.FC = () => {
   const [initMessage, setInitMessage] = useState("Initializing MeteoSran...");
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [isFetchingSidebar, setIsFetchingSidebar] = useState(false);
   const [isFetchingActiveChat, setIsFetchingActiveChat] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedMode, setSelectedMode] = useState<ResponseMode>(ResponseMode.CONCISE);
@@ -64,7 +60,7 @@ const App: React.FC = () => {
   const [locationError, setLocationError] = useState<string | null>(null);
   const [locationPrompt, setLocationPrompt] = useState(false);
   const { user, loading: authLoading } = useAuth();
-  
+
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [chatSessions, setChatSessions] = useState<ChatSession[]>([]);
   const [activeChatId, setActiveChatId] = useState<string | null>(null);
@@ -73,7 +69,6 @@ const App: React.FC = () => {
   // Fetch messages when user logs in
   useEffect(() => {
     if (user && isInitialized) {
-      setIsFetchingSidebar(true);
       fetchChatSessions(user.uid).then(async sessions => {
         setChatSessions(sessions);
         if (sessions.length > 0) {
@@ -87,9 +82,7 @@ const App: React.FC = () => {
           setMessages([]);
         }
       }).catch(err => {
-         console.error("Failed to load chat sessions:", err);
-      }).finally(() => {
-         setIsFetchingSidebar(false);
+        console.error("Failed to load chat sessions:", err);
       });
     }
   }, [user, isInitialized]);
@@ -118,7 +111,7 @@ const App: React.FC = () => {
         setInitMessage("Initializing AI components...");
         setInitProgress(60);
         const initResult = await initChatService();
-        
+
         if (initResult) {
           throw new Error(`Failed to initialize chat service: ${initResult}`);
         }
@@ -141,7 +134,7 @@ const App: React.FC = () => {
     initializeChat();
   }, []);
 
-  // Advanced Geolocation hook handling Android best practices (high accuracy, cache, timeout, permissions)
+  // Advanced Geolocation hook handling Android best practices
   const { location: geoLoc, error: geoErr } = useGeolocation(true);
 
   useEffect(() => {
@@ -156,7 +149,6 @@ const App: React.FC = () => {
     }
   }, [geoLoc, geoErr]);
 
-  // Handler for manual location entry (simple prompt for now)
   const handleManualLocation = () => {
     const manual = prompt('Enter your city or coordinates (lat,lon):');
     if (manual) {
@@ -206,36 +198,34 @@ const App: React.FC = () => {
   };
 
   const toggleTheme = () => {
-    // Track theme toggle event
-    track('theme_toggle', { 
-      from: theme, 
-      to: theme === 'light' ? 'dark' : 'light' 
+    track('theme_toggle', {
+      from: theme,
+      to: theme === 'light' ? 'dark' : 'light'
     });
-    
+
     triggerGlassFade();
     setTimeout(() => {
       setTheme(prevTheme => (prevTheme === 'light' ? 'dark' : 'light'));
-    }, 450); // switch theme at midpoint of fade
+    }, 450);
   };
 
   const handleSendMessage = async (text: string, imageFile?: File | null) => {
     if (!text.trim() && !imageFile) return;
 
-    // Track message sending
-    track('message_sent', { 
-      hasText: !!text.trim(), 
+    track('message_sent', {
+      hasText: !!text.trim(),
       hasImage: !!imageFile,
       mode: selectedMode,
-      messageLength: text.length 
+      messageLength: text.length
     });
 
-    const isWeatherQueryForCI = text.toLowerCase().includes('weather') && 
-                                (text.toLowerCase().includes('ivory coast') || text.toLowerCase().includes('abidjan'));
-    
+    const isWeatherQueryForCI = text.toLowerCase().includes('weather') &&
+      (text.toLowerCase().includes('ivory coast') || text.toLowerCase().includes('abidjan'));
+
     if (isWeatherQueryForCI) {
       track('weather_widget_shown', { query: 'ivory_coast_weather' });
     }
-    
+
     setShowWeatherWidget(isWeatherQueryForCI);
 
     const userMessage: Message = {
@@ -252,24 +242,27 @@ const App: React.FC = () => {
       })
     };
 
-    setMessages(prev => [...prev, userMessage]);
+    // FIX 1: Create a definitive, synchronous array of the history PLUS the new message
+    const currentConversation = [...messages, userMessage];
+
+    // Update the UI using that exact array
+    setMessages(currentConversation);
     setIsLoading(true);
     setError(null);
 
     try {
-      const response = await sendMessageToAI([...messages, userMessage], selectedMode, false, user?.displayName || null);
+      // Send that exact array to the API. No stale state!
+      const response = await sendMessageToAI(currentConversation, selectedMode, user?.displayName || null);
       setMessages(prev => [...prev, response]);
-      
+
       let finalChatId = activeChatId;
 
-      // Do database writes asynchronously without awaiting so the UI updates instantly
       (async () => {
         if (!finalChatId && user) {
-          // First message of a new chat session! Let's create the session and generate a title
           const promptText = userMessage.text;
           const newTitle = promptText ? promptText.split(" ").slice(0, 5).join(" ") + "..." : "Image Analysis...";
           finalChatId = await createChatSession(user.uid, newTitle);
-          
+
           if (finalChatId) {
             setActiveChatId(finalChatId);
             setChatSessions(prev => [{ id: finalChatId!, title: newTitle, createdAt: new Date(), updatedAt: new Date() }, ...prev]);
@@ -300,32 +293,39 @@ const App: React.FC = () => {
     const msg = messages[msgIndex];
     if (msg.role !== MessageRole.MODEL) return;
 
-    // Send the history up to the message we want to regenerate
+    // FIX 2: The history needed to regenerate this AI response is everything up to, 
+    // AND INCLUDING, the User message immediately preceding it.
     const historyToResend = messages.slice(0, msgIndex);
-    
+
+    // Safety check: Ensure the last message in the resend history is actually from the user.
+    if (historyToResend.length === 0 || historyToResend[historyToResend.length - 1].role !== MessageRole.USER) {
+      setError("Cannot regenerate: Previous message is not a valid user query.");
+      return;
+    }
+
     setIsLoading(true);
     setError(null);
 
     try {
-      const response = await sendMessageToAI(historyToResend, selectedMode, false, user?.displayName || null);
-      
+      const response = await sendMessageToAI(historyToResend, selectedMode, user?.displayName || null);
+
       setMessages(prev => {
         const newMessages = [...prev];
         const targetMsg = { ...newMessages[msgIndex] };
-        
+
         const alts = targetMsg.alternatives ? [...targetMsg.alternatives] : [targetMsg.text];
         alts.push(response.text);
-        
+
         targetMsg.alternatives = alts;
         targetMsg.currentAlternativeIndex = alts.length - 1;
         targetMsg.text = response.text;
-        
+
         newMessages[msgIndex] = targetMsg;
-        
+
         if (user && activeChatId) {
           saveMessageToDB(user.uid, activeChatId, targetMsg);
         }
-        
+
         return newMessages;
       });
     } catch (err) {
@@ -340,39 +340,38 @@ const App: React.FC = () => {
     setMessages(prev => {
       const msgIndex = prev.findIndex(m => m.id === messageId);
       if (msgIndex === -1) return prev;
-      
+
       const newMessages = [...prev];
       const targetMsg = { ...newMessages[msgIndex] };
       const alts = targetMsg.alternatives;
-      
+
       if (!alts || alts.length <= 1) return prev;
-      
+
       let currIdx = targetMsg.currentAlternativeIndex || 0;
       if (direction === 'prev' && currIdx > 0) {
         currIdx--;
       } else if (direction === 'next' && currIdx < alts.length - 1) {
         currIdx++;
       }
-      
+
       targetMsg.currentAlternativeIndex = currIdx;
       targetMsg.text = alts[currIdx];
       newMessages[msgIndex] = targetMsg;
-      
+
       if (user && activeChatId) {
         saveMessageToDB(user.uid, activeChatId, targetMsg);
       }
-      
+
       return newMessages;
     });
   };
 
   const handleSampleQuestion = (question: string) => {
-    // Track sample question usage
-    track('sample_question_clicked', { 
-      question: question.substring(0, 50), // First 50 chars for privacy
-      questionLength: question.length 
+    track('sample_question_clicked', {
+      question: question.substring(0, 50),
+      questionLength: question.length
     });
-    
+
     setCurrentInput({ text: question, imageFile: null });
     setTimeout(() => {
       handleSendMessage(question);
@@ -383,10 +382,9 @@ const App: React.FC = () => {
   };
 
   const handleModeChange = (mode: ResponseMode) => {
-    // Track mode changes
-    track('response_mode_changed', { 
-      from: selectedMode, 
-      to: mode 
+    track('response_mode_changed', {
+      from: selectedMode,
+      to: mode
     });
     setSelectedMode(mode);
   };
@@ -408,7 +406,7 @@ const App: React.FC = () => {
       )}
 
       {user && (
-        <Sidebar 
+        <Sidebar
           isOpen={isSidebarOpen}
           onClose={() => setIsSidebarOpen(false)}
           chatSessions={chatSessions}
@@ -421,23 +419,22 @@ const App: React.FC = () => {
       )}
 
       <div className="flex-1 flex flex-col h-full w-full relative overflow-hidden transition-all duration-300">
-        {/* Location error and manual entry */}
         {locationError && (
           <div className="bg-yellow-100 text-yellow-800 p-2 text-center text-xs sm:text-sm z-30">
             {locationError} {locationPrompt && <button className="ml-1 sm:ml-2 underline" onClick={handleManualLocation}>Enter manually</button>}
           </div>
         )}
-        
-        <Header 
-          theme={theme} 
-          toggleTheme={toggleTheme} 
+
+        <Header
+          theme={theme}
+          toggleTheme={toggleTheme}
           messages={messages}
           selectedMode={selectedMode}
           onModeChange={handleModeChange}
           onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
         />
-        
-        <main className="flex-grow flex flex-col overflow-hidden p-1 sm:p-2 md:p-4 relative">
+
+        <main className="flex-grow flex flex-col overflow-hidden px-1.5 sm:px-2 md:p-4 relative">
           {error && <ErrorMessage message={error} />}
           {showWeatherWidget && (
             <div className="my-2 sm:my-4 flex justify-center px-1 sm:px-0 z-10">
@@ -461,14 +458,12 @@ const App: React.FC = () => {
         </main>
         <Footer />
       </div>
-      
-      {/* Live Voice API Overlay */}
-      <LiveSessionOverlay 
-        isActive={isLiveSessionActive} 
-        onClose={() => setIsLiveSessionActive(false)} 
+
+      <LiveSessionOverlay
+        isActive={isLiveSessionActive}
+        onClose={() => setIsLiveSessionActive(false)}
       />
 
-      {/* PWA Install Prompt */}
       <PWAInstallPrompt theme={theme} />
     </div>
   );

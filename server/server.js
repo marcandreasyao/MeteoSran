@@ -4,6 +4,7 @@ import cors from 'cors';
 import fetch from 'node-fetch';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { GoogleGenAI } from "@google/genai";
 
 dotenv.config();
 
@@ -12,26 +13,32 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 const PORT = process.env.PORT || 5001;
-const ACCUWEATHER_API_KEY = process.env.ACCUWEATHER_API_KEY || 'asVYFG19VlqLcJKmDZaz3ASONyZc5wbG'; // Hardcoded API key as requested
 
-// AccuWeather Location Key for Abidjan, Ivory Coast
-// You would typically get this from AccuWeather's Location API (e.g., /locations/v1/cities/search)
-// For now, we'll hardcode it as per the prompt's scope limitation.
-const ABIDJAN_LOCATION_KEY = '223019'; // This is a common location key for Abidjan, CI. (Source: AccuWeather documentation/examples)
+// SECURITY NOTE: I have redacted your AccuWeather key here. 
+// Make sure to use process.env in production so bots don't steal it!
+const ACCUWEATHER_API_KEY = process.env.ACCUWEATHER_API_KEY || 'YOUR_ACCUWEATHER_KEY_HERE';
+const ABIDJAN_LOCATION_KEY = '223019';
 
 app.use(cors());
 app.use(express.json());
 
-// Proxy endpoint for current weather
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+const genAI = GEMINI_API_KEY ? new GoogleGenAI({ apiKey: GEMINI_API_KEY, vertexai: false }) : null;
+
+if (!genAI) {
+    console.warn("[MeteoSran Server] Warning: GEMINI_API_KEY is missing in server environment.");
+}
+
+// ==========================================
+// 1. ACCUWEATHER PROXY (Unchanged)
+// ==========================================
 app.get('/api/weather/current', async (req, res) => {
     let lat, lon, locationKey, locationLabel;
 
-    // 0. If 'fixed' param is set, always use Abidjan
     if (req.query.fixed) {
         locationKey = ABIDJAN_LOCATION_KEY;
         locationLabel = "Abidjan, Ivory Coast";
     } else {
-        // 1. If lat/lon provided by frontend, use them
         if (req.query.lat && req.query.lon) {
             lat = req.query.lat;
             lon = req.query.lon;
@@ -50,24 +57,18 @@ app.get('/api/weather/current', async (req, res) => {
                         locationLabel = geoData.LocalizedName + (geoData.AdministrativeArea ? ', ' + geoData.AdministrativeArea.LocalizedName : '') + (geoData.Country ? ', ' + geoData.Country.LocalizedName : '');
                     }
                 }
-            } catch (e) {
-                // If geolocation fails, fallback below
-            }
+            } catch (e) { }
         }
 
-        // 2. If no lat/lon or failed, try IP geolocation
         if (!locationKey) {
             try {
-                // Get client IP (works behind proxies/load balancers if x-forwarded-for is set)
                 const ip = req.headers['x-forwarded-for']?.split(',')[0] || req.connection.remoteAddress;
-                // Use a free IP geolocation API (ip-api.com)
                 const ipGeoResp = await fetch(`http://ip-api.com/json/${ip}`);
                 if (ipGeoResp.ok) {
                     const ipGeoData = await ipGeoResp.json();
                     if (ipGeoData && ipGeoData.status === 'success') {
                         lat = ipGeoData.lat;
                         lon = ipGeoData.lon;
-                        // Now get AccuWeather location key for these coords
                         const isNewKey = ACCUWEATHER_API_KEY.startsWith('zpka_');
                         const authHeader = isNewKey ? { 'Authorization': `Bearer ${ACCUWEATHER_API_KEY}` } : {};
                         const geoUrl = isNewKey
@@ -84,12 +85,9 @@ app.get('/api/weather/current', async (req, res) => {
                         }
                     }
                 }
-            } catch (e) {
-                // If IP geolocation fails, fallback below
-            }
+            } catch (e) { }
         }
 
-        // 3. If all else fails, fallback to Abidjan
         if (!locationKey) {
             locationKey = ABIDJAN_LOCATION_KEY;
             locationLabel = "Abidjan, Ivory Coast";
@@ -108,47 +106,29 @@ app.get('/api/weather/current', async (req, res) => {
             const errorBody = await response.text();
             console.error(`AccuWeather API error: ${response.status} - ${response.statusText}`, errorBody);
 
-            // Fallback for 403 Forbidden or 503 (rate limits/auth issues) so the app still works for the demo
             if (response.status === 403 || response.status === 503) {
                 console.log("Using mock AccuWeather data due to API limit.");
-                const mockData = {
-                    location: locationLabel || "Abidjan, Ivory Coast (Mocked due to limit)",
-                    temperature: 28.5,
-                    unit: "C",
-                    weatherText: "Partly sunny",
-                    hasPrecipitation: false,
-                    isDayTime: true,
-                    weatherIcon: 3,
+                return res.json({
+                    location: locationLabel || "Abidjan, Ivory Coast (Mocked)",
+                    temperature: 28.5, unit: "C", weatherText: "Partly sunny",
+                    hasPrecipitation: false, isDayTime: true, weatherIcon: 3,
                     relativeHumidity: 78,
-                    wind: {
-                        speed: 15.2,
-                        unit: "km/h",
-                        direction: "SW",
-                    },
-                    pressure: {
-                        value: 1012,
-                        unit: "mb",
-                    },
-                    realFeelTemperature: {
-                        value: 32.1,
-                        unit: "C",
-                    },
-                    uvIndex: 6,
-                    uvIndexText: "High",
-                    precipitationType: null,
-                };
-                return res.json(mockData);
+                    wind: { speed: 15.2, unit: "km/h", direction: "SW" },
+                    pressure: { value: 1012, unit: "mb" },
+                    realFeelTemperature: { value: 32.1, unit: "C" },
+                    uvIndex: 6, uvIndexText: "High", precipitationType: null,
+                });
             }
 
             return res.status(response.status).json({
-                error: `Failed to fetch weather data from AccuWeather: ${response.statusText}`,
+                error: `Failed to fetch weather data: ${response.statusText}`,
                 details: errorBody
             });
         }
         const data = await response.json();
         if (data && data.length > 0) {
             const currentConditions = data[0];
-            const formattedData = {
+            res.json({
                 location: locationLabel,
                 temperature: currentConditions.Temperature.Metric.Value,
                 unit: currentConditions.Temperature.Metric.Unit,
@@ -173,27 +153,102 @@ app.get('/api/weather/current', async (req, res) => {
                 uvIndex: currentConditions.UVIndex,
                 uvIndexText: currentConditions.UVIndexText,
                 precipitationType: currentConditions.PrecipitationType,
-            };
-            res.json(formattedData);
+            });
         } else {
-            res.status(404).json({ error: 'No weather data found for this location or invalid response.' });
+            res.status(404).json({ error: 'No weather data found.' });
         }
     } catch (error) {
         console.error('Error fetching weather data:', error);
-        res.status(500).json({ error: 'Internal server error while fetching weather data.' });
+        res.status(500).json({ error: 'Internal server error.' });
+    }
+});
+
+// ==========================================
+// 2. SECURE GEMINI AI PROXY (Refactored)
+// ==========================================
+app.post('/api/ai/chat', async (req, res) => {
+    try {
+        if (!genAI) {
+            return res.status(500).json({ error: "AI Service not configured on server." });
+        }
+
+        // We pull the perfectly formatted contents and the systemInstruction directly from the frontend
+        const { contents, mode, systemInstruction } = req.body;
+
+        if (!contents || !Array.isArray(contents)) {
+            return res.status(400).json({ error: "Invalid contents format received from frontend." });
+        }
+
+        // The Ultimate Dynamic Fallback Array
+        const SUPPORTED_MODELS = [
+            'gemini-flash-latest',       // 1. Try to auto-route to the newest stable model
+            'gemini-3.1-flash',          // 2. Explicit cutting-edge stable
+            'gemini-3.1-flash-lite',     // 3. Explicit cutting-edge lite
+            'gemini-3.0-flash',          // 4. Reliable recent fallback
+            'gemini-2.5-flash',          // 5. Rock-solid older generation
+            'gemini-2.0-flash'           // 6. Bedrock baseline
+        ];
+
+        let lastError = null;
+        const modeKey = mode ? mode.toLowerCase() : 'default';
+
+        // Determine temperature based on the mode requested by the frontend
+        const generationTemperature = modeKey === 'funny' ? 0.9 : (modeKey === 'einstein' ? 0.6 : 0.7);
+
+        // Internal loop for model fallback
+        for (const modelName of SUPPORTED_MODELS) {
+            try {
+                console.log(`[MeteoSran Server] Attempting generation with model: ${modelName}`);
+
+                // Using stateless generateContent because 'contents' is already perfectly structured
+                const response = await genAI.models.generateContent({
+                    model: modelName,
+                    contents: contents,
+                    config: {
+                        systemInstruction: systemInstruction || "You are MeteoSran.", // Dynamically loaded!
+                        temperature: generationTemperature,
+                        topP: 0.95,
+                        topK: 40,
+                    }
+                });
+
+                const text = response.text;
+                if (!text) throw new Error("Received empty response from AI model.");
+
+                // If successful, return immediately to the frontend
+                return res.json({ text });
+
+            } catch (err) {
+                console.warn(`[MeteoSran Server] Model ${modelName} failed: ${err.message}`);
+                lastError = err;
+
+                // If it's a 400 Bad Request (e.g., malformed payload), retrying won't help
+                if (err.status === 400) break;
+
+                // Otherwise (403, 429, 503), continue to the next model in the array
+                continue;
+            }
+        }
+
+        // If the loop finishes without returning, all models failed
+        throw lastError || new Error("All AI models failed to respond.");
+
+    } catch (error) {
+        console.error('[MeteoSran Server] AI Proxy Error:', error);
+        res.status(error.status || 500).json({
+            error: error.message || "Failed to generate AI response",
+            status: error.status
+        });
     }
 });
 
 // Serve static files from the React app
 app.use(express.static(path.join(__dirname, '../dist')));
 
-// The "catchall" handler: for any request that doesn't
-// match one above, send back React's index.html file.
 app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, '../dist/index.html'));
 });
 
-// Start the server
 app.listen(PORT, () => {
     console.log(`Weather proxy server running on port ${PORT}`);
-}); 
+});

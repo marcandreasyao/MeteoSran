@@ -22,17 +22,33 @@ export const PWAInstallPrompt: React.FC<PWAInstallPromptProps> = ({ theme }) => 
   const [isVisible, setIsVisible] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [isInstalled, setIsInstalled] = useState(false);
+  const [isIOS, setIsIOS] = useState(false);
 
   useEffect(() => {
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
+    const isInWebAppiOS = (window.navigator as any).standalone === true;
+
     // Check if app is already installed
     const checkInstallStatus = () => {
-      const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
-      const isInWebAppiOS = (window.navigator as any).standalone === true;
-      const isInstalled = isStandalone || isInWebAppiOS;
-      setIsInstalled(isInstalled);
+      const isInstalledStatus = isStandalone || isInWebAppiOS;
+      setIsInstalled(isInstalledStatus);
     };
 
+    // Check if device is iOS
+    const checkIOS = () => {
+      const isIOSDevice = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
+                         (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+      setIsIOS(isIOSDevice);
+      
+      // If iOS and not installed, show prompt after delay
+      if (isIOSDevice && !isStandalone && !isInWebAppiOS) {
+        setTimeout(() => {
+          setIsVisible(true);
+        }, 3000);
+      }
+    };
     checkInstallStatus();
+    checkIOS();
 
     // Listen for PWA install prompt
     const handleBeforeInstallPrompt = (e: Event) => {
@@ -40,9 +56,9 @@ export const PWAInstallPrompt: React.FC<PWAInstallPromptProps> = ({ theme }) => 
       e.preventDefault();
       setDeferredPrompt(e as BeforeInstallPromptEvent);
       
-      // Show custom install prompt after a delay
+      // Show custom install prompt after a delay for non-iOS
       setTimeout(() => {
-        if (!isInstalled) {
+        if (!isInstalled && !isIOS) {
           setIsVisible(true);
         }
       }, 5000); // Show after 5 seconds
@@ -166,7 +182,7 @@ export const PWAInstallPrompt: React.FC<PWAInstallPromptProps> = ({ theme }) => 
     }, 60 * 60 * 1000);
   };
 
-  if (!isVisible || isInstalled || !deferredPrompt) {
+  if (!isVisible || isInstalled || (!deferredPrompt && !isIOS)) {
     return null;
   }
 
@@ -194,34 +210,45 @@ export const PWAInstallPrompt: React.FC<PWAInstallPromptProps> = ({ theme }) => 
               Install MeteoSran
             </h3>
             <p className={`text-xs mb-3 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>
-              Get instant access to weather insights with our PWA. Works offline and feels like a native app!
+              {isIOS 
+                ? "Tap the Share button below and select 'Add to Home Screen' for a premium weather experience!" 
+                : "Get instant access to weather insights with our PWA. Works offline and feels like a native app!"
+              }
             </p>
-            <div className="flex space-x-2">
-              <button
-                onClick={handleInstall}
-                className={`
-                  px-3 py-1.5 text-xs font-medium rounded-md transition-colors
-                  ${theme === 'dark'
-                    ? 'bg-blue-600 hover:bg-blue-700 text-white'
-                    : 'bg-blue-600 hover:bg-blue-700 text-white'
-                  }
-                `}
-              >
-                Install
-              </button>
-              <button
-                onClick={handleDismiss}
-                className={`
-                  px-3 py-1.5 text-xs font-medium rounded-md transition-colors
-                  ${theme === 'dark'
-                    ? 'bg-gray-700 hover:bg-gray-600 text-gray-300'
-                    : 'bg-gray-200 hover:bg-gray-300 text-gray-700'
-                  }
-                `}
-              >
-                Later
-              </button>
-            </div>
+            {!isIOS && (
+              <div className="flex space-x-2">
+                <button
+                  onClick={handleInstall}
+                  className={`
+                    px-3 py-1.5 text-xs font-medium rounded-md transition-colors
+                    ${theme === 'dark'
+                      ? 'bg-blue-600 hover:bg-blue-700 text-white'
+                      : 'bg-blue-600 hover:bg-blue-700 text-white'
+                    }
+                  `}
+                >
+                  Install
+                </button>
+                <button
+                  onClick={handleDismiss}
+                  className={`
+                    px-3 py-1.5 text-xs font-medium rounded-md transition-colors
+                    ${theme === 'dark'
+                      ? 'bg-gray-700 hover:bg-gray-600 text-gray-300'
+                      : 'bg-gray-200 hover:bg-gray-300 text-gray-700'
+                    }
+                  `}
+                >
+                  Later
+                </button>
+              </div>
+            )}
+            {isIOS && (
+              <div className="flex items-center gap-2 text-blue-500 font-medium text-xs mt-2">
+                <span className="material-symbols-outlined text-sm">share</span>
+                <span>Share &gt; Add to Home Screen</span>
+              </div>
+            )}
           </div>
           <button
             onClick={handleDismiss}
