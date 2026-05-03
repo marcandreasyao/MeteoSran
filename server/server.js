@@ -12,7 +12,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
-const PORT = process.env.PORT || 5001;
+const PORT = process.env.PORT || 5005;
 
 // SECURITY NOTE: I have redacted your AccuWeather key here. 
 // Make sure to use process.env in production so bots don't steal it!
@@ -249,6 +249,17 @@ app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, '../dist/index.html'));
 });
 
-app.listen(PORT, () => {
-    console.log(`Weather proxy server running on port ${PORT}`);
-});
+const startServer = (port) => {
+    const server = app.listen(port, () => {
+        console.log(`[MeteoSran Server] Weather proxy server running on port ${port}`);
+    }).on('error', (err) => {
+        if (err.code === 'EADDRINUSE') {
+            console.warn(`[MeteoSran Server] Port ${port} is in use, trying ${port + 1}...`);
+            startServer(port + 1);
+        } else {
+            console.error('[MeteoSran Server] Server error:', err);
+        }
+    });
+};
+
+startServer(PORT);

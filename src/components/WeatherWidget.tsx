@@ -74,16 +74,16 @@ const WeatherWidget: React.FC<WeatherWidgetProps> = ({ userLocation }) => {
   };
 
   return (
-    <div className="p-6 rounded-2xl shadow-xl border border-white border-opacity-10 bg-white bg-opacity-10 backdrop-blur-glass text-white font-sans max-w-sm mx-auto transition-all duration-300 hover:scale-105">
+    <div className="p-6 rounded-2xl shadow-xl border border-white border-opacity-10 bg-white bg-opacity-10 backdrop-blur-glass text-white font-sans max-w-sm mx-auto transition-all duration-300 sm:hover:scale-105 active:scale-95">
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-3xl font-bold">{weather.temperature}°{weather.unit}</h2>
-        <img src={getWeatherIconUrl(weather.weatherIcon)} alt={weather.weatherText} className="w-16 h-16" />
+        <h2 className="text-fluid-3xl font-bold">{weather.temperature}°{weather.unit}</h2>
+        <img src={getWeatherIconUrl(weather.weatherIcon)} alt={weather.weatherText} className="w-16 h-16 object-contain aspect-square" />
       </div>
       
-      <p className="text-xl mb-2">{weather.location}</p>
-      <p className="text-lg text-gray-200 mb-4">{weather.weatherText}</p>
+      <p className="text-fluid-xl mb-2">{weather.location}</p>
+      <p className="text-fluid-lg text-gray-200 mb-4">{weather.weatherText}</p>
 
-      <div className="flex justify-between text-sm text-gray-300">
+      <div className="flex justify-between text-fluid-sm text-gray-300">
         <div>
           <p>RealFeel: {weather.realFeelTemperature.value}°{weather.realFeelTemperature.unit}</p>
           <p>Day Time: {weather.isDayTime ? 'Yes' : 'No'}</p>

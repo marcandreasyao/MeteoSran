@@ -965,6 +965,13 @@
       }
     }
 
+    /* Better tap targets (universal 44px rule) */
+    button,
+    [role="button"] {
+      min-height: 44px;
+      min-width: 44px;
+    }
+
     /* Additional mobile-specific improvements */
     @media (max-width: 640px) {
 
@@ -972,13 +979,6 @@
       html {
         -webkit-text-size-adjust: 100%;
         text-size-adjust: 100%;
-      }
-
-      /* Better tap targets */
-      button,
-      [role="button"] {
-        min-height: 44px;
-        min-width: 44px;
       }
 
       /* Compact grid on mobile */

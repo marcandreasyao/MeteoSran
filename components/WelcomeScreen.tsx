@@ -81,13 +81,13 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ firstName, onSugge
       <div className="max-w-4xl mx-auto w-full flex flex-col items-center sm:items-start text-center sm:text-left">
         
         {/* Header Greetings */}
-        <h1 className="text-4xl sm:text-5xl font-semibold text-slate-800 dark:text-slate-200 mb-2 leading-tight">
+        <h1 className="text-4xl md:text-[3.5rem] font-semibold text-slate-800 dark:text-slate-200 mb-4 tracking-tight leading-tight">
           {greeting},{' '}
           <span className="bg-clip-text text-transparent bg-gradient-to-r from-sky-500 to-indigo-500">
             {firstName || 'there'}!
           </span>
         </h1>
-        <p className="text-xl sm:text-2xl text-slate-500 dark:text-slate-400 font-medium mb-12">
+        <p className="text-xl md:text-2xl text-slate-500 dark:text-slate-400 font-medium mb-12">
           How can I assist you with the weather today?
         </p>
 
@@ -102,15 +102,14 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ firstName, onSugge
               <button
                 key={`${suggestion.text}-${index}`}
                 onClick={() => onSuggestionClick(suggestion.text)}
-                className={`group relative flex flex-col justify-between text-left p-5 min-w-[200px] w-56 sm:w-64 h-48 flex-shrink-0
+                className={`group relative flex flex-col justify-between text-left p-5 min-w-[200px] w-56 sm:w-64 aspect-[4/3] h-auto flex-shrink-0
                            rounded-2xl snap-start cursor-pointer transition-all duration-500
-                           bg-white/40 hover:bg-white/70 dark:bg-slate-800/40 dark:hover:bg-slate-700/60
-                           border border-slate-200/50 hover:border-slate-300 dark:border-slate-700/50 dark:hover:border-slate-600
+                           bg-white/40 sm:hover:bg-white/70 active:bg-white/70 dark:bg-slate-800/40 dark:sm:hover:bg-slate-700/60 dark:active:bg-slate-700/60                           border border-slate-200/50 hover:border-slate-300 dark:border-slate-700/50 dark:hover:border-slate-600
                            shadow-sm hover:shadow-md backdrop-blur-sm
                            ${fadingIndex === index ? 'opacity-0 scale-95' : 'opacity-100 scale-100'}`}
                 aria-label={`Suggestion: ${suggestion.text}`}
               >
-              <h4 className="text-slate-700 dark:text-slate-300 font-medium leading-snug">
+              <h4 className="text-fluid-base text-slate-700 dark:text-slate-300 font-medium leading-snug">
                 {suggestion.text}
               </h4>
               

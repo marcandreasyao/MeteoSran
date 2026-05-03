@@ -10,6 +10,7 @@ import { LoadingProgress } from './components/LoadingProgress';
 import { PWAInstallPrompt } from './components/PWAInstallPrompt';
 import WeatherWidget from './src/components/WeatherWidget';
 import { useGeolocation } from './src/hooks/useGeolocation';
+import { useTouchDevice } from './src/hooks/useTouchDevice';
 import { useAuth } from './src/contexts/AuthContext';
 import { LoginScreen } from './components/LoginScreen';
 import { saveMessageToDB, fetchUserMessages, fetchChatSessions, createChatSession, ChatSession } from './src/services/dbService';
@@ -32,6 +33,8 @@ const readFileAsBase64 = (file: File): Promise<string> => {
 };
 
 const App: React.FC = () => {
+  const isTouch = useTouchDevice();
+
   const [theme, setTheme] = useState<Theme>(() => {
     const savedTheme = localStorage.getItem('theme');
     if (savedTheme === 'dark' || savedTheme === 'light') return savedTheme as Theme;
@@ -95,6 +98,14 @@ const App: React.FC = () => {
     }
     localStorage.setItem('theme', theme);
   }, [theme]);
+
+  useEffect(() => {
+    if (isTouch) {
+      document.body.classList.add('touch-device');
+    } else {
+      document.body.classList.remove('touch-device');
+    }
+  }, [isTouch]);
 
   useEffect(() => {
     const initializeChat = async () => {
@@ -418,7 +429,7 @@ const App: React.FC = () => {
         />
       )}
 
-      <div className="flex-1 flex flex-col h-full w-full relative overflow-hidden transition-all duration-300">
+      <div className="flex-1 flex flex-col h-full w-full relative overflow-hidden transition-all duration-300 pb-safe pt-safe">
         {locationError && (
           <div className="bg-yellow-100 text-yellow-800 p-2 text-center text-xs sm:text-sm z-30">
             {locationError} {locationPrompt && <button className="ml-1 sm:ml-2 underline" onClick={handleManualLocation}>Enter manually</button>}

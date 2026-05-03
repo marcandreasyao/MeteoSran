@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Theme } from '../App';
 import { Message, ResponseMode } from '../types';
 import { generateChatPdf } from '../services/pdfService';
@@ -86,9 +86,11 @@ export const Header: React.FC<HeaderProps> = ({ theme, toggleTheme, messages, se
     localStorage.setItem('notificationType', notificationType);
   }, [notificationType]);
 
+  const modeDropdownRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
-    const handleClickOutside = () => {
-      if (false) { // dropdownRef removed, so this block is now unreachable
+    const handleClickOutside = (event: MouseEvent) => {
+      if (modeDropdownRef.current && !modeDropdownRef.current.contains(event.target as Node)) {
         setIsModeDropdownOpen(false);
       }
     };
@@ -177,7 +179,7 @@ export const Header: React.FC<HeaderProps> = ({ theme, toggleTheme, messages, se
           </span>
 
           {/* Mode Selector Dropdown */}
-          <div className="relative">
+          <div className="relative" ref={modeDropdownRef}>
             <button
               type="button"
               onClick={() => setIsModeDropdownOpen(!isModeDropdownOpen)}
@@ -301,80 +303,75 @@ export const Header: React.FC<HeaderProps> = ({ theme, toggleTheme, messages, se
                   />
                   
                   {/* Settings Menu Content */}
-                  <div className="absolute right-0 mt-3 w-[290px] sm:w-[340px] md:w-[400px] origin-top-right 
-                                  rounded-3xl bg-white/80 dark:bg-slate-900/90 backdrop-blur-2xl
-                                  shadow-[0_20px_50px_rgba(0,0,0,0.3)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.5)]
-                                  border border-white/20 dark:border-slate-800/80 focus:outline-none z-30 
-                                  overflow-hidden p-6 sm:p-8 animate-settings-drop-down">
+                  <div className="absolute right-0 mt-4 w-[calc(100vw-2rem)] max-w-[400px] origin-top-right 
+                                  rounded-[2rem] bg-white/70 dark:bg-[#1a1b1e]/70 backdrop-blur-3xl
+                                  shadow-[0_8px_32px_rgba(0,0,0,0.12)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.4)]
+                                  border border-white/50 dark:border-white/10 focus:outline-none z-30 
+                                  overflow-hidden p-6 animate-settings-drop-down">
                     
                     <button
-                      className="absolute top-5 right-5 p-2 rounded-full text-slate-400 hover:text-slate-600 dark:hover:text-white 
-                                 hover:bg-slate-100/50 dark:hover:bg-slate-800/50 transition-all focus:outline-none"
+                      className="absolute top-5 right-5 rounded-full p-2 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 
+                                 hover:bg-slate-100/50 dark:hover:bg-slate-800/50 transition-all focus:outline-none min-touch-target flex items-center justify-center"
                       onClick={() => setShowSettings(false)}
                       aria-label="Close settings"
                     >
-                      <span className="material-symbols-outlined text-xl sm:text-2xl">close</span>
+                      <span className="material-symbols-outlined text-xl">close</span>
                     </button>
 
-                    <div className="flex flex-col items-center mb-8">
-                      <div className="w-14 h-14 rounded-2xl bg-sky-500/10 dark:bg-sky-500/10 flex items-center justify-center mb-4 ring-1 ring-sky-500/20">
-                        <span className="material-symbols-outlined text-3xl sm:text-4xl text-sky-500 align-middle">settings</span>
-                      </div>
-                      <h2 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
-                        User Preferences
+                    <div className="flex flex-col items-start mb-6">
+                      <h2 className="text-2xl font-semibold text-slate-900 dark:text-white tracking-tight mb-1">
+                        Preferences
                       </h2>
+                      <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">
+                        Customize your MeteoSran experience
+                      </p>
                     </div>
 
-                    <div className="space-y-8">
+                    <div className="space-y-6">
                       {/* Notification toggle */}
-                      <div className="group">
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="text-sm sm:text-base text-slate-700 dark:text-slate-200 font-bold flex items-center gap-3">
-                            <span className="material-symbols-outlined text-xl sm:text-2xl text-slate-400 group-hover:text-sky-500 transition-colors">notifications</span>
+                      <div className="group flex items-center justify-between">
+                        <div className="flex flex-col">
+                          <span className="text-base text-slate-800 dark:text-slate-200 font-medium flex items-center gap-2">
+                            <span className="material-symbols-outlined text-lg text-slate-400">notifications</span>
                             Notifications
                           </span>
-                          <label className="relative inline-block w-12 h-6.5 cursor-pointer select-none">
-                            <input
-                              type="checkbox"
-                              checked={notificationsEnabled}
-                              onChange={e => setNotificationsEnabled(e.target.checked)}
-                              className="sr-only peer"
-                            />
-                            <div className="block bg-slate-200 dark:bg-slate-700 peer-checked:bg-sky-500 w-12 h-6.5 rounded-full transition-all duration-300"></div>
-                            <div className="absolute left-1 top-1 bg-white w-4.5 h-4.5 rounded-full shadow-md transition-all duration-300 peer-checked:translate-x-5.5"></div>
-                          </label>
-                        </div>
-                        <p className="ml-11 text-xs text-slate-500 dark:text-slate-400 leading-relaxed font-medium opacity-80">
-                          Stay updated with real-time weather alerts.
-                        </p>
-                      </div>
-
-                      <div className="h-px bg-gradient-to-r from-transparent via-slate-200 dark:via-slate-800 to-transparent" />
-
-                      {/* Location preference */}
-                      <div className="group">
-                        <div className="flex items-center mb-1">
-                          <span className="text-sm sm:text-base text-slate-700 dark:text-slate-200 font-bold flex items-center gap-3">
-                            <span className="material-symbols-outlined text-xl sm:text-2xl text-slate-400 group-hover:text-sky-500 transition-colors">location_on</span>
-                            Location Source
+                          <span className="text-xs text-slate-500 dark:text-slate-400 mt-1 ml-7">
+                            Real-time weather alerts
                           </span>
                         </div>
-                        <p className="ml-11 mb-4 text-[10px] sm:text-xs text-slate-500 dark:text-slate-400 leading-relaxed font-medium opacity-80">
-                          Choose how your location is discovered for local accuracy.
-                        </p>
-                        <div className="grid grid-cols-2 gap-3 ml-11">
+                        <label className="relative inline-flex items-center cursor-pointer min-touch-target justify-center">
+                          <input
+                            type="checkbox"
+                            checked={notificationsEnabled}
+                            onChange={e => setNotificationsEnabled(e.target.checked)}
+                            className="sr-only peer"
+                          />
+                          <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-sky-500"></div>
+                        </label>
+                      </div>
+
+                      <div className="h-px bg-slate-200/50 dark:bg-slate-700/50 w-full" />
+
+                      {/* Location preference */}
+                      <div className="group flex flex-col">
+                        <span className="text-base text-slate-800 dark:text-slate-200 font-medium flex items-center gap-2 mb-3">
+                          <span className="material-symbols-outlined text-lg text-slate-400">location_on</span>
+                          Location Source
+                        </span>
+                        
+                        <div className="flex p-1 space-x-1 bg-slate-100/80 dark:bg-slate-800/80 rounded-xl">
                           {[
                             { id: 'auto', label: 'Auto' },
                             { id: 'manual', label: 'Manual' },
-                            { id: 'ip', label: 'IP-based' },
+                            { id: 'ip', label: 'IP' },
                             { id: 'fixed', label: 'Fixed' }
                           ].map((mode) => (
                             <button
                               key={mode.id}
-                              className={`px-4 py-2.5 text-[11px] sm:text-xs rounded-2xl font-bold transition-all
+                              className={`flex-1 py-1.5 text-sm rounded-lg font-medium transition-all duration-200 min-touch-target
                                 ${locationMode === mode.id 
-                                  ? 'bg-sky-500 text-white shadow-lg shadow-sky-500/30' 
-                                  : 'bg-slate-100/50 dark:bg-slate-800/50 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 border border-transparent dark:hover:border-slate-700'}`}
+                                  ? 'bg-white dark:bg-slate-600 text-slate-900 dark:text-white shadow-sm' 
+                                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'}`}
                               onClick={() => setLocationMode(mode.id as any)}
                             >
                               {mode.label}
@@ -383,21 +380,19 @@ export const Header: React.FC<HeaderProps> = ({ theme, toggleTheme, messages, se
                         </div>
                       </div>
 
-                      <div className="h-px bg-gradient-to-r from-transparent via-slate-200 dark:via-slate-800 to-transparent" />
+                      <div className="h-px bg-slate-200/50 dark:bg-slate-700/50 w-full" />
 
                       {/* Notification type */}
-                      <div className="group flex flex-col items-center text-center">
-                        <div className="flex items-center gap-3 mb-4">
-                          <span className="material-symbols-outlined text-xl sm:text-2xl text-slate-400 group-hover:text-sky-500 transition-colors">list_alt</span>
-                          <span className="text-sm sm:text-base text-slate-700 dark:text-slate-200 font-bold">
-                            Update Type
-                          </span>
-                        </div>
-                        <div className="w-full max-w-[280px]">
+                      <div className="group flex flex-col">
+                        <span className="text-base text-slate-800 dark:text-slate-200 font-medium flex items-center gap-2 mb-3">
+                          <span className="material-symbols-outlined text-lg text-slate-400">list_alt</span>
+                          Update Type
+                        </span>
+                        <div className="relative">
                           <select
-                            className="w-full p-3 text-xs sm:text-sm rounded-2xl border border-slate-200/50 dark:border-slate-800 
-                                       bg-slate-100/50 dark:bg-slate-800/50 text-slate-700 dark:text-slate-200 text-center
-                                       focus:outline-none focus:ring-2 focus:ring-sky-500/50 appearance-none cursor-pointer font-semibold transition-all"
+                            className="w-full px-4 py-2.5 text-sm rounded-xl border border-slate-200/50 dark:border-slate-700/50 
+                                       bg-slate-50/50 dark:bg-slate-800/50 text-slate-800 dark:text-slate-200
+                                       focus:outline-none focus:ring-2 focus:ring-sky-500/50 appearance-none cursor-pointer font-medium transition-all min-touch-target"
                             value={notificationType}
                             onChange={e => setNotificationType(e.target.value)}
                           >
@@ -405,13 +400,16 @@ export const Header: React.FC<HeaderProps> = ({ theme, toggleTheme, messages, se
                             <option value="Severe Alerts">Severe Alerts</option>
                             <option value="Rain Warnings">Rain Warnings</option>
                           </select>
+                          <div className="absolute inset-y-0 right-4 top-0 flex items-center pointer-events-none text-slate-400">
+                             <span className="material-symbols-outlined text-lg">expand_more</span>
+                          </div>
                         </div>
                       </div>
 
-                      <div className="pt-4 flex justify-center">
+                      <div className="pt-4">
                         <button
-                          className="w-full max-w-[320px] py-4 text-sm sm:text-base rounded-2xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 
-                                     font-bold shadow-2xl hover:opacity-90 active:scale-[0.98] transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                          className="w-full py-2.5 text-sm rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 
+                                     font-medium shadow-sm hover:opacity-90 active:scale-[0.98] transition-all disabled:opacity-40 disabled:cursor-not-allowed min-touch-target"
                           disabled={!notificationsEnabled}
                           onClick={handleSendTestNotification}
                         >
