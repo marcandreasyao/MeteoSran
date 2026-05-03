@@ -30,7 +30,7 @@ Thank you for your interest in improving MeteoSran! We’re committed to buildin
    ```
 2. **Environment**
    - Copy `.env.example` to `.env.local`
-   - Populate `AI_API_KEY`, `ACCUWEATHER_API_KEY`.
+   - Populate `AI_API_KEY`, `ACCUWEATHER_API_KEY`, and `VITE_FIREBASE_*` variables.
 3. **Branching**
    - Base feature branches off `main`.
    - Prefix branches: `feature/`, `fix/`, `refactor/`.

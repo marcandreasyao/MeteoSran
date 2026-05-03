@@ -33,6 +33,13 @@ if not exist ".env.local" (
     echo. >> .env.local
     echo GEMINI_API_KEY=your_gemini_api_key_here >> .env.local
     echo ACCUWEATHER_API_KEY=your_accuweather_api_key_here >> .env.local
+    echo VITE_FIREBASE_API_KEY=your_firebase_api_key >> .env.local
+    echo VITE_FIREBASE_AUTH_DOMAIN=your_firebase_auth_domain >> .env.local
+    echo VITE_FIREBASE_PROJECT_ID=your_firebase_project_id >> .env.local
+    echo VITE_FIREBASE_STORAGE_BUCKET=your_firebase_storage_bucket >> .env.local
+    echo VITE_FIREBASE_MESSAGING_SENDER_ID=your_firebase_messaging_sender_id >> .env.local
+    echo VITE_FIREBASE_APP_ID=your_firebase_app_id >> .env.local
+    echo VITE_FIREBASE_MEASUREMENT_ID=your_firebase_measurement_id >> .env.local
     echo 📝 Please edit .env.local with your actual API keys
 )
 

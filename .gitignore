@@ -79,3 +79,16 @@ temp/
 # Testing and Coverage
 coverage/
 .nyc_output/
+
+# Extra Security and Keys
+*.rsa
+*.dsa
+*.ecdsa
+*.ed25519
+*.env.test
+*.env.production
+*.env.local
+firebase-export*
+.npmrc
+.yarnrc
+.env.staging
