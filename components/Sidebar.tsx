@@ -12,19 +12,19 @@ interface SidebarProps {
   onSearchChange: (query: string) => void;
 }
 
-export const Sidebar: React.FC<SidebarProps> = ({ 
-  isOpen, 
-  onClose, 
-  chatSessions, 
-  activeChatId, 
-  onSelectChat, 
+export const Sidebar: React.FC<SidebarProps> = ({
+  isOpen,
+  onClose,
+  chatSessions,
+  activeChatId,
+  onSelectChat,
   onNewChat,
   searchQuery,
   onSearchChange
 }) => {
   const filteredSessions = useMemo(() => {
     if (!searchQuery.trim()) return chatSessions;
-    return chatSessions.filter(chat => 
+    return chatSessions.filter(chat =>
       chat.title.toLowerCase().includes(searchQuery.toLowerCase())
     );
   }, [chatSessions, searchQuery]);
@@ -33,12 +33,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
     <>
       {/* Mobile overlay */}
       {isOpen && (
-        <div 
+        <div
           className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 md:hidden transition-opacity"
           onClick={onClose}
         />
       )}
-      
+
       {/* Sidebar relative to screen on mobile, static flex item on desktop */}
       <div className={`
         fixed md:relative top-0 left-0 h-full z-50
@@ -57,17 +57,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
           <div className="relative mb-6">
             <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-fluid-sm">search</span>
-            <input 
-              type="text" 
+            <input
+              type="text"
               placeholder="Search for chats"
               value={searchQuery}
               onChange={(e) => onSearchChange(e.target.value)}
               className="w-full bg-slate-800/50 border border-slate-700/50 rounded-xl pl-9 pr-3 py-2.5 min-touch-target text-fluid-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/50 transition-all"
             />
           </div>
-          
+
           <div className="text-fluid-xs font-semibold text-slate-500 mb-3 ml-1 uppercase tracking-wider whitespace-nowrap">Recent</div>
-          
+
           <div className="flex-1 overflow-y-auto space-y-1 pr-1 custom-scrollbar">
             {filteredSessions.map((chat) => (
               <button
@@ -79,8 +79,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 className={`
                   w-full text-left p-3 min-touch-target rounded-xl flex items-center gap-3 text-fluid-sm
                   transition-all whitespace-nowrap overflow-hidden group
-                  ${activeChatId === chat.id 
-                    ? 'bg-slate-800 text-white shadow-sm border border-slate-700' 
+                  ${activeChatId === chat.id
+                    ? 'bg-slate-800 text-white shadow-sm border border-slate-700'
                     : 'text-slate-400 sm:hover:bg-slate-800/40 active:bg-slate-800/60 sm:hover:text-slate-200 border border-transparent'}
                 `}
               >
@@ -88,7 +88,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 <span className="truncate flex-1">{chat.title}</span>
               </button>
             ))}
-            
+
             {filteredSessions.length === 0 && (
               <div className="text-sm text-slate-500 text-center mt-6">
                 {searchQuery ? "No matching chats" : "No recent chats"}

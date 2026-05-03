@@ -22,11 +22,21 @@ const ABIDJAN_LOCATION_KEY = '223019';
 app.use(cors());
 app.use(express.json());
 
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-const genAI = GEMINI_API_KEY ? new GoogleGenAI({ apiKey: GEMINI_API_KEY, vertexai: false }) : null;
+// Load multiple Gemini API keys for rotation
+const GEMINI_KEYS = [];
+for (let i = 1; i <= 10; i++) {
+    const key = process.env[`GEMINI_API_KEY_${i}`];
+    if (key) GEMINI_KEYS.push(key);
+}
+// Fallback to original key if no numbered keys are found
+if (GEMINI_KEYS.length === 0 && process.env.GEMINI_API_KEY) {
+    GEMINI_KEYS.push(process.env.GEMINI_API_KEY);
+}
 
-if (!genAI) {
-    console.warn("[MeteoSran Server] Warning: GEMINI_API_KEY is missing in server environment.");
+if (GEMINI_KEYS.length === 0) {
+    console.warn("[MeteoSran Server] Warning: No GEMINI_API_KEY found in server environment.");
+} else {
+    console.log(`[MeteoSran Server] Loaded ${GEMINI_KEYS.length} Gemini API keys for rotation.`);
 }
 
 // ==========================================
@@ -168,10 +178,6 @@ app.get('/api/weather/current', async (req, res) => {
 // ==========================================
 app.post('/api/ai/chat', async (req, res) => {
     try {
-        if (!genAI) {
-            return res.status(500).json({ error: "AI Service not configured on server." });
-        }
-
         // We pull the perfectly formatted contents and the systemInstruction directly from the frontend
         const { contents, mode, systemInstruction } = req.body;
 
@@ -195,38 +201,45 @@ app.post('/api/ai/chat', async (req, res) => {
         // Determine temperature based on the mode requested by the frontend
         const generationTemperature = modeKey === 'funny' ? 0.9 : (modeKey === 'einstein' ? 0.6 : 0.7);
 
-        // Internal loop for model fallback
+        // Internal loop for model fallback and key rotation
         for (const modelName of SUPPORTED_MODELS) {
-            try {
-                console.log(`[MeteoSran Server] Attempting generation with model: ${modelName}`);
+            for (let k = 0; k < GEMINI_KEYS.length; k++) {
+                const currentKey = GEMINI_KEYS[k];
+                const genAIInstance = new GoogleGenAI({ apiKey: currentKey, vertexai: false });
 
-                // Using stateless generateContent because 'contents' is already perfectly structured
-                const response = await genAI.models.generateContent({
-                    model: modelName,
-                    contents: contents,
-                    config: {
-                        systemInstruction: systemInstruction || "You are MeteoSran.", // Dynamically loaded!
-                        temperature: generationTemperature,
-                        topP: 0.95,
-                        topK: 40,
+                try {
+                    console.log(`[MeteoSran Server] Attempting generation with model: ${modelName} (Key ${k + 1}/${GEMINI_KEYS.length})`);
+
+                    const response = await genAIInstance.models.generateContent({
+                        model: modelName,
+                        contents: contents,
+                        config: {
+                            systemInstruction: systemInstruction || "You are MeteoSran.",
+                            temperature: generationTemperature,
+                            topP: 0.95,
+                            topK: 40,
+                        }
+                    });
+
+                    const text = response.text;
+                    if (!text) throw new Error("Received empty response from AI model.");
+
+                    return res.json({ text });
+
+                } catch (err) {
+                    console.warn(`[MeteoSran Server] Model ${modelName} with Key ${k + 1} failed: ${err.message}`);
+                    lastError = err;
+
+                    // If it's a quota (429) or auth (403) error, try the next key for the same model
+                    if (err.status === 429 || err.status === 403) {
+                        console.log(`[MeteoSran Server] Key ${k + 1} hit a limit/auth issue. Rotating to next key...`);
+                        continue;
                     }
-                });
 
-                const text = response.text;
-                if (!text) throw new Error("Received empty response from AI model.");
-
-                // If successful, return immediately to the frontend
-                return res.json({ text });
-
-            } catch (err) {
-                console.warn(`[MeteoSran Server] Model ${modelName} failed: ${err.message}`);
-                lastError = err;
-
-                // If it's a 400 Bad Request (e.g., malformed payload), retrying won't help
-                if (err.status === 400) break;
-
-                // Otherwise (403, 429, 503), continue to the next model in the array
-                continue;
+                    // If it's a 400 Bad Request (e.g., malformed payload or model not found), 
+                    // trying other keys for this model won't help, try next model.
+                    break;
+                }
             }
         }
 
