@@ -6,25 +6,76 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
+firebase-debug.log*
+firebase-debug.err*
 
-node_modules
-dist
-dist-ssr
-# Environment variables
+# Dependencies
+node_modules/
+jspm_packages/
+.npm/
+
+# Build and Output
+dist/
+dist-ssr/
+build/
+out/
+.vite/
+.next/
+.nuxt/
+
+# Environment variables (Crucial for Security)
 .env
 .env.*
-**/ .env
-**/ .env.*
-*.local
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+**/.env
+**/.env.*
+
+# Secrets, Keys, and Credentials (Crucial for Security)
+*.pem
+*.key
+*.cert
+*.crt
+*.p12
+*.pfx
+*.jks
+secret.json
+client_secret.json
+service-account.json
+credentials.json
+auth.json
+
+# Cache and temporary files
+.eslintcache
+.stylelintcache
+.npm/
+.yarn/
+.pnp.*
+.cache/
+tmp/
+temp/
 
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
-.idea
+!.vscode/settings.json
+.idea/
 .DS_Store
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
 *.sw?
-.env
+*.bak
+*.tmp
+
+# Vercel / Netlify / Firebase
+.vercel/
+.netlify/
+.firebase/
+
+# Testing and Coverage
+coverage/
+.nyc_output/

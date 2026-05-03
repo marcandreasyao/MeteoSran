@@ -450,35 +450,9 @@
         font-size: 0.875rem !important;
       }
 
-      /* Settings/dropdown mobile sizing */
-      header .absolute.right-0 {
-        width: 280px !important;
-        max-width: calc(100vw - 1rem) !important;
-        left: auto !important;
-        right: 0.5rem !important;
-        transform: translateX(0) !important;
-      }
-
-      /* Settings modal specific mobile styles */
-      header .absolute.right-0[class*="w-["] {
-        width: 280px !important;
-        max-width: calc(100vw - 1rem) !important;
-        padding: 0.75rem !important;
-        right: 0.5rem !important;
-        left: auto !important;
-        transform: translateX(0) !important;
-      }
-
-      /* Settings modal text sizing */
-      header .absolute.right-0 h2 {
-        font-size: 1rem !important;
-        line-height: 1.25rem !important;
-        margin-bottom: 0.75rem !important;
-      }
-
       /* Settings sections spacing */
       header .absolute.right-0 .space-y-6 {
-        gap: 0.75rem !important;
+        gap: 0.75rem;
       }
 
       /* Settings labels */
@@ -1385,6 +1359,31 @@
       100% {
         opacity: 0;
       }
+    }
+
+    /* Premium Menu Animations */
+    .animate-settings-drop-down {
+      animation: settings-drop-down 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    @keyframes settings-drop-down {
+      from {
+        opacity: 0;
+        transform: translateY(-10px) scale(0.95);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    .animate-fade-in {
+      animation: fade-in 0.3s ease-out forwards;
+    }
+
+    @keyframes fade-in {
+      from { opacity: 0; }
+      to { opacity: 1; }
     }
   </style>
   <script type="importmap">

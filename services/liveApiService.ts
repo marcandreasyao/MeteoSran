@@ -1,6 +1,6 @@
 import { SYSTEM_INSTRUCTION } from './geminiService';
 
-const API_KEY = import.meta.env?.VITE_GEMINI_API_KEY || "AIzaSyC5knS5kLETmp3grQ1lTMjnZRqbJqm26-M";
+const API_KEY = import.meta.env?.VITE_GEMINI_API_KEY;
 const HOST = 'generativelanguage.googleapis.com';
 const URL = `wss://${HOST}/ws/google.ai.generativelanguage.v1alpha.GenerativeService.BidiGenerateContent?key=${API_KEY}`;
 

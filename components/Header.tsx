@@ -141,9 +141,24 @@ export const Header: React.FC<HeaderProps> = ({ theme, toggleTheme, messages, se
     <header 
       className="p-2 sm:p-4 pt-[calc(0.5rem+env(safe-area-inset-top,0px))] w-full z-20
                  bg-white/30 dark:bg-slate-800/60 backdrop-blur-lg 
-                 shadow-lg border-b border-white/20 dark:border-slate-700/60"
+                 relative transition-colors duration-300"
       role="banner"
     >
+      {/* Premium Decorative Border Effect */}
+      <div className="absolute bottom-0 left-0 right-0 h-[1px] w-full overflow-hidden pointer-events-none select-none">
+        {/* Subtle base line - theme aware */}
+        <div className="absolute inset-x-0 bottom-0 h-full bg-gradient-to-r from-transparent via-slate-300/40 dark:via-slate-700/60 to-transparent" />
+        
+        {/* Focused accent hotspot - responsive width and intensity */}
+        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[60%] sm:w-1/3 h-full 
+                        bg-gradient-to-r from-transparent via-sky-400/30 dark:via-sky-400/40 to-transparent 
+                        blur-[0.5px] transition-all duration-700" />
+        
+        {/* Meshed ambient depth - very subtle */}
+        <div className="absolute -bottom-1 left-0 right-0 h-[10px] 
+                        bg-gradient-to-b from-transparent via-sky-400/5 dark:via-sky-400/10 to-transparent 
+                        opacity-50 sm:opacity-70" />
+      </div>
       <div className="container mx-auto flex items-center justify-between">
         <div className="flex items-center space-x-2 sm:space-x-4">
           {onToggleSidebar && (
@@ -276,112 +291,136 @@ export const Header: React.FC<HeaderProps> = ({ theme, toggleTheme, messages, se
               >
                 <span className="material-symbols-outlined text-lg sm:text-xl">settings</span>
               </button>
+
               {showSettings && (
-                <div className="absolute right-0 mt-2 w-[280px] sm:w-[320px] md:w-[380px] origin-top-right rounded-xl sm:rounded-2xl bg-white/80 dark:bg-slate-800/80 backdrop-blur-lg shadow-2xl border border-white/30 dark:border-slate-700/40 ring-1 ring-black ring-opacity-5 focus:outline-none z-30 overflow-hidden max-h-[80vh] overflow-y-auto p-3 sm:p-4 md:p-6 max-w-[calc(100vw-1rem)]">
-                  <button
-                    className="absolute top-1.5 sm:top-2 right-1.5 sm:right-2 text-gray-400 hover:text-gray-700 dark:hover:text-white text-lg sm:text-xl md:text-2xl focus:outline-none"
+                <>
+                  {/* Click-outside backdrop */}
+                  <div 
+                    className="fixed inset-0 z-20 bg-black/5 dark:bg-black/20 animate-fade-in"
                     onClick={() => setShowSettings(false)}
-                    aria-label="Close settings"
-                  >
-                    ×
-                  </button>
-                  <h2 className="text-lg sm:text-xl md:text-2xl font-bold sm:font-extrabold mb-3 sm:mb-4 md:mb-6 text-center text-gray-900 dark:text-white tracking-tight flex items-center justify-center gap-1 sm:gap-2">
-                    <span className="material-symbols-outlined text-xl sm:text-2xl md:text-3xl align-middle">settings</span>
-                    <span className="text-sm sm:text-base md:text-lg">User Preferences</span>
-                  </h2>
-                  <div className="space-y-3 sm:space-y-4 md:space-y-6">
-                    {/* Notification toggle */}
-                    <div>
-                      <div className="flex items-center justify-between mb-1 sm:mb-2">
-                        <span className="text-sm sm:text-base md:text-lg text-gray-700 dark:text-gray-200 font-medium sm:font-semibold flex items-center gap-1 sm:gap-2">
-                          <span className="material-symbols-outlined text-base sm:text-lg md:text-xl align-middle">notifications</span>
-                          <span className="text-xs sm:text-sm md:text-base">Enable Notifications</span>
-                        </span>
-                        {/* Apple-style switch */}
-                        <label className="relative inline-block w-10 sm:w-12 h-6 sm:h-7 align-middle select-none">
-                          <input
-                            type="checkbox"
-                            checked={notificationsEnabled}
-                            onChange={e => setNotificationsEnabled(e.target.checked)}
-                            className="sr-only peer"
-                          />
-                          <div className="block bg-gray-300 peer-checked:bg-green-500 w-10 sm:w-12 h-6 sm:h-7 rounded-full transition-colors duration-300"></div>
-                          <div className="dot absolute left-1 top-1 bg-white w-4 sm:w-5 h-4 sm:h-5 rounded-full shadow-md transition-transform duration-300 peer-checked:translate-x-4 sm:peer-checked:translate-x-5"></div>
-                        </label>
+                  />
+                  
+                  {/* Settings Menu Content */}
+                  <div className="absolute right-0 mt-3 w-[290px] sm:w-[340px] md:w-[400px] origin-top-right 
+                                  rounded-3xl bg-white/80 dark:bg-slate-900/90 backdrop-blur-2xl
+                                  shadow-[0_20px_50px_rgba(0,0,0,0.3)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.5)]
+                                  border border-white/20 dark:border-slate-800/80 focus:outline-none z-30 
+                                  overflow-hidden p-6 sm:p-8 animate-settings-drop-down">
+                    
+                    <button
+                      className="absolute top-5 right-5 p-2 rounded-full text-slate-400 hover:text-slate-600 dark:hover:text-white 
+                                 hover:bg-slate-100/50 dark:hover:bg-slate-800/50 transition-all focus:outline-none"
+                      onClick={() => setShowSettings(false)}
+                      aria-label="Close settings"
+                    >
+                      <span className="material-symbols-outlined text-xl sm:text-2xl">close</span>
+                    </button>
+
+                    <div className="flex flex-col items-center mb-8">
+                      <div className="w-14 h-14 rounded-2xl bg-sky-500/10 dark:bg-sky-500/10 flex items-center justify-center mb-4 ring-1 ring-sky-500/20">
+                        <span className="material-symbols-outlined text-3xl sm:text-4xl text-sky-500 align-middle">settings</span>
                       </div>
-                      <span className="ml-6 sm:ml-8 md:ml-10 text-xs text-gray-500 dark:text-gray-400">Get notified about weather updates and alerts.</span>
+                      <h2 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
+                        User Preferences
+                      </h2>
                     </div>
-                    <hr className="my-1 sm:my-2 border-t border-gray-200 dark:border-gray-700" />
-                    {/* Location preference */}
-                    <div>
-                      <div className="flex items-center justify-between mb-1 sm:mb-2">
-                        <span className="text-sm sm:text-base md:text-lg text-gray-700 dark:text-gray-200 font-medium sm:font-semibold flex items-center gap-1 sm:gap-2">
-                          <span className="material-symbols-outlined text-base sm:text-lg md:text-xl align-middle">location_on</span>
-                          <span className="text-xs sm:text-sm md:text-base">Location</span>
-                        </span>
+
+                    <div className="space-y-8">
+                      {/* Notification toggle */}
+                      <div className="group">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-sm sm:text-base text-slate-700 dark:text-slate-200 font-bold flex items-center gap-3">
+                            <span className="material-symbols-outlined text-xl sm:text-2xl text-slate-400 group-hover:text-sky-500 transition-colors">notifications</span>
+                            Notifications
+                          </span>
+                          <label className="relative inline-block w-12 h-6.5 cursor-pointer select-none">
+                            <input
+                              type="checkbox"
+                              checked={notificationsEnabled}
+                              onChange={e => setNotificationsEnabled(e.target.checked)}
+                              className="sr-only peer"
+                            />
+                            <div className="block bg-slate-200 dark:bg-slate-700 peer-checked:bg-sky-500 w-12 h-6.5 rounded-full transition-all duration-300"></div>
+                            <div className="absolute left-1 top-1 bg-white w-4.5 h-4.5 rounded-full shadow-md transition-all duration-300 peer-checked:translate-x-5.5"></div>
+                          </label>
+                        </div>
+                        <p className="ml-11 text-xs text-slate-500 dark:text-slate-400 leading-relaxed font-medium opacity-80">
+                          Stay updated with real-time weather alerts.
+                        </p>
                       </div>
-                      <div className="flex flex-wrap gap-0.5 sm:gap-1 ml-1 sm:ml-2">
+
+                      <div className="h-px bg-gradient-to-r from-transparent via-slate-200 dark:via-slate-800 to-transparent" />
+
+                      {/* Location preference */}
+                      <div className="group">
+                        <div className="flex items-center mb-1">
+                          <span className="text-sm sm:text-base text-slate-700 dark:text-slate-200 font-bold flex items-center gap-3">
+                            <span className="material-symbols-outlined text-xl sm:text-2xl text-slate-400 group-hover:text-sky-500 transition-colors">location_on</span>
+                            Location Source
+                          </span>
+                        </div>
+                        <p className="ml-11 mb-4 text-[10px] sm:text-xs text-slate-500 dark:text-slate-400 leading-relaxed font-medium opacity-80">
+                          Choose how your location is discovered for local accuracy.
+                        </p>
+                        <div className="grid grid-cols-2 gap-3 ml-11">
+                          {[
+                            { id: 'auto', label: 'Auto' },
+                            { id: 'manual', label: 'Manual' },
+                            { id: 'ip', label: 'IP-based' },
+                            { id: 'fixed', label: 'Fixed' }
+                          ].map((mode) => (
+                            <button
+                              key={mode.id}
+                              className={`px-4 py-2.5 text-[11px] sm:text-xs rounded-2xl font-bold transition-all
+                                ${locationMode === mode.id 
+                                  ? 'bg-sky-500 text-white shadow-lg shadow-sky-500/30' 
+                                  : 'bg-slate-100/50 dark:bg-slate-800/50 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 border border-transparent dark:hover:border-slate-700'}`}
+                              onClick={() => setLocationMode(mode.id as any)}
+                            >
+                              {mode.label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="h-px bg-gradient-to-r from-transparent via-slate-200 dark:via-slate-800 to-transparent" />
+
+                      {/* Notification type */}
+                      <div className="group flex flex-col items-center text-center">
+                        <div className="flex items-center gap-3 mb-4">
+                          <span className="material-symbols-outlined text-xl sm:text-2xl text-slate-400 group-hover:text-sky-500 transition-colors">list_alt</span>
+                          <span className="text-sm sm:text-base text-slate-700 dark:text-slate-200 font-bold">
+                            Update Type
+                          </span>
+                        </div>
+                        <div className="w-full max-w-[280px]">
+                          <select
+                            className="w-full p-3 text-xs sm:text-sm rounded-2xl border border-slate-200/50 dark:border-slate-800 
+                                       bg-slate-100/50 dark:bg-slate-800/50 text-slate-700 dark:text-slate-200 text-center
+                                       focus:outline-none focus:ring-2 focus:ring-sky-500/50 appearance-none cursor-pointer font-semibold transition-all"
+                            value={notificationType}
+                            onChange={e => setNotificationType(e.target.value)}
+                          >
+                            <option value="Daily Summary">Daily Summary</option>
+                            <option value="Severe Alerts">Severe Alerts</option>
+                            <option value="Rain Warnings">Rain Warnings</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      <div className="pt-4 flex justify-center">
                         <button
-                          className={`px-1.5 sm:px-2 py-0.5 sm:py-1 text-xs rounded-l-lg font-medium sm:font-semibold shadow-sm transition min-w-[50px] sm:min-w-[60px] ${locationMode === 'auto' ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-200' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'}`}
-                          onClick={() => setLocationMode('auto')}
-                          disabled={locationMode === 'auto'}
+                          className="w-full max-w-[320px] py-4 text-sm sm:text-base rounded-2xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 
+                                     font-bold shadow-2xl hover:opacity-90 active:scale-[0.98] transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                          disabled={!notificationsEnabled}
+                          onClick={handleSendTestNotification}
                         >
-                          Auto
-                        </button>
-                        <button
-                          className={`px-1.5 sm:px-2 py-0.5 sm:py-1 text-xs font-medium sm:font-semibold shadow-sm transition min-w-[50px] sm:min-w-[60px] ${locationMode === 'manual' ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-200' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'}`}
-                          onClick={() => setLocationMode('manual')}
-                          disabled={locationMode === 'manual'}
-                        >
-                          Manual
-                        </button>
-                        <button
-                          className={`px-1.5 sm:px-2 py-0.5 sm:py-1 text-xs font-medium sm:font-semibold shadow-sm transition min-w-[50px] sm:min-w-[60px] ${locationMode === 'ip' ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-200' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'}`}
-                          onClick={() => setLocationMode('ip')}
-                          disabled={locationMode === 'ip'}
-                        >
-                          IP-based
-                        </button>
-                        <button
-                          className={`px-1.5 sm:px-2 py-0.5 sm:py-1 text-xs rounded-r-lg font-medium sm:font-semibold shadow-sm transition min-w-[50px] sm:min-w-[60px] ${locationMode === 'fixed' ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-200' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'}`}
-                          onClick={() => setLocationMode('fixed')}
-                          disabled={locationMode === 'fixed'}
-                        >
-                          Fixed city
+                          Send Test Notification
                         </button>
                       </div>
-                      <span className="ml-6 sm:ml-8 md:ml-10 text-xs text-gray-500 dark:text-gray-400">Choose how your location is determined for weather updates.</span>
-                    </div>
-                    <hr className="my-1 sm:my-2 border-t border-gray-200 dark:border-gray-700" />
-                    {/* Notification type */}
-                    <div>
-                      <div className="flex items-center justify-between mb-1 sm:mb-2">
-                        <span className="text-sm sm:text-base md:text-lg text-gray-700 dark:text-gray-200 font-medium sm:font-semibold flex items-center gap-1 sm:gap-2">
-                          <span className="material-symbols-outlined text-base sm:text-lg md:text-xl align-middle">list_alt</span>
-                          <span className="text-xs sm:text-sm md:text-base">Notification Type</span>
-                        </span>
-                      </div>
-                      <select
-                        className="w-full mt-1 p-1.5 sm:p-2 text-xs sm:text-sm rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-slate-700 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        value={notificationType}
-                        onChange={e => setNotificationType(e.target.value)}
-                      >
-                        <option value="Daily Summary">Daily Summary</option>
-                        <option value="Severe Alerts">Severe Alerts</option>
-                        <option value="Rain Warnings">Rain Warnings</option>
-                      </select>
-                    </div>
-                    <div className="flex justify-center mt-2 sm:mt-3 md:mt-4">
-                      <button
-                        className="px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm rounded-lg bg-blue-500 text-white font-medium sm:font-semibold shadow hover:bg-blue-600 transition disabled:opacity-50"
-                        disabled={!notificationsEnabled}
-                        onClick={handleSendTestNotification}
-                      >
-                        Send Test Notification
-                      </button>
                     </div>
                   </div>
-                </div>
+                </>
               )}
             </div>
           </div>
