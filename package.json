@@ -1,7 +1,7 @@
 {
   "name": "meteosran",
   "private": true,
-  "version": "1.6.3",
+  "version": "1.6.5",
   "type": "module",
   "engines": {
     "node": ">=18.0.0"

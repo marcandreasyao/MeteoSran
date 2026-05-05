@@ -24,11 +24,12 @@ export default defineConfig(({ mode }) => {
       cors: true
     },
     build: {
+      chunkSizeWarningLimit: 1000,
       rollupOptions: {
         output: {
           manualChunks: {
             vendor: ['react', 'react-dom'],
-            ai: ['@google/genai'],
+            firebase: ['firebase/app', 'firebase/firestore', 'firebase/auth', 'firebase/storage'],
             markdown: ['react-markdown', 'remark-gfm']
           }
         }
@@ -52,7 +53,7 @@ export default defineConfig(({ mode }) => {
     },
     // PWA-specific optimizations
     optimizeDeps: {
-      include: ['react', 'react-dom', '@google/genai', 'react-markdown']
+      include: ['react', 'react-dom', 'react-markdown']
     }
   };
 });

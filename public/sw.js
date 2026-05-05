@@ -1,6 +1,6 @@
-const CACHE_NAME = 'meteosran-v1.6.3';
-const STATIC_CACHE_NAME = 'meteosran-static-v1.6.3';
-const DYNAMIC_CACHE_NAME = 'meteosran-dynamic-v1.6.3';
+const CACHE_NAME = 'meteosran-v1.6.5';
+const STATIC_CACHE_NAME = 'meteosran-static-v1.6.5';
+const DYNAMIC_CACHE_NAME = 'meteosran-dynamic-v1.6.5';
 
 // Files to cache immediately
 const STATIC_ASSETS = [
@@ -92,6 +92,11 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  // Fix for Chrome DevTools "only-if-cached" bug
+  if (request.cache === 'only-if-cached' && request.mode !== 'same-origin') {
+    return;
+  }
+
   event.respondWith(
     handleRequest(request)
   );
@@ -106,14 +111,14 @@ async function handleRequest(request) {
       return await networkFirst(request);
     }
 
-    // Cache-first strategy for static resources
-    if (CACHE_FIRST.some(pattern => url.href.includes(pattern))) {
+    // Cache-first strategy for static resources and Vite assets
+    if (CACHE_FIRST.some(pattern => url.href.includes(pattern)) || url.pathname.includes('/assets/')) {
       return await cacheFirst(request);
     }
 
-    // Stale-while-revalidate for HTML pages and app assets
-    if (url.pathname === '/' || url.pathname.endsWith('.html') || url.pathname.endsWith('.tsx') || url.pathname.endsWith('.ts')) {
-      return await staleWhileRevalidate(request);
+    // Network-first for HTML pages to ensure latest version is fetched
+    if (url.pathname === '/' || url.pathname.endsWith('.html')) {
+      return await networkFirst(request);
     }
 
     // Default to network-first for everything else
@@ -161,6 +166,11 @@ async function networkFirst(request) {
     if (networkResponse.ok) {
       const cache = await caches.open(DYNAMIC_CACHE_NAME);
       cache.put(request, networkResponse.clone());
+    } else if (networkResponse.status === 404) {
+      const cachedResponse = await caches.match(request);
+      if (cachedResponse) {
+        return cachedResponse;
+      }
     }
 
     return networkResponse;
