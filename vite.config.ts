@@ -28,7 +28,6 @@ export default defineConfig(({ mode }) => {
           output: {
             manualChunks: {
               vendor: ['react', 'react-dom'],
-              ai: ['@google/genai'],
               markdown: ['react-markdown', 'remark-gfm']
             }
           }
@@ -52,7 +51,7 @@ export default defineConfig(({ mode }) => {
       },
       // PWA-specific optimizations
       optimizeDeps: {
-        include: ['react', 'react-dom', '@google/genai', 'react-markdown']
+        include: ['react', 'react-dom', 'react-markdown']
       }
     };
 });
