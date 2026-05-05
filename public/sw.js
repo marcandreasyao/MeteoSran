@@ -1,6 +1,6 @@
-const CACHE_NAME = 'meteosran-v1.6.4';
-const STATIC_CACHE_NAME = 'meteosran-static-v1.6.4';
-const DYNAMIC_CACHE_NAME = 'meteosran-dynamic-v1.6.4';
+const CACHE_NAME = 'meteosran-v1.6.3';
+const STATIC_CACHE_NAME = 'meteosran-static-v1.6.3';
+const DYNAMIC_CACHE_NAME = 'meteosran-dynamic-v1.6.3';
 
 // Files to cache immediately
 const STATIC_ASSETS = [
@@ -33,7 +33,7 @@ const CACHE_FIRST = [
 // Install event - cache static assets
 self.addEventListener('install', (event) => {
   console.log('[SW] Installing service worker...');
-  
+
   event.waitUntil(
     caches.open(STATIC_CACHE_NAME)
       .then((cache) => {
@@ -53,16 +53,16 @@ self.addEventListener('install', (event) => {
 // Activate event - clean up old caches
 self.addEventListener('activate', (event) => {
   console.log('[SW] Activating service worker...');
-  
+
   event.waitUntil(
     caches.keys()
       .then((cacheNames) => {
         return Promise.all(
           cacheNames
             .filter((cacheName) => {
-              return cacheName !== STATIC_CACHE_NAME && 
-                     cacheName !== DYNAMIC_CACHE_NAME &&
-                     (cacheName.startsWith('meteosran-') || cacheName.startsWith('meteosran-static-') || cacheName.startsWith('meteosran-dynamic-'));
+              return cacheName !== STATIC_CACHE_NAME &&
+                cacheName !== DYNAMIC_CACHE_NAME &&
+                (cacheName.startsWith('meteosran-') || cacheName.startsWith('meteosran-static-') || cacheName.startsWith('meteosran-dynamic-'));
             })
             .map((cacheName) => {
               console.log('[SW] Deleting old cache:', cacheName);
@@ -81,12 +81,12 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
-  
+
   // Skip non-GET requests
   if (request.method !== 'GET') {
     return;
   }
-  
+
   // Skip chrome-extension and other non-http(s) requests
   if (!url.protocol.startsWith('http')) {
     return;
@@ -99,49 +99,49 @@ self.addEventListener('fetch', (event) => {
 
 async function handleRequest(request) {
   const url = new URL(request.url);
-  
+
   try {
     // Network-first strategy for API calls
     if (NETWORK_FIRST.some(pattern => url.href.includes(pattern))) {
       return await networkFirst(request);
     }
-    
+
     // Cache-first strategy for static resources
     if (CACHE_FIRST.some(pattern => url.href.includes(pattern))) {
       return await cacheFirst(request);
     }
-    
+
     // Stale-while-revalidate for HTML pages and app assets
     if (url.pathname === '/' || url.pathname.endsWith('.html') || url.pathname.endsWith('.tsx') || url.pathname.endsWith('.ts')) {
       return await staleWhileRevalidate(request);
     }
-    
+
     // Default to network-first for everything else
     return await networkFirst(request);
-    
+
   } catch (error) {
     console.error('[SW] Error handling request:', error);
-    
+
     // Fallback for navigation requests
     if (request.mode === 'navigate') {
       const cachedResponse = await caches.match('/');
       if (cachedResponse) {
         return cachedResponse;
       }
-      
+
       // Return offline page if main page isn't cached
       const offlinePage = await caches.match('/offline.html');
       if (offlinePage) {
         return offlinePage;
       }
     }
-    
+
     // Generic network error response
     return new Response(
-      JSON.stringify({ 
-        error: 'Network error', 
+      JSON.stringify({
+        error: 'Network error',
         message: 'Unable to fetch resource',
-        offline: !navigator.onLine 
+        offline: !navigator.onLine
       }),
       {
         headers: { 'Content-Type': 'application/json' },
@@ -156,22 +156,22 @@ async function handleRequest(request) {
 async function networkFirst(request) {
   try {
     const networkResponse = await fetch(request);
-    
+
     // Cache successful responses
     if (networkResponse.ok) {
       const cache = await caches.open(DYNAMIC_CACHE_NAME);
       cache.put(request, networkResponse.clone());
     }
-    
+
     return networkResponse;
   } catch (error) {
     console.log('[SW] Network failed, trying cache for:', request.url);
     const cachedResponse = await caches.match(request);
-    
+
     if (cachedResponse) {
       return cachedResponse;
     }
-    
+
     throw error;
   }
 }
@@ -179,19 +179,19 @@ async function networkFirst(request) {
 // Cache-first strategy
 async function cacheFirst(request) {
   const cachedResponse = await caches.match(request);
-  
+
   if (cachedResponse) {
     return cachedResponse;
   }
-  
+
   try {
     const networkResponse = await fetch(request);
-    
+
     if (networkResponse.ok) {
       const cache = await caches.open(DYNAMIC_CACHE_NAME);
       cache.put(request, networkResponse.clone());
     }
-    
+
     return networkResponse;
   } catch (error) {
     console.error('[SW] Cache-first failed for:', request.url, error);
@@ -202,7 +202,7 @@ async function cacheFirst(request) {
 // Stale-while-revalidate strategy
 async function staleWhileRevalidate(request) {
   const cachedResponse = await caches.match(request);
-  
+
   // Fetch from network in the background
   const networkPromise = fetch(request).then(async (networkResponse) => {
     if (networkResponse.ok) {
@@ -213,12 +213,12 @@ async function staleWhileRevalidate(request) {
   }).catch((error) => {
     console.log('[SW] Background fetch failed for:', request.url, error);
   });
-  
+
   // Return cached response immediately if available
   if (cachedResponse) {
     return cachedResponse;
   }
-  
+
   // If no cache, wait for network
   return networkPromise;
 }
@@ -226,7 +226,7 @@ async function staleWhileRevalidate(request) {
 // Handle background sync for offline functionality
 self.addEventListener('sync', (event) => {
   console.log('[SW] Background sync triggered:', event.tag);
-  
+
   if (event.tag === 'background-sync') {
     event.waitUntil(doBackgroundSync());
   }
@@ -241,7 +241,7 @@ async function doBackgroundSync() {
 // Handle push notifications (for future weather alerts)
 self.addEventListener('push', (event) => {
   console.log('[SW] Push notification received');
-  
+
   const options = {
     body: event.data ? event.data.text() : 'Weather update from MeteoSran',
     icon: '/Meteosran-logo.png',
@@ -260,7 +260,7 @@ self.addEventListener('push', (event) => {
       }
     ]
   };
-  
+
   event.waitUntil(
     self.registration.showNotification('MeteoSran Weather Alert', options)
   );
@@ -269,9 +269,9 @@ self.addEventListener('push', (event) => {
 // Handle notification clicks
 self.addEventListener('notificationclick', (event) => {
   console.log('[SW] Notification clicked');
-  
+
   event.notification.close();
-  
+
   if (event.action === 'open' || !event.action) {
     event.waitUntil(
       clients.openWindow('/')
@@ -295,15 +295,15 @@ self.addEventListener('periodicsync', (event) => {
 
 async function cleanupOldCaches() {
   const cacheNames = await caches.keys();
-  const oldCaches = cacheNames.filter(name => 
-    name.startsWith('meteosran-') && 
-    name !== STATIC_CACHE_NAME && 
+  const oldCaches = cacheNames.filter(name =>
+    name.startsWith('meteosran-') &&
+    name !== STATIC_CACHE_NAME &&
     name !== DYNAMIC_CACHE_NAME
   );
-  
+
   await Promise.all(
     oldCaches.map(name => caches.delete(name))
   );
-  
+
   console.log('[SW] Cleaned up old caches:', oldCaches);
 }
