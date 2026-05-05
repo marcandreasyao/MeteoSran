@@ -1,8 +1,8 @@
 import React from 'react';
 
 export const Footer: React.FC = () => {
-  const year = 2025; 
-  const version = "1.6.3";
+  const year = 2025;
+  const version = "1.6.5";
 
   return (
     <footer
