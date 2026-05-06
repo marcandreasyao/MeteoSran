@@ -209,7 +209,7 @@ export const Header: React.FC<HeaderProps> = ({ theme, toggleTheme, messages, se
             {isModeDropdownOpen && (
               <div
                 className="absolute left-0 sm:right-0 mt-2 w-[250px] sm:w-[280px] md:w-[320px] lg:w-[360px] origin-top-left sm:origin-top-right rounded-xl 
-                           bg-white/70 dark:bg-slate-800/70 backdrop-blur-xl 
+                           bg-white/95 dark:bg-slate-800/95 backdrop-blur-xl 
                            shadow-2xl border border-white/30 dark:border-slate-700/40
                            ring-1 ring-black ring-opacity-5 focus:outline-none z-30 overflow-hidden
                            max-h-[80vh] overflow-y-auto max-w-[calc(100vw-1rem)]"
@@ -301,12 +301,12 @@ export const Header: React.FC<HeaderProps> = ({ theme, toggleTheme, messages, se
 
               {showSettings && (
                 <div className="absolute right-0 mt-4 w-[280px] sm:w-[340px] md:w-[380px] origin-top-right 
-                                rounded-3xl bg-white/80 dark:bg-[#1a1b1e]/80 backdrop-blur-3xl
+                                rounded-3xl bg-white/95 dark:bg-[#1a1b1e]/95 backdrop-blur-3xl
                                 shadow-2xl border border-white/50 dark:border-white/10 focus:outline-none z-30 
                                 overflow-hidden p-5 sm:p-6 animate-settings-drop-down max-h-[85vh] overflow-y-auto custom-scrollbar">
 
                   <button
-                    className="absolute top-4 right-4 rounded-full p-2 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 
+                    className="absolute top-3 right-3 z-50 rounded-full p-2 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 
                                hover:bg-slate-100/50 dark:hover:bg-slate-800/50 transition-all focus:outline-none min-h-[44px] min-w-[44px] flex items-center justify-center"
                     onClick={() => setShowSettings(false)}
                     aria-label="Close settings"
@@ -314,7 +314,7 @@ export const Header: React.FC<HeaderProps> = ({ theme, toggleTheme, messages, se
                     <span className="material-symbols-outlined text-xl">close</span>
                   </button>
 
-                  <div className="flex flex-col items-start mb-6">
+                  <div className="flex flex-col items-start mb-6 pr-12">
                     <h2 className="text-xl sm:text-2xl font-semibold text-slate-900 dark:text-white tracking-tight mb-1">
                       Preferences
                     </h2>
@@ -335,14 +335,14 @@ export const Header: React.FC<HeaderProps> = ({ theme, toggleTheme, messages, se
                           Real-time weather alerts
                         </span>
                       </div>
-                      <label className="relative inline-flex items-center cursor-pointer min-h-[44px] min-w-[44px] justify-center">
+                      <label className="flex items-center cursor-pointer min-h-[44px] min-w-[44px] justify-center">
                         <input
                           type="checkbox"
                           checked={notificationsEnabled}
                           onChange={e => setNotificationsEnabled(e.target.checked)}
                           className="sr-only peer"
                         />
-                        <div className="w-10 h-5 sm:w-11 sm:h-6 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] sm:after:top-[2px] sm:after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 sm:after:h-5 sm:after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-sky-500"></div>
+                        <div className="relative w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-sky-500"></div>
                       </label>
                     </div>
 
