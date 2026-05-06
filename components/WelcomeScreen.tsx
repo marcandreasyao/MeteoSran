@@ -55,7 +55,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ firstName, onSugge
         setQuestions(currentQuestions => {
           const newQuestions = [...currentQuestions];
           const currentQuestionTexts = newQuestions.map(q => q.text);
-          
+
           let newQuestion;
           do {
             newQuestion = allQuestions[Math.floor(Math.random() * allQuestions.length)];
@@ -79,24 +79,24 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ firstName, onSugge
   return (
     <div className="flex flex-col flex-1 overflow-y-auto px-4 sm:px-8 pt-8 sm:pt-16 pb-32 h-full custom-scrollbar">
       <div className="max-w-4xl mx-auto w-full flex flex-col items-center sm:items-start text-center sm:text-left">
-        
+
         {/* Header Greetings */}
-        <h1 className="text-4xl md:text-[3.5rem] font-semibold text-slate-800 dark:text-slate-200 mb-4 tracking-tight leading-tight">
+        <h1 className="font-semibold text-slate-800 dark:text-slate-200 mb-2 md:mb-4 tracking-tight leading-tight text-[clamp(2.5rem,8vw,4.5rem)]">
           {greeting},{' '}
           <span className="bg-clip-text text-transparent bg-gradient-to-r from-sky-500 to-indigo-500">
             {firstName || 'there'}!
           </span>
         </h1>
-        <p className="text-xl md:text-2xl text-slate-500 dark:text-slate-400 font-medium mb-12">
+        <p className="text-slate-500 dark:text-slate-400 font-medium mb-8 md:mb-12 text-[clamp(1.25rem,4vw,1.75rem)]">
           How can I assist you with the weather today?
         </p>
 
         {/* Suggestion List wrapped in Fade Mask */}
         <div className="w-[calc(100%+2rem)] -ml-4 sm:w-[calc(100%+4rem)] sm:-ml-8 relative"
-             style={{ 
-               WebkitMaskImage: 'linear-gradient(to right, transparent 0%, black 5%, black 95%, transparent 100%)', 
-               maskImage: 'linear-gradient(to right, transparent 0%, black 5%, black 95%, transparent 100%)' 
-             }}>
+          style={{
+            WebkitMaskImage: 'linear-gradient(to right, transparent 0%, black 5%, black 95%, transparent 100%)',
+            maskImage: 'linear-gradient(to right, transparent 0%, black 5%, black 95%, transparent 100%)'
+          }}>
           <div className="w-full flex gap-4 overflow-x-auto pb-4 pt-2 px-4 sm:px-8 snap-x snap-mandatory hide-scrollbar">
             {questions.map((suggestion, index) => (
               <button
@@ -109,25 +109,25 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ firstName, onSugge
                            ${fadingIndex === index ? 'opacity-0 scale-95' : 'opacity-100 scale-100'}`}
                 aria-label={`Suggestion: ${suggestion.text}`}
               >
-              <h4 className="text-fluid-base text-slate-700 dark:text-slate-300 font-medium leading-snug">
-                {suggestion.text}
-              </h4>
-              
-              <div className="absolute bottom-4 right-4 w-10 h-10 flex flex-col items-center justify-center 
+                <h4 className="text-fluid-base text-slate-700 dark:text-slate-300 font-medium leading-snug">
+                  {suggestion.text}
+                </h4>
+
+                <div className="absolute bottom-4 right-4 w-10 h-10 flex flex-col items-center justify-center 
                               rounded-full bg-white dark:bg-slate-900 
                               text-slate-600 dark:text-slate-300 shadow-sm
                               group-hover:scale-110 group-hover:bg-slate-50 dark:group-hover:bg-slate-800 transition-transform duration-200">
-                <span className="material-symbols-outlined text-[1.3rem]">
-                  {suggestion.icon}
-                </span>
-              </div>
+                  <span className="material-symbols-outlined text-[1.3rem]">
+                    {suggestion.icon}
+                  </span>
+                </div>
               </button>
             ))}
           </div>
         </div>
-        
+
       </div>
-      
+
       {/* Required CSS to hide scrollbar for suggestions but keep them scrollable */}
       <style>{`
         .hide-scrollbar::-webkit-scrollbar {

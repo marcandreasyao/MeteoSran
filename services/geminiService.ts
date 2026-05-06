@@ -195,7 +195,8 @@ const getSeasonalContext = (): string => {
 export const sendMessageToAI = async (
   messages: Message[],
   mode: ResponseMode = ResponseMode.DEFAULT,
-  userName: string | null = null
+  userName: string | null = null,
+  memorySummary: string | null = null
 ): Promise<Message> => {
   console.log("[MeteoSran] Building advanced prompt and sending via proxy...");
 
@@ -225,6 +226,10 @@ export const sendMessageToAI = async (
     if (userName) {
       invisibleContext += `\n[USER_CONTEXT]: You are currently talking to ${userName}. Address them warmly by their name occasionally.`;
     }
+    
+    if (memorySummary) {
+      invisibleContext += `\n[MEMORY_SUMMARY]: ${memorySummary}`;
+    }
 
     // Weather & Climatology for Ivory Coast
     const isWeatherQueryForCI = lastMessage.text.toLowerCase().includes('weather') &&
@@ -246,7 +251,16 @@ export const sendMessageToAI = async (
     }
 
     // 2. Map existing messages array into the correct SDK format (Content format)
-    const contents = messages.map(m => ({
+    // BIG TECH OPTIMIZATION: Expanded Sliding Window + Memory Hook
+    // We allow a larger window (e.g., 20 messages) since Gemini has a massive context window.
+    // In the future, older messages should be summarized and injected into 'invisibleContext'.
+    const MAX_CONTEXT_MESSAGES = 20;
+    const recentMessages = messages.slice(-MAX_CONTEXT_MESSAGES);
+
+    // (Future Scale Architecture: if messages.length > 20, we would fetch a 'Conversation Summary' 
+    // from our database and append it to invisibleContext here to maintain perfect long-term memory)
+
+    const contents = recentMessages.map(m => ({
       role: m.role === MessageRole.USER ? 'user' : 'model',
       parts: m.image
         ? [
@@ -258,10 +272,10 @@ export const sendMessageToAI = async (
 
     // 3. Append the invisible context block ONLY to the last message part
     const finalUserMessageIndex = contents.length - 1;
-    
+
     // Provide a default MeteoSran-specific prompt if the user only sends an image
-    const userQueryText = lastMessage.text && lastMessage.text.trim() !== "" 
-      ? lastMessage.text 
+    const userQueryText = lastMessage.text && lastMessage.text.trim() !== ""
+      ? lastMessage.text
       : "Could you analyze this image and explain the weather conditions or phenomena visible in it?";
 
     contents[finalUserMessageIndex].parts[0].text = `${invisibleContext}\n\n[USER QUERY]:\n${userQueryText}`;

@@ -18,6 +18,7 @@ export interface ChatSession {
   title: string;
   createdAt: Date;
   updatedAt: Date;
+  memorySummary?: string;
 }
 
 export const createChatSession = async (userId: string, title: string = "New Chat"): Promise<string | null> => {
@@ -28,7 +29,8 @@ export const createChatSession = async (userId: string, title: string = "New Cha
     const newChatRef = await addDoc(chatsRef, {
       title,
       createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp()
+      updatedAt: serverTimestamp(),
+      memorySummary: ""
     });
     return newChatRef.id;
   } catch (error) {
@@ -53,7 +55,8 @@ export const fetchChatSessions = async (userId: string): Promise<ChatSession[]> 
         id: docSnap.id,
         title: data.title || "Untitled Chat",
         createdAt: data.createdAt?.toDate() || new Date(),
-        updatedAt: data.updatedAt?.toDate() || new Date()
+        updatedAt: data.updatedAt?.toDate() || new Date(),
+        memorySummary: data.memorySummary || ""
       });
     });
 
@@ -61,6 +64,15 @@ export const fetchChatSessions = async (userId: string): Promise<ChatSession[]> 
   } catch (error) {
     console.error("Error fetching chat sessions:", error);
     return [];
+  }
+};
+
+export const updateChatMemorySummary = async (userId: string, chatId: string, summary: string) => {
+  try {
+    const chatRef = doc(db, 'users', userId, 'chats', chatId);
+    await setDoc(chatRef, { memorySummary: summary, updatedAt: serverTimestamp() }, { merge: true });
+  } catch (error) {
+    console.error("Error updating memory summary:", error);
   }
 };
 

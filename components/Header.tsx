@@ -87,11 +87,15 @@ export const Header: React.FC<HeaderProps> = ({ theme, toggleTheme, messages, se
   }, [notificationType]);
 
   const modeDropdownRef = useRef<HTMLDivElement>(null);
+  const settingsDropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (modeDropdownRef.current && !modeDropdownRef.current.contains(event.target as Node)) {
         setIsModeDropdownOpen(false);
+      }
+      if (settingsDropdownRef.current && !settingsDropdownRef.current.contains(event.target as Node)) {
+        setShowSettings(false);
       }
     };
 
@@ -140,7 +144,7 @@ export const Header: React.FC<HeaderProps> = ({ theme, toggleTheme, messages, se
   };
 
   return (
-    <header 
+    <header
       className="p-2 sm:p-4 pt-[calc(0.5rem+env(safe-area-inset-top,0px))] w-full z-20
                  bg-white/30 dark:bg-slate-800/60 backdrop-blur-lg 
                  relative transition-colors duration-300"
@@ -150,12 +154,12 @@ export const Header: React.FC<HeaderProps> = ({ theme, toggleTheme, messages, se
       <div className="absolute bottom-0 left-0 right-0 h-[1px] w-full overflow-hidden pointer-events-none select-none">
         {/* Subtle base line - theme aware */}
         <div className="absolute inset-x-0 bottom-0 h-full bg-gradient-to-r from-transparent via-slate-300/40 dark:via-slate-700/60 to-transparent" />
-        
+
         {/* Focused accent hotspot - responsive width and intensity */}
         <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[60%] sm:w-1/3 h-full 
                         bg-gradient-to-r from-transparent via-sky-400/30 dark:via-sky-400/40 to-transparent 
                         blur-[0.5px] transition-all duration-700" />
-        
+
         {/* Meshed ambient depth - very subtle */}
         <div className="absolute -bottom-1 left-0 right-0 h-[10px] 
                         bg-gradient-to-b from-transparent via-sky-400/5 dark:via-sky-400/10 to-transparent 
@@ -194,16 +198,16 @@ export const Header: React.FC<HeaderProps> = ({ theme, toggleTheme, messages, se
             >
               <span className="text-sm sm:text-base leading-none">{selectedModeDetails.icon}</span>
               <span className="hidden sm:inline">{selectedModeDetails.name}</span>
-              <span 
+              <span
                 className={`material-symbols-outlined transition-transform duration-200 ${isModeDropdownOpen ? 'rotate-180' : ''}`}
-                style={{ fontSize: '16px'}}
+                style={{ fontSize: '16px' }}
               >
                 arrow_drop_down
               </span>
             </button>
 
             {isModeDropdownOpen && (
-              <div 
+              <div
                 className="absolute left-0 sm:right-0 mt-2 w-[250px] sm:w-[280px] md:w-[320px] lg:w-[360px] origin-top-left sm:origin-top-right rounded-xl 
                            bg-white/70 dark:bg-slate-800/70 backdrop-blur-xl 
                            shadow-2xl border border-white/30 dark:border-slate-700/40
@@ -285,140 +289,131 @@ export const Header: React.FC<HeaderProps> = ({ theme, toggleTheme, messages, se
             >
               <span className="material-symbols-outlined text-lg sm:text-xl">logout</span>
             </button>
-            <div className="relative">
+            <div className="relative" ref={settingsDropdownRef}>
               <button
                 className="p-1.5 sm:p-2 rounded-full hover:bg-black/10 dark:hover:bg-white/10 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-sky-500 dark:focus:ring-sky-400 transition-colors"
                 onClick={() => setShowSettings(!showSettings)}
                 aria-label="Open settings"
+                aria-expanded={showSettings}
               >
                 <span className="material-symbols-outlined text-lg sm:text-xl">settings</span>
               </button>
 
               {showSettings && (
-                <>
-                  {/* Click-outside backdrop */}
-                  <div 
-                    className="fixed inset-0 z-20 bg-black/5 dark:bg-black/20 animate-fade-in"
-                    onClick={() => setShowSettings(false)}
-                  />
-                  
-                  {/* Settings Menu Content */}
-                  <div className="absolute right-0 mt-4 w-[calc(100vw-2rem)] max-w-[400px] origin-top-right 
-                                  rounded-[2rem] bg-white/70 dark:bg-[#1a1b1e]/70 backdrop-blur-3xl
-                                  shadow-[0_8px_32px_rgba(0,0,0,0.12)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.4)]
-                                  border border-white/50 dark:border-white/10 focus:outline-none z-30 
-                                  overflow-hidden p-6 animate-settings-drop-down">
-                    
-                    <button
-                      className="absolute top-5 right-5 rounded-full p-2 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 
-                                 hover:bg-slate-100/50 dark:hover:bg-slate-800/50 transition-all focus:outline-none min-touch-target flex items-center justify-center"
-                      onClick={() => setShowSettings(false)}
-                      aria-label="Close settings"
-                    >
-                      <span className="material-symbols-outlined text-xl">close</span>
-                    </button>
+                <div className="absolute right-0 mt-4 w-[280px] sm:w-[340px] md:w-[380px] origin-top-right 
+                                rounded-3xl bg-white/80 dark:bg-[#1a1b1e]/80 backdrop-blur-3xl
+                                shadow-2xl border border-white/50 dark:border-white/10 focus:outline-none z-30 
+                                overflow-hidden p-5 sm:p-6 animate-settings-drop-down max-h-[85vh] overflow-y-auto custom-scrollbar">
 
-                    <div className="flex flex-col items-start mb-6">
-                      <h2 className="text-2xl font-semibold text-slate-900 dark:text-white tracking-tight mb-1">
-                        Preferences
-                      </h2>
-                      <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">
-                        Customize your MeteoSran experience
-                      </p>
+                  <button
+                    className="absolute top-4 right-4 rounded-full p-2 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 
+                               hover:bg-slate-100/50 dark:hover:bg-slate-800/50 transition-all focus:outline-none min-h-[44px] min-w-[44px] flex items-center justify-center"
+                    onClick={() => setShowSettings(false)}
+                    aria-label="Close settings"
+                  >
+                    <span className="material-symbols-outlined text-xl">close</span>
+                  </button>
+
+                  <div className="flex flex-col items-start mb-6">
+                    <h2 className="text-xl sm:text-2xl font-semibold text-slate-900 dark:text-white tracking-tight mb-1">
+                      Preferences
+                    </h2>
+                    <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-medium">
+                      Customize your MeteoSran experience
+                    </p>
+                  </div>
+
+                  <div className="space-y-6">
+                    {/* Notification toggle */}
+                    <div className="group flex items-center justify-between">
+                      <div className="flex flex-col pr-4">
+                        <span className="text-sm sm:text-base text-slate-800 dark:text-slate-200 font-medium flex items-center gap-2">
+                          <span className="material-symbols-outlined text-[18px] sm:text-[20px] text-slate-400">notifications</span>
+                          Notifications
+                        </span>
+                        <span className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400 mt-1 ml-7">
+                          Real-time weather alerts
+                        </span>
+                      </div>
+                      <label className="relative inline-flex items-center cursor-pointer min-h-[44px] min-w-[44px] justify-center">
+                        <input
+                          type="checkbox"
+                          checked={notificationsEnabled}
+                          onChange={e => setNotificationsEnabled(e.target.checked)}
+                          className="sr-only peer"
+                        />
+                        <div className="w-10 h-5 sm:w-11 sm:h-6 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] sm:after:top-[2px] sm:after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 sm:after:h-5 sm:after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-sky-500"></div>
+                      </label>
                     </div>
 
-                    <div className="space-y-6">
-                      {/* Notification toggle */}
-                      <div className="group flex items-center justify-between">
-                        <div className="flex flex-col">
-                          <span className="text-base text-slate-800 dark:text-slate-200 font-medium flex items-center gap-2">
-                            <span className="material-symbols-outlined text-lg text-slate-400">notifications</span>
-                            Notifications
-                          </span>
-                          <span className="text-xs text-slate-500 dark:text-slate-400 mt-1 ml-7">
-                            Real-time weather alerts
-                          </span>
-                        </div>
-                        <label className="relative inline-flex items-center cursor-pointer min-touch-target justify-center">
-                          <input
-                            type="checkbox"
-                            checked={notificationsEnabled}
-                            onChange={e => setNotificationsEnabled(e.target.checked)}
-                            className="sr-only peer"
-                          />
-                          <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-sky-500"></div>
-                        </label>
-                      </div>
+                    <div className="h-px bg-slate-200/50 dark:bg-slate-700/50 w-full" />
 
-                      <div className="h-px bg-slate-200/50 dark:bg-slate-700/50 w-full" />
+                    {/* Location preference */}
+                    <div className="group flex flex-col">
+                      <span className="text-sm sm:text-base text-slate-800 dark:text-slate-200 font-medium flex items-center gap-2 mb-3">
+                        <span className="material-symbols-outlined text-[18px] sm:text-[20px] text-slate-400">location_on</span>
+                        Location Source
+                      </span>
 
-                      {/* Location preference */}
-                      <div className="group flex flex-col">
-                        <span className="text-base text-slate-800 dark:text-slate-200 font-medium flex items-center gap-2 mb-3">
-                          <span className="material-symbols-outlined text-lg text-slate-400">location_on</span>
-                          Location Source
-                        </span>
-                        
-                        <div className="flex p-1 space-x-1 bg-slate-100/80 dark:bg-slate-800/80 rounded-xl">
-                          {[
-                            { id: 'auto', label: 'Auto' },
-                            { id: 'manual', label: 'Manual' },
-                            { id: 'ip', label: 'IP' },
-                            { id: 'fixed', label: 'Fixed' }
-                          ].map((mode) => (
-                            <button
-                              key={mode.id}
-                              className={`flex-1 py-1.5 text-sm rounded-lg font-medium transition-all duration-200 min-touch-target
-                                ${locationMode === mode.id 
-                                  ? 'bg-white dark:bg-slate-600 text-slate-900 dark:text-white shadow-sm' 
-                                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'}`}
-                              onClick={() => setLocationMode(mode.id as any)}
-                            >
-                              {mode.label}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-
-                      <div className="h-px bg-slate-200/50 dark:bg-slate-700/50 w-full" />
-
-                      {/* Notification type */}
-                      <div className="group flex flex-col">
-                        <span className="text-base text-slate-800 dark:text-slate-200 font-medium flex items-center gap-2 mb-3">
-                          <span className="material-symbols-outlined text-lg text-slate-400">list_alt</span>
-                          Update Type
-                        </span>
-                        <div className="relative">
-                          <select
-                            className="w-full px-4 py-2.5 text-sm rounded-xl border border-slate-200/50 dark:border-slate-700/50 
-                                       bg-slate-50/50 dark:bg-slate-800/50 text-slate-800 dark:text-slate-200
-                                       focus:outline-none focus:ring-2 focus:ring-sky-500/50 appearance-none cursor-pointer font-medium transition-all min-touch-target"
-                            value={notificationType}
-                            onChange={e => setNotificationType(e.target.value)}
+                      <div className="flex p-1 space-x-1 bg-slate-100/80 dark:bg-slate-800/80 rounded-xl overflow-x-auto hide-scrollbar">
+                        {[
+                          { id: 'auto', label: 'Auto' },
+                          { id: 'manual', label: 'Manual' },
+                          { id: 'ip', label: 'IP' },
+                          { id: 'fixed', label: 'Fixed' }
+                        ].map((mode) => (
+                          <button
+                            key={mode.id}
+                            className={`flex-1 py-1.5 sm:py-2 text-xs sm:text-sm rounded-lg font-medium transition-all duration-200 min-h-[44px] min-w-[60px]
+                              ${locationMode === mode.id
+                                ? 'bg-white dark:bg-slate-600 text-slate-900 dark:text-white shadow-sm'
+                                : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'}`}
+                            onClick={() => setLocationMode(mode.id as any)}
                           >
-                            <option value="Daily Summary">Daily Summary</option>
-                            <option value="Severe Alerts">Severe Alerts</option>
-                            <option value="Rain Warnings">Rain Warnings</option>
-                          </select>
-                          <div className="absolute inset-y-0 right-4 top-0 flex items-center pointer-events-none text-slate-400">
-                             <span className="material-symbols-outlined text-lg">expand_more</span>
-                          </div>
+                            {mode.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="h-px bg-slate-200/50 dark:bg-slate-700/50 w-full" />
+
+                    {/* Notification type */}
+                    <div className="group flex flex-col">
+                      <span className="text-sm sm:text-base text-slate-800 dark:text-slate-200 font-medium flex items-center gap-2 mb-3">
+                        <span className="material-symbols-outlined text-[18px] sm:text-[20px] text-slate-400">list_alt</span>
+                        Update Type
+                      </span>
+                      <div className="relative">
+                        <select
+                          className="w-full px-3 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm rounded-xl border border-slate-200/50 dark:border-slate-700/50 
+                                     bg-slate-50/50 dark:bg-slate-800/50 text-slate-800 dark:text-slate-200
+                                     focus:outline-none focus:ring-2 focus:ring-sky-500/50 appearance-none cursor-pointer font-medium transition-all min-h-[44px]"
+                          value={notificationType}
+                          onChange={e => setNotificationType(e.target.value)}
+                        >
+                          <option value="Daily Summary">Daily Summary</option>
+                          <option value="Severe Alerts">Severe Alerts</option>
+                          <option value="Rain Warnings">Rain Warnings</option>
+                        </select>
+                        <div className="absolute inset-y-0 right-3 top-0 flex items-center pointer-events-none text-slate-400">
+                          <span className="material-symbols-outlined text-lg">expand_more</span>
                         </div>
                       </div>
+                    </div>
 
-                      <div className="pt-4">
-                        <button
-                          className="w-full py-2.5 text-sm rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 
-                                     font-medium shadow-sm hover:opacity-90 active:scale-[0.98] transition-all disabled:opacity-40 disabled:cursor-not-allowed min-touch-target"
-                          disabled={!notificationsEnabled}
-                          onClick={handleSendTestNotification}
-                        >
-                          Send Test Notification
-                        </button>
-                      </div>
+                    <div className="pt-2 sm:pt-4">
+                      <button
+                        className="w-full py-2.5 sm:py-3 text-xs sm:text-sm rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 
+                                   font-medium shadow-sm hover:opacity-90 active:scale-[0.98] transition-all disabled:opacity-40 disabled:cursor-not-allowed min-h-[44px]"
+                        disabled={!notificationsEnabled}
+                        onClick={handleSendTestNotification}
+                      >
+                        Send Test Notification
+                      </button>
                     </div>
                   </div>
-                </>
+                </div>
               )}
             </div>
           </div>

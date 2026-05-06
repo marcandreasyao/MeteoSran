@@ -144,7 +144,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading, 
             aria-label="Upload image file"
             disabled={isLoading}
           />
-        
+
           {/* Tools Menu (Dropdown) on Mobile/Tablet */}
           <div className="relative flex items-center shrink-0">
             <button
@@ -171,7 +171,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading, 
                     <span className="material-symbols-outlined text-[22px] group-hover:scale-110 transition-transform">add_photo_alternate</span>
                     <span className="text-sm font-medium">Image Upload</span>
                   </button>
-                  
+
                   {onStartLiveSession && (
                     <button
                       type="button"
@@ -238,10 +238,10 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading, 
             </div>
           ) : (
             <div className="flex-grow relative flex items-center my-auto overflow-hidden"
-                 style={{ 
-                   WebkitMaskImage: 'linear-gradient(to right, transparent 0%, black 5%, black 95%, transparent 100%)', 
-                   maskImage: 'linear-gradient(to right, transparent 0%, black 5%, black 95%, transparent 100%)' 
-                 }}>
+              style={{
+                WebkitMaskImage: 'linear-gradient(to right, transparent 0%, black 5%, black 95%, transparent 100%)',
+                maskImage: 'linear-gradient(to right, transparent 0%, black 5%, black 95%, transparent 100%)'
+              }}>
               <textarea
                 ref={inputRef}
                 value={currentText}

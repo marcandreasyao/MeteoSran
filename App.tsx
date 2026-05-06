@@ -263,7 +263,9 @@ const App: React.FC = () => {
 
     try {
       // Send that exact array to the API. No stale state!
-      const response = await sendMessageToAI(currentConversation, selectedMode, user?.displayName || null);
+      const currentChat = chatSessions.find(c => c.id === activeChatId);
+      const memorySummary = currentChat?.memorySummary || null;
+      const response = await sendMessageToAI(currentConversation, selectedMode, user?.displayName || null, memorySummary);
       setMessages(prev => [...prev, response]);
 
       let finalChatId = activeChatId;
@@ -318,7 +320,9 @@ const App: React.FC = () => {
     setError(null);
 
     try {
-      const response = await sendMessageToAI(historyToResend, selectedMode, user?.displayName || null);
+      const currentChat = chatSessions.find(c => c.id === activeChatId);
+      const memorySummary = currentChat?.memorySummary || null;
+      const response = await sendMessageToAI(historyToResend, selectedMode, user?.displayName || null, memorySummary);
 
       setMessages(prev => {
         const newMessages = [...prev];
