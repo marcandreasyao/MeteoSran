@@ -23,6 +23,19 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, onRegener
   const hasImage = message.image && message.image.data && message.image.mimeType;
   const timeString = new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
+  // Dark-mode helper for button resting state
+  const isDark = () => document.body.classList.contains('dark');
+  const restingBg  = () => isDark() ? 'rgba(30,41,59,0.65)' : 'rgba(255,255,255,0.55)';
+  const restingBorder = 'rgba(148,163,184,0.18)';
+  const restingColor  = 'rgb(100,116,139)';
+  const restingShadow = '0 1px 4px rgba(0,0,0,0.06)';
+
+  // Unified Hover Theme (Sky Blue)
+  const hoverBg = 'rgba(14,165,233,0.08)';
+  const hoverBorder = '1px solid rgba(14,165,233,0.28)';
+  const hoverColor = 'rgb(14,165,233)';
+  const hoverShadow = '0 0 12px rgba(14,165,233,0.18), 0 2px 8px rgba(14,165,233,0.10)';
+
   const handleCopy = () => {
     navigator.clipboard.writeText(message.text);
     setCopied(true);
@@ -158,37 +171,190 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, onRegener
             </ReactMarkdown>
           </div>
           
-          {/* ACTION BUTTONS (Only visible on hover or focus for cleaner UI) */}
-          <div className="flex items-center gap-2 mt-3 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity duration-300">
-            {/* Copy Button */}
-            <button onClick={handleCopy} className="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors bg-white/50 dark:bg-slate-800/50 hover:bg-white dark:hover:bg-slate-700/80 rounded border border-transparent hover:border-slate-200 dark:hover:border-slate-600 shadow-sm" title="Copy response">
+          {/* ACTION BUTTONS — Premium glassmorphic row */}
+          <div className="flex items-center gap-1.5 mt-3 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-all duration-300 ease-out">
+
+            {/* ── Copy Button ── */}
+            <button
+              onClick={handleCopy}
+              title={copied ? 'Copied!' : 'Copy response'}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '5px',
+                padding: '5px 10px',
+                borderRadius: '999px',
+                border: copied
+                  ? '1px solid rgba(34,197,94,0.35)'
+                  : '1px solid rgba(148,163,184,0.18)',
+                background: copied
+                  ? 'rgba(34,197,94,0.08)'
+                  : 'rgba(255,255,255,0.55)',
+                backdropFilter: 'blur(12px)',
+                WebkitBackdropFilter: 'blur(12px)',
+                boxShadow: copied
+                  ? '0 0 0 1px rgba(34,197,94,0.15), 0 2px 8px rgba(34,197,94,0.12)'
+                  : '0 1px 4px rgba(0,0,0,0.06)',
+                color: copied ? 'rgb(22,163,74)' : 'rgb(100,116,139)',
+                fontSize: '11.5px',
+                fontWeight: 500,
+                letterSpacing: '0.01em',
+                cursor: 'pointer',
+                transition: 'all 0.22s cubic-bezier(0.34,1.56,0.64,1)',
+                whiteSpace: 'nowrap',
+                minHeight: 'auto',
+                minWidth: 'auto',
+              }}
+              onMouseEnter={e => {
+                if (!copied) {
+                  const el = e.currentTarget as HTMLButtonElement;
+                  el.style.background = hoverBg;
+                  el.style.border = hoverBorder;
+                  el.style.color = hoverColor;
+                  el.style.boxShadow = hoverShadow;
+                  el.style.transform = 'scale(1.04)';
+                }
+              }}
+              onMouseLeave={e => {
+                const el = e.currentTarget as HTMLButtonElement;
+                if (copied) {
+                  el.style.background = 'rgba(34,197,94,0.08)';
+                  el.style.border = '1px solid rgba(34,197,94,0.35)';
+                  el.style.color = 'rgb(22,163,74)';
+                  el.style.boxShadow = '0 0 0 1px rgba(34,197,94,0.15), 0 2px 8px rgba(34,197,94,0.12)';
+                } else {
+                  el.style.background = restingBg();
+                  el.style.border = `1px solid ${restingBorder}`;
+                  el.style.color = restingColor;
+                  el.style.boxShadow = restingShadow;
+                }
+                el.style.transform = 'scale(1)';
+              }}
+            >
               {copied ? (
-                <svg className="w-3.5 h-3.5 md:w-4 md:h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                <>
+                  <svg style={{width:'13px',height:'13px',flexShrink:0}} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                  </svg>
+                  <span>Copié !</span>
+                </>
               ) : (
-                <svg className="w-3.5 h-3.5 md:w-4 md:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+                <>
+                  <svg style={{width:'13px',height:'13px',flexShrink:0}} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                  </svg>
+                  <span>Copier</span>
+                </>
               )}
             </button>
-            
-            {/* Export Button */}
-            <button onClick={handleExport} className="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors bg-white/50 dark:bg-slate-800/50 hover:bg-white dark:hover:bg-slate-700/80 rounded border border-transparent hover:border-slate-200 dark:hover:border-slate-600 shadow-sm" title="Export response">
-              <svg className="w-3.5 h-3.5 md:w-4 md:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
+
+            {/* ── Share Button ── */}
+            <button
+              onClick={handleExport}
+              title="Partager la réponse"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '5px',
+                padding: '5px 10px',
+                borderRadius: '999px',
+                border: '1px solid rgba(148,163,184,0.18)',
+                background: restingBg(),
+                backdropFilter: 'blur(12px)',
+                WebkitBackdropFilter: 'blur(12px)',
+                boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
+                color: 'rgb(100,116,139)',
+                fontSize: '11.5px',
+                fontWeight: 500,
+                letterSpacing: '0.01em',
+                cursor: 'pointer',
+                transition: 'all 0.22s cubic-bezier(0.34,1.56,0.64,1)',
+                whiteSpace: 'nowrap',
+                minHeight: 'auto',
+                minWidth: 'auto',
+              }}
+              onMouseEnter={e => {
+                const el = e.currentTarget as HTMLButtonElement;
+                el.style.background = hoverBg;
+                el.style.border = hoverBorder;
+                el.style.color = hoverColor;
+                el.style.boxShadow = hoverShadow;
+                el.style.transform = 'scale(1.04)';
+              }}
+              onMouseLeave={e => {
+                const el = e.currentTarget as HTMLButtonElement;
+                el.style.background = restingBg();
+                el.style.border = `1px solid ${restingBorder}`;
+                el.style.color = restingColor;
+                el.style.boxShadow = restingShadow;
+                el.style.transform = 'scale(1)';
+              }}
+            >
+              <svg style={{width:'13px',height:'13px',flexShrink:0}} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+              </svg>
+              <span>Partager</span>
             </button>
 
-            {/* Regenerate Button */}
+            {/* ── Regenerate Button ── */}
             {onRegenerate && (
-              <button onClick={() => onRegenerate(message.id)} className="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors bg-white/50 dark:bg-slate-800/50 hover:bg-white dark:hover:bg-slate-700/80 rounded border border-transparent hover:border-slate-200 dark:hover:border-slate-600 shadow-sm" title="Regenerate response">
-                <svg className="w-3.5 h-3.5 md:w-4 md:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+              <button
+                onClick={() => onRegenerate(message.id)}
+                title="Régénérer la réponse"
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '5px',
+                  padding: '5px 10px',
+                  borderRadius: '999px',
+                  border: '1px solid rgba(148,163,184,0.18)',
+                  background: restingBg(),
+                  backdropFilter: 'blur(12px)',
+                  WebkitBackdropFilter: 'blur(12px)',
+                  boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
+                  color: 'rgb(100,116,139)',
+                  fontSize: '11.5px',
+                  fontWeight: 500,
+                  letterSpacing: '0.01em',
+                  cursor: 'pointer',
+                  transition: 'all 0.22s cubic-bezier(0.34,1.56,0.64,1)',
+                  whiteSpace: 'nowrap',
+                  minHeight: 'auto',
+                  minWidth: 'auto',
+                }}
+                onMouseEnter={e => {
+                  const el = e.currentTarget as HTMLButtonElement;
+                  el.style.background = hoverBg;
+                  el.style.border = hoverBorder;
+                  el.style.color = hoverColor;
+                  el.style.boxShadow = hoverShadow;
+                  el.style.transform = 'scale(1.04)';
+                }}
+                onMouseLeave={e => {
+                  const el = e.currentTarget as HTMLButtonElement;
+                  el.style.background = restingBg();
+                  el.style.border = `1px solid ${restingBorder}`;
+                  el.style.color = restingColor;
+                  el.style.boxShadow = restingShadow;
+                  el.style.transform = 'scale(1)';
+                }}
+              >
+                <svg style={{width:'13px',height:'13px',flexShrink:0}} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                <span>Régénérer</span>
               </button>
             )}
 
-            {/* Pagination controls for alternatives */}
+            {/* ── Alternatives Pagination ── */}
             {message.alternatives && message.alternatives.length > 1 && (
-              <div className="flex items-center gap-1 ml-1 text-[10px] md:text-xs text-slate-500 bg-slate-100 dark:bg-slate-800/80 px-2 py-1 rounded-full border border-slate-200 dark:border-slate-700">
+              <div className="flex items-center gap-1 ml-1 text-[10px] md:text-xs text-slate-500 bg-white/55 dark:bg-slate-800/60 px-2.5 py-1 rounded-full border border-slate-200/40 dark:border-slate-700/40 backdrop-blur-md shadow-sm">
                 <button 
                   onClick={() => onSwitchAlternative && onSwitchAlternative(message.id, 'prev')}
                   disabled={message.currentAlternativeIndex === 0}
-                  className="p-0.5 rounded-full hover:bg-slate-300 dark:hover:bg-slate-600 disabled:opacity-30 transition-colors"
-                  title="Previous version"
+                  className="p-0.5 rounded-full hover:bg-slate-200/70 dark:hover:bg-slate-600/70 disabled:opacity-30 transition-colors"
+                  title="Version précédente"
+                  style={{minHeight:'auto',minWidth:'auto'}}
                 >
                   <svg className="w-3 h-3 md:w-3.5 md:h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
                 </button>
@@ -196,8 +362,9 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, onRegener
                 <button 
                   onClick={() => onSwitchAlternative && onSwitchAlternative(message.id, 'next')}
                   disabled={message.currentAlternativeIndex === message.alternatives.length - 1}
-                  className="p-0.5 rounded-full hover:bg-slate-300 dark:hover:bg-slate-600 disabled:opacity-30 transition-colors"
-                  title="Next version"
+                  className="p-0.5 rounded-full hover:bg-slate-200/70 dark:hover:bg-slate-600/70 disabled:opacity-30 transition-colors"
+                  title="Version suivante"
+                  style={{minHeight:'auto',minWidth:'auto'}}
                 >
                   <svg className="w-3 h-3 md:w-3.5 md:h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
                 </button>
