@@ -99,6 +99,33 @@ const App: React.FC = () => {
     localStorage.setItem('theme', theme);
   }, [theme]);
 
+  // Automatic System Theme Adaptation
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    
+    const handleSystemThemeChange = (e: MediaQueryListEvent | MediaQueryList) => {
+      const newTheme = e.matches ? 'dark' : 'light';
+      setTheme(newTheme);
+    };
+
+    // Initial check and listener registration
+    // Using try-catch or checking for addEventListener support for older browsers/Android versions
+    try {
+      mediaQuery.addEventListener('change', handleSystemThemeChange);
+    } catch (err) {
+      // Fallback for older Safari/mobile browsers
+      mediaQuery.addListener(handleSystemThemeChange);
+    }
+
+    return () => {
+      try {
+        mediaQuery.removeEventListener('change', handleSystemThemeChange);
+      } catch (err) {
+        mediaQuery.removeListener(handleSystemThemeChange);
+      }
+    };
+  }, []);
+
   useEffect(() => {
     if (isTouch) {
       document.body.classList.add('touch-device');
