@@ -11,14 +11,24 @@ interface MessageBubbleProps {
 
 
 
-const ModelIcon: React.FC = () => (
-  <img src="/Meteosran-logo.png" alt="MeteoSran Logo" className="h-6 w-6 md:h-7 md:w-7 rounded-full bg-white dark:bg-slate-800 p-0.5 md:p-1" />
+const ModelIcon: React.FC<{ isThinking?: boolean }> = ({ isThinking }) => (
+  <div className="relative">
+    <div className={`aura-ring ${isThinking ? 'active' : ''}`}></div>
+    <div className={`aura-glow ${isThinking ? 'active' : ''}`}></div>
+    <img 
+      src="/Meteosran-logo.png" 
+      alt="MeteoSran Logo" 
+      className={`h-6 w-6 md:h-7 md:w-7 rounded-full bg-white dark:bg-slate-800 p-0.5 md:p-1 relative z-10 
+        ${isThinking ? 'animate-[logo-breathing_2s_ease-in-out_infinite]' : ''}`} 
+    />
+  </div>
 );
 
 export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, onRegenerate, onSwitchAlternative }) => {
   const [copied, setCopied] = useState(false);
   const isUser = message.role === MessageRole.USER;
   const isSystem = message.role === MessageRole.SYSTEM;
+  const [isTyping, setIsTyping] = useState(false);
 
   const hasImage = message.image && message.image.data && message.image.mimeType;
   const timeString = new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -51,6 +61,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, onRegener
     if (!isUser && !isSystem) {
       const isNew = Date.now() - new Date(message.timestamp).getTime() < 2000;
       if (isNew) {
+        setIsTyping(true);
         const words = message.text.split(' ');
         let currentWordIndex = 0;
         setDisplayedText(words[0] || '');
@@ -62,11 +73,16 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, onRegener
           } else {
             clearInterval(typingInterval);
             setDisplayedText(message.text);
+            setIsTyping(false);
           }
         }, 50);
-        return () => clearInterval(typingInterval);
+        return () => {
+          clearInterval(typingInterval);
+          setIsTyping(false);
+        };
       } else {
         setDisplayedText(message.text);
+        setIsTyping(false);
       }
     }
   }, [message.text, isUser, isSystem, message.timestamp]);
@@ -134,7 +150,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, onRegener
     <div className="flex justify-start w-full animate-fade-up-soft group">
       <div className="flex gap-3 max-w-[95%] md:max-w-3xl w-full">
         <div className="flex-shrink-0 mt-1">
-          <ModelIcon />
+          <ModelIcon isThinking={isTyping || (displayedText === '' && !isUser && !isSystem)} />
         </div>
         
         <div className="flex flex-col flex-grow min-w-0">
@@ -175,36 +191,37 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, onRegener
           <div className="flex items-center gap-1.5 mt-3 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-all duration-300 ease-out">
 
             {/* ── Copy Button ── */}
-            <button
-              onClick={handleCopy}
-              title={copied ? 'Copied!' : 'Copy response'}
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '5px',
-                padding: '5px 10px',
-                borderRadius: '999px',
-                border: copied
-                  ? '1px solid rgba(34,197,94,0.35)'
-                  : '1px solid rgba(148,163,184,0.18)',
-                background: copied
-                  ? 'rgba(34,197,94,0.08)'
-                  : 'rgba(255,255,255,0.55)',
-                backdropFilter: 'blur(12px)',
-                WebkitBackdropFilter: 'blur(12px)',
-                boxShadow: copied
-                  ? '0 0 0 1px rgba(34,197,94,0.15), 0 2px 8px rgba(34,197,94,0.12)'
-                  : '0 1px 4px rgba(0,0,0,0.06)',
-                color: copied ? 'rgb(22,163,74)' : 'rgb(100,116,139)',
-                fontSize: '11.5px',
-                fontWeight: 500,
-                letterSpacing: '0.01em',
-                cursor: 'pointer',
-                transition: 'all 0.22s cubic-bezier(0.34,1.56,0.64,1)',
-                whiteSpace: 'nowrap',
-                minHeight: 'auto',
-                minWidth: 'auto',
-              }}
+            <div className="relative tooltip-container">
+              <div className="premium-tooltip">{copied ? 'Copié !' : 'Copier'}</div>
+              <button
+                onClick={handleCopy}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '5px',
+                  padding: '5px 10px',
+                  borderRadius: '999px',
+                  border: copied
+                    ? '1px solid rgba(34,197,94,0.35)'
+                    : '1px solid rgba(148,163,184,0.18)',
+                  background: copied
+                    ? 'rgba(34,197,94,0.08)'
+                    : 'rgba(255,255,255,0.55)',
+                  backdropFilter: 'blur(12px)',
+                  WebkitBackdropFilter: 'blur(12px)',
+                  boxShadow: copied
+                    ? '0 0 0 1px rgba(34,197,94,0.15), 0 2px 8px rgba(34,197,94,0.12)'
+                    : '0 1px 4px rgba(0,0,0,0.06)',
+                  color: copied ? 'rgb(22,163,74)' : 'rgb(100,116,139)',
+                  fontSize: '11.5px',
+                  fontWeight: 500,
+                  letterSpacing: '0.01em',
+                  cursor: 'pointer',
+                  transition: 'all 0.22s cubic-bezier(0.34,1.56,0.64,1)',
+                  whiteSpace: 'nowrap',
+                  minHeight: 'auto',
+                  minWidth: 'auto',
+                }}
               onMouseEnter={e => {
                 if (!copied) {
                   const el = e.currentTarget as HTMLButtonElement;
@@ -247,11 +264,13 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, onRegener
                 </>
               )}
             </button>
+          </div>
 
-            {/* ── Share Button ── */}
+          {/* ── Share Button ── */}
+          <div className="relative tooltip-container">
+            <div className="premium-tooltip">Partager</div>
             <button
               onClick={handleExport}
-              title="Partager la réponse"
               style={{
                 display: 'inline-flex',
                 alignItems: 'center',
@@ -295,12 +314,14 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, onRegener
               </svg>
               <span>Partager</span>
             </button>
+          </div>
 
-            {/* ── Regenerate Button ── */}
-            {onRegenerate && (
+          {/* ── Regenerate Button ── */}
+          {onRegenerate && (
+            <div className="relative tooltip-container">
+              <div className="premium-tooltip">Régénérer</div>
               <button
                 onClick={() => onRegenerate(message.id)}
-                title="Régénérer la réponse"
                 style={{
                   display: 'inline-flex',
                   alignItems: 'center',
@@ -344,7 +365,8 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, onRegener
                 </svg>
                 <span>Régénérer</span>
               </button>
-            )}
+            </div>
+          )}
 
             {/* ── Alternatives Pagination ── */}
             {message.alternatives && message.alternatives.length > 1 && (
