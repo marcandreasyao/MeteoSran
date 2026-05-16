@@ -9,6 +9,5 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Ping Render App
-        # REPLACE 'https://meteosran-server.onrender.com' WITH YOUR ACTUAL RENDER URL
         run: |
-          curl -I https://meteosran-server.onrender.com/ping
+          curl -I https://meteosran.onrender.com/ping
