@@ -249,7 +249,9 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 Connect with the creator:
 - GitHub: [@marcandreasyao](https://github.com/marcandreasyao)
-- Email: marc.andreas.yao@example.com
+- Email: [EMAIL_ADDRESS](mailto:marcandreas2018@gmail.com)
+- LinkedIn: [LINKEDIN_PROFILE](https://www.linkedin.com/in/marcandreasyao)
+- Phone Number: +225 0778271018
 
 ## 🙏 Acknowledgments
 

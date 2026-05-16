@@ -22,6 +22,11 @@ const ABIDJAN_LOCATION_KEY = '223019';
 app.use(cors());
 app.use(express.json());
 
+// Keep-alive ping route
+app.get('/ping', (req, res) => {
+    res.status(200).send('pong');
+});
+
 // Load multiple Gemini API keys for rotation
 const GEMINI_KEYS = [];
 for (let i = 1; i <= 10; i++) {
