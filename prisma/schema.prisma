@@ -1,0 +1,40 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model ChatSession {
+  id            String    @id @default(uuid())
+  userId        String    // Firebase UID
+  title         String    @default("New Chat")
+  memorySummary String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  messages      Message[]
+
+  @@index([userId])
+}
+
+model Message {
+  id                      String      @id @default(uuid())
+  chatSessionId           String
+  role                    String      // "user" or "model"
+  text                    String
+  timestamp               DateTime    @default(now())
+  
+  // JSON field for storing the image object: { data: string, mimeType: string, name: string }
+  image                   Json?
+  
+  // JSON field for array of alternative texts
+  alternatives            Json?
+  currentAlternativeIndex Int?
+
+  chatSession             ChatSession @relation(fields: [chatSessionId], references: [id], onDelete: Cascade)
+
+  @@index([chatSessionId])
+  @@index([timestamp])
+}

@@ -1,16 +1,5 @@
-import { db } from '../firebase';
-import {
-  collection,
-  doc,
-  setDoc,
-  getDocs,
-  query,
-  orderBy,
-  Timestamp,
-  addDoc,
-  serverTimestamp,
-  deleteDoc
-} from 'firebase/firestore';
+// We no longer use Firebase for storing chat history, but we still export the types
+// and interact with our PostgreSQL backend API via the Express server.
 import { Message } from '../../types';
 
 export interface ChatSession {
@@ -21,18 +10,22 @@ export interface ChatSession {
   memorySummary?: string;
 }
 
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5005/api';
+
 export const createChatSession = async (userId: string, title: string = "New Chat"): Promise<string | null> => {
   if (!userId) return null;
 
   try {
-    const chatsRef = collection(db, 'users', userId, 'chats');
-    const newChatRef = await addDoc(chatsRef, {
-      title,
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
-      memorySummary: ""
+    const response = await fetch(`${API_BASE_URL}/chats`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId, title })
     });
-    return newChatRef.id;
+    
+    if (!response.ok) throw new Error("Failed to create chat session");
+    
+    const data = await response.json();
+    return data.id;
   } catch (error) {
     console.error("Error creating chat session:", error);
     return null;
@@ -43,24 +36,15 @@ export const fetchChatSessions = async (userId: string): Promise<ChatSession[]> 
   if (!userId) return [];
 
   try {
-    const chatsRef = collection(db, 'users', userId, 'chats');
-    const q = query(chatsRef, orderBy('updatedAt', 'desc'));
-
-    const querySnapshot = await getDocs(q);
-    const sessions: ChatSession[] = [];
-
-    querySnapshot.forEach((docSnap) => {
-      const data = docSnap.data();
-      sessions.push({
-        id: docSnap.id,
-        title: data.title || "Untitled Chat",
-        createdAt: data.createdAt?.toDate() || new Date(),
-        updatedAt: data.updatedAt?.toDate() || new Date(),
-        memorySummary: data.memorySummary || ""
-      });
-    });
-
-    return sessions;
+    const response = await fetch(`${API_BASE_URL}/chats/${userId}`);
+    if (!response.ok) throw new Error("Failed to fetch chat sessions");
+    
+    const sessions = await response.json();
+    return sessions.map((session: any) => ({
+      ...session,
+      createdAt: new Date(session.createdAt),
+      updatedAt: new Date(session.updatedAt)
+    }));
   } catch (error) {
     console.error("Error fetching chat sessions:", error);
     return [];
@@ -69,8 +53,12 @@ export const fetchChatSessions = async (userId: string): Promise<ChatSession[]> 
 
 export const updateChatMemorySummary = async (userId: string, chatId: string, summary: string) => {
   try {
-    const chatRef = doc(db, 'users', userId, 'chats', chatId);
-    await setDoc(chatRef, { memorySummary: summary, updatedAt: serverTimestamp() }, { merge: true });
+    const response = await fetch(`${API_BASE_URL}/chats/${chatId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ memorySummary: summary })
+    });
+    if (!response.ok) throw new Error("Failed to update memory summary");
   } catch (error) {
     console.error("Error updating memory summary:", error);
   }
@@ -80,31 +68,29 @@ export const saveMessageToDB = async (userId: string, chatId: string, message: M
   if (!userId || !chatId) return;
 
   try {
-    const userMessageRef = doc(db, 'users', userId, 'chats', chatId, 'messages', message.id);
-
-    // Update the chat session's updatedAt timestamp
-    const chatRef = doc(db, 'users', userId, 'chats', chatId);
-    await setDoc(chatRef, {
-      updatedAt: serverTimestamp()
-    }, { merge: true });
-
-    // Safely serialize the timestamp for Firestore
-    const messageToSave = {
-      ...message,
-      timestamp: message.timestamp instanceof Date
-        ? Timestamp.fromDate(message.timestamp)
-        : message.timestamp
-    };
-
-    // Prevent massive base64 strings from breaking Firestore document limits
-    if (messageToSave.image && messageToSave.image.data.length > 500000) {
-      console.warn("Image too large for Firestore document. Omitting from DB save.");
-      delete messageToSave.image;
+    const response = await fetch(`${API_BASE_URL}/messages`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chatId, message })
+    });
+    
+    if (!response.ok) {
+      // Handle payload too large (413) or other errors gracefully
+      if (response.status === 413) {
+         console.warn("Image too large to save in PostgreSQL. Dropping image payload.");
+         const messageWithoutImage = { ...message };
+         delete messageWithoutImage.image;
+         await fetch(`${API_BASE_URL}/messages`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ chatId, message: messageWithoutImage })
+         });
+      } else {
+         throw new Error("Failed to save message");
+      }
     }
-
-    await setDoc(userMessageRef, messageToSave);
   } catch (error) {
-    console.error("Error saving message to Firestore:", error);
+    console.error("Error saving message to PostgreSQL via API:", error);
   }
 };
 
@@ -112,58 +98,26 @@ export const fetchUserMessages = async (userId: string, chatId: string): Promise
   if (!userId || !chatId) return [];
 
   try {
-    const messagesRef = collection(db, 'users', userId, 'chats', chatId, 'messages');
-
-    // The Beast Defeated: Removed the orderBy('timestamp', 'asc') clause to bypass 
-    // strict Firestore indexing requirements and mixed data-type silent failures.
-    const q = query(messagesRef);
-
-    const querySnapshot = await getDocs(q);
-    const messages: Message[] = [];
-
-    querySnapshot.forEach((docSnap) => {
-      const data = docSnap.data();
-      messages.push({
-        id: data.id || docSnap.id,
-        role: data.role,
-        text: data.text,
-        timestamp: data.timestamp
-          ? (typeof data.timestamp.toDate === 'function' ? data.timestamp.toDate() : new Date(data.timestamp))
-          : new Date(0), // Failsafe for missing timestamps
-        image: data.image,
-        alternatives: data.alternatives,
-        currentAlternativeIndex: data.currentAlternativeIndex
-      });
-    });
-
-    // The Angel's Touch: In-memory sorting guarantees a perfect chronological 
-    // timeline regardless of how the legacy data was originally stored.
-    messages.sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
-
-    console.log(`[MeteoSran] Fetched & sorted ${messages.length} messages for chat ${chatId}`);
-    return messages;
+    const response = await fetch(`${API_BASE_URL}/messages/${chatId}`);
+    if (!response.ok) throw new Error("Failed to fetch messages");
+    
+    const messages = await response.json();
+    return messages.map((msg: any) => ({
+      id: msg.id,
+      role: msg.role,
+      text: msg.text,
+      timestamp: new Date(msg.timestamp),
+      image: msg.image,
+      alternatives: msg.alternatives,
+      currentAlternativeIndex: msg.currentAlternativeIndex
+    }));
   } catch (error) {
-    console.error("Error fetching messages from Firestore:", error);
+    console.error("Error fetching messages from PostgreSQL via API:", error);
     return [];
   }
 };
 
 export const migrateLegacyMessages = async (userId: string) => {
-  try {
-    const oldMessagesRef = collection(db, 'users', userId, 'messages');
-    const oldSnapshot = await getDocs(oldMessagesRef);
-    if (!oldSnapshot.empty) {
-      const chatId = await createChatSession(userId, "Legacy Chat");
-      if (chatId) {
-        for (const docSnap of oldSnapshot.docs) {
-          const data = docSnap.data() as any;
-          const newMsgRef = doc(db, 'users', userId, 'chats', chatId, 'messages', docSnap.id);
-          await setDoc(newMsgRef, data);
-          await deleteDoc(doc(db, 'users', userId, 'messages', docSnap.id));
-        }
-      }
-    }
-  } catch (error) {
-    console.error("Migration error:", error);
-  }
+  // Legacy migration left as a stub or to be implemented via backend script if needed
+  console.log("Legacy migration not implemented for PostgreSQL yet.");
 };
