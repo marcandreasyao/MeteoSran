@@ -88,11 +88,11 @@ export const ReleaseNotesModal: React.FC<ReleaseNotesModalProps> = ({ onClose })
 
             <div className="flex gap-3">
               <div className="flex-shrink-0 w-8 h-8 rounded-full bg-emerald-100 dark:bg-emerald-500/20 flex items-center justify-center">
-                <span className="material-symbols-outlined text-[18px] text-emerald-600 dark:text-emerald-400">touch_app</span>
+                <span className="material-symbols-outlined text-[18px] text-emerald-600 dark:text-emerald-400">side_navigation</span>
               </div>
               <div>
-                <h4 className="text-sm font-semibold text-slate-800 dark:text-slate-200">Premium Interactions</h4>
-                <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5 leading-relaxed">Experience floating glass tooltips, springy action buttons, and automatic OS-level Dark/Light mode synchronization.</p>
+                <h4 className="text-sm font-semibold text-slate-800 dark:text-slate-200">Minimalist Slate Sidebar</h4>
+                <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5 leading-relaxed">Experience a typography-driven history, animated hover glides, glowing active blue dot indicators, and a sleek bottom-line search.</p>
               </div>
             </div>
           </div>
