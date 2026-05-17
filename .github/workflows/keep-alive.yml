@@ -1,7 +1,7 @@
 name: Keep Render Alive
 on:
   schedule:
-    - cron: '*/5 * * * *' # Pings every 5 minutes (max allowed by GitHub) to combat schedule delays
+    - cron: '*/10 * * * *' # Pings every 5 minutes (max allowed by GitHub) to combat schedule delays
   workflow_dispatch: # Allows you to trigger it manually from the Actions tab
 
 jobs:
