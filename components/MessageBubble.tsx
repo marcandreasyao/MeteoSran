@@ -24,6 +24,73 @@ const ModelIcon: React.FC<{ isThinking?: boolean }> = ({ isThinking }) => (
   </div>
 );
 
+// Aura cursor — a glowing dot that trails the stream
+const AuraCursor: React.FC = () => (
+  <span
+    aria-hidden
+    style={{
+      display: 'inline-block',
+      width: '6px',
+      height: '6px',
+      borderRadius: '50%',
+      marginLeft: '3px',
+      verticalAlign: 'middle',
+      background: 'radial-gradient(circle, #38bdf8 0%, #818cf8 60%, transparent 100%)',
+      boxShadow: '0 0 8px 3px rgba(56,189,248,0.55), 0 0 18px 6px rgba(129,140,248,0.25)',
+      animation: 'aura-cursor-pulse 1.1s ease-in-out infinite',
+    }}
+  />
+);
+
+// Aurora Glass Code Block Component
+const CodeBlock: React.FC<{ language: string; children: React.ReactNode }> = ({ language, children }) => {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(String(children).replace(/\n$/, ''));
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <div className="my-4 rounded-xl overflow-hidden shadow-lg border border-slate-200/60 dark:border-slate-700/50 bg-white/40 dark:bg-[#0d1117]/60 backdrop-blur-xl relative group">
+      {/* Aurora Ambient Glow (visible in dark mode) */}
+      <div className="absolute inset-0 bg-gradient-to-br from-sky-400/5 via-transparent to-indigo-400/5 pointer-events-none opacity-0 dark:opacity-100"></div>
+      
+      {/* Mac-style Header */}
+      <div className="relative flex items-center justify-between px-4 py-2.5 bg-slate-100/60 dark:bg-slate-800/60 border-b border-slate-200/60 dark:border-slate-700/50 backdrop-blur-md">
+        <div className="flex items-center gap-3">
+          <div className="flex gap-1.5">
+            <div className="w-3 h-3 rounded-full bg-[#ff5f56] shadow-[inset_0_1px_4px_rgba(0,0,0,0.2)]"></div>
+            <div className="w-3 h-3 rounded-full bg-[#ffbd2e] shadow-[inset_0_1px_4px_rgba(0,0,0,0.2)]"></div>
+            <div className="w-3 h-3 rounded-full bg-[#27c93f] shadow-[inset_0_1px_4px_rgba(0,0,0,0.2)]"></div>
+          </div>
+          <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{language}</span>
+        </div>
+        
+        <button
+          onClick={handleCopy}
+          className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-medium transition-all duration-200 backdrop-blur-md border shadow-sm
+            ${copied 
+              ? 'bg-green-500/10 border-green-500/30 text-green-600 dark:text-green-400' 
+              : 'bg-white/50 dark:bg-slate-700/50 border-slate-200/50 dark:border-slate-600/50 text-slate-500 dark:text-slate-400 hover:bg-white/80 dark:hover:bg-slate-700/80 hover:text-sky-600 dark:hover:text-sky-400'
+            }`}
+        >
+          <span className="material-symbols-outlined text-[14px]">
+            {copied ? 'check' : 'content_copy'}
+          </span>
+          {copied ? 'Copied' : 'Copy'}
+        </button>
+      </div>
+      
+      {/* Code Content */}
+      <pre className="relative p-4 overflow-x-auto text-[13px] md:text-[14px] leading-relaxed text-slate-800 dark:text-slate-300 font-mono custom-scrollbar">
+        <code>{children}</code>
+      </pre>
+    </div>
+  );
+};
+
 export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, onRegenerate, onSwitchAlternative }) => {
   const [copied, setCopied] = useState(false);
   const isUser = message.role === MessageRole.USER;
@@ -159,7 +226,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, onRegener
             <span className="text-[10px] md:text-xs text-slate-400 dark:text-slate-500">{timeString}</span>
           </div>
 
-          <div className="text-slate-800 dark:text-slate-200 text-[14px] md:text-[15px] leading-relaxed">
+          <div className={`text-slate-800 dark:text-slate-200 text-[14px] md:text-[15px] leading-relaxed transition-opacity duration-300 ${isTyping ? 'opacity-100' : ''}`}>
             <ReactMarkdown
               remarkPlugins={[remarkGfm]}
               components={{
@@ -169,22 +236,29 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, onRegener
                 ul: ({node, ...props}) => <ul className="list-disc list-outside ml-4 md:ml-5 my-2 md:my-3 space-y-1.5 marker:text-slate-400" {...props} />,
                 ol: ({node, ...props}) => <ol className="list-decimal list-outside ml-4 md:ml-5 my-2 md:my-3 space-y-1.5 marker:text-slate-400" {...props} />,
                 li: ({node, ...props}) => <li className="pl-1" {...props} />,
-                p: ({node, ...props}) => <p className="mb-3 md:mb-4 last:mb-0" {...props} />,
+                p: ({node, children, ...props}) => <p className="mb-3 md:mb-4 last:mb-0" {...props}>{children}</p>,
                 strong: ({node, ...props}) => <strong className="font-semibold text-slate-900 dark:text-white" {...props} />,
                 a: ({node, ...props}) => <a className="text-sky-600 dark:text-sky-400 hover:text-sky-700 dark:hover:text-sky-300 underline decoration-sky-400/30 underline-offset-2 transition-colors" target="_blank" rel="noopener noreferrer" {...props} />,
                 blockquote: ({node, ...props}) => <blockquote className="border-l-4 border-slate-300 dark:border-slate-600 pl-4 py-1 my-3 italic text-slate-600 dark:text-slate-400 bg-slate-50/50 dark:bg-slate-800/50 rounded-r-lg" {...props} />,
-                code: ({node, inline, ...props}: any) => 
-                  inline ? 
-                  <code className="bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded text-[0.9em] font-mono text-sky-700 dark:text-sky-300" {...props} /> :
-                  <div className="my-3 md:my-4 rounded-lg overflow-hidden bg-slate-900 dark:bg-[#0d1117] shadow-sm ring-1 ring-slate-800 dark:ring-white/10">
-                    <pre className="p-3 md:p-4 overflow-x-auto text-[13px] md:text-[14px] leading-relaxed text-slate-300 font-mono">
-                      <code {...props} />
-                    </pre>
-                  </div>
+                code: ({node, inline, className, children, ...props}: any) => {
+                  const match = /language-(\w+)/.exec(className || '');
+                  const language = match ? match[1] : 'code';
+                  
+                  return inline ? (
+                    <code className="bg-slate-100 dark:bg-slate-800/80 px-1.5 py-0.5 rounded-md border border-slate-200/50 dark:border-slate-700/50 text-[0.9em] font-mono text-sky-700 dark:text-sky-300 shadow-sm" {...props}>
+                      {children}
+                    </code>
+                  ) : (
+                    <CodeBlock language={language}>
+                      {children}
+                    </CodeBlock>
+                  );
+                }
               }}
             >
               {displayedText}
             </ReactMarkdown>
+            {isTyping && <AuraCursor />}
           </div>
           
           {/* ACTION BUTTONS — Premium glassmorphic row */}

@@ -12,6 +12,8 @@ interface HeaderProps {
   selectedMode: ResponseMode;
   onModeChange: (mode: ResponseMode) => void;
   onToggleSidebar?: () => void;
+  onOpenNotifications?: () => void;
+  hasUnreadNotifications?: boolean;
 }
 
 const ResponseModeDetails = {
@@ -47,7 +49,9 @@ const ResponseModeDetails = {
   }
 };
 
-export const Header: React.FC<HeaderProps> = ({ theme, toggleTheme, messages, selectedMode, onModeChange, onToggleSidebar }) => {
+export const Header: React.FC<HeaderProps> = ({ 
+  theme, toggleTheme, messages, selectedMode, onModeChange, onToggleSidebar, onOpenNotifications, hasUnreadNotifications 
+}) => {
   const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
   const [isModeDropdownOpen, setIsModeDropdownOpen] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
@@ -269,6 +273,19 @@ export const Header: React.FC<HeaderProps> = ({ theme, toggleTheme, messages, se
                 {isDownloadingPdf ? 'hourglass_top' : 'download'}
               </span>
             </button>
+            <div className="relative">
+              <button
+                onClick={onOpenNotifications}
+                className="p-1.5 sm:p-2 rounded-full hover:bg-black/10 dark:hover:bg-white/10 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-sky-500 dark:focus:ring-sky-400 transition-colors"
+                aria-label="Release Notes & Notifications"
+                title="What's New in 1.6.6"
+              >
+                <span className="material-symbols-outlined text-lg sm:text-xl">campaign</span>
+                {hasUnreadNotifications && (
+                  <span className="absolute top-1.5 right-1.5 sm:top-2 sm:right-2 w-2 h-2 rounded-full bg-red-500 animate-pulse shadow-[0_0_8px_rgba(239,68,68,0.8)] border border-white dark:border-slate-800"></span>
+                )}
+              </button>
+            </div>
             <button
               onClick={toggleTheme}
               className="p-1.5 sm:p-2 rounded-full hover:bg-black/10 dark:hover:bg-white/10 
@@ -315,10 +332,10 @@ export const Header: React.FC<HeaderProps> = ({ theme, toggleTheme, messages, se
                   </button>
 
                   <div className="flex flex-col items-start mb-6 pr-12">
-                    <h2 className="text-xl sm:text-2xl font-semibold text-slate-900 dark:text-white tracking-tight mb-1">
+                    <h2 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white tracking-tight mb-1">
                       Preferences
                     </h2>
-                    <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-medium">
+                    <p className="text-xs sm:text-sm text-sky-600 dark:text-sky-400 font-medium">
                       Customize your MeteoSran experience
                     </p>
                   </div>
@@ -327,11 +344,11 @@ export const Header: React.FC<HeaderProps> = ({ theme, toggleTheme, messages, se
                     {/* Notification toggle */}
                     <div className="group flex items-center justify-between">
                       <div className="flex flex-col pr-4">
-                        <span className="text-sm sm:text-base text-slate-800 dark:text-slate-200 font-medium flex items-center gap-2">
-                          <span className="material-symbols-outlined text-[18px] sm:text-[20px] text-slate-400">notifications</span>
+                        <span className="text-xs sm:text-sm text-slate-800 dark:text-slate-200 font-semibold flex items-center gap-2">
+                          <span className="material-symbols-outlined text-[18px] sm:text-[20px] text-sky-500 dark:text-sky-400">notifications</span>
                           Notifications
                         </span>
-                        <span className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400 mt-1 ml-7">
+                        <span className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400 mt-0.5 ml-7 leading-relaxed">
                           Real-time weather alerts
                         </span>
                       </div>
@@ -350,8 +367,8 @@ export const Header: React.FC<HeaderProps> = ({ theme, toggleTheme, messages, se
 
                     {/* Location preference */}
                     <div className="group flex flex-col">
-                      <span className="text-sm sm:text-base text-slate-800 dark:text-slate-200 font-medium flex items-center gap-2 mb-3">
-                        <span className="material-symbols-outlined text-[18px] sm:text-[20px] text-slate-400">location_on</span>
+                      <span className="text-xs sm:text-sm text-slate-800 dark:text-slate-200 font-semibold flex items-center gap-2 mb-3">
+                        <span className="material-symbols-outlined text-[18px] sm:text-[20px] text-sky-500 dark:text-sky-400">location_on</span>
                         Location Source
                       </span>
 
@@ -366,7 +383,7 @@ export const Header: React.FC<HeaderProps> = ({ theme, toggleTheme, messages, se
                             key={mode.id}
                             className={`flex-1 py-1.5 sm:py-2 text-xs sm:text-sm rounded-lg font-medium transition-all duration-200 min-h-[44px] min-w-[60px]
                               ${locationMode === mode.id
-                                ? 'bg-white dark:bg-slate-600 text-slate-900 dark:text-white shadow-sm'
+                                ? 'bg-sky-500 text-white shadow-[0_2px_8px_rgba(14,165,233,0.3)]'
                                 : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'}`}
                             onClick={() => setLocationMode(mode.id as any)}
                           >
@@ -380,8 +397,8 @@ export const Header: React.FC<HeaderProps> = ({ theme, toggleTheme, messages, se
 
                     {/* Notification type */}
                     <div className="group flex flex-col">
-                      <span className="text-sm sm:text-base text-slate-800 dark:text-slate-200 font-medium flex items-center gap-2 mb-3">
-                        <span className="material-symbols-outlined text-[18px] sm:text-[20px] text-slate-400">list_alt</span>
+                      <span className="text-xs sm:text-sm text-slate-800 dark:text-slate-200 font-semibold flex items-center gap-2 mb-3">
+                        <span className="material-symbols-outlined text-[18px] sm:text-[20px] text-sky-500 dark:text-sky-400">list_alt</span>
                         Update Type
                       </span>
                       <div className="relative">
@@ -404,8 +421,8 @@ export const Header: React.FC<HeaderProps> = ({ theme, toggleTheme, messages, se
 
                     <div className="pt-2 sm:pt-4">
                       <button
-                        className="w-full py-2.5 sm:py-3 text-xs sm:text-sm rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 
-                                   font-medium shadow-sm hover:opacity-90 active:scale-[0.98] transition-all disabled:opacity-40 disabled:cursor-not-allowed min-h-[44px]"
+                        className="w-full py-2.5 sm:py-3 text-xs sm:text-sm rounded-full bg-sky-500 hover:bg-sky-600 text-white
+                                   font-medium shadow-md hover:shadow-lg active:scale-95 transition-all disabled:opacity-40 disabled:cursor-not-allowed min-h-[44px]"
                         disabled={!notificationsEnabled}
                         onClick={handleSendTestNotification}
                       >

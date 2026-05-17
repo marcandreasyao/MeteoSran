@@ -1146,10 +1146,41 @@
       from {
         opacity: 0;
       }
-
       to {
         opacity: 1;
       }
+    }
+
+    /* ── Modal Animations ── */
+    @keyframes modal-pop {
+      0% { opacity: 0; transform: scale(0.95) translateY(10px); }
+      100% { opacity: 1; transform: scale(1) translateY(0); }
+    }
+
+    .animate-modal-pop {
+      animation: modal-pop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    }
+    
+    @keyframes modal-fade-out {
+      0% { opacity: 1; transform: scale(1); }
+      100% { opacity: 0; transform: scale(0.95) translateY(10px); }
+    }
+    
+    .animate-modal-fade-out {
+      animation: modal-fade-out 0.3s ease-in forwards;
+    }
+    
+    @keyframes fade-out {
+      from {
+        opacity: 1;
+      }
+      to {
+        opacity: 0;
+      }
+    }
+    
+    .animate-fade-out {
+      animation: fade-out 0.3s ease-in forwards;
     }
 
     /* ── Premium Message Action Pill Buttons (dark mode) ── */
@@ -1209,6 +1240,21 @@
       opacity: 1;
       transform: scale(1);
     }
+
+    /* ── Fluid Aura Streaming (Trailing Cursor) ── */
+    @keyframes aura-cursor-pulse {
+      0%, 100% {
+        transform: scale(1);
+        opacity: 0.9;
+        box-shadow: 0 0 8px 3px rgba(56,189,248,0.55), 0 0 18px 6px rgba(129,140,248,0.25);
+      }
+      50% {
+        transform: scale(1.35);
+        opacity: 1;
+        box-shadow: 0 0 14px 6px rgba(56,189,248,0.8), 0 0 30px 10px rgba(129,140,248,0.4);
+      }
+    }
+
 
     /* ── Floating Glass Tooltips ── */
     .premium-tooltip {

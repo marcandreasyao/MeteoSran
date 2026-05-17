@@ -16,6 +16,7 @@ import { LoginScreen } from './components/LoginScreen';
 import { saveMessageToDB, fetchUserMessages, fetchChatSessions, createChatSession, ChatSession } from './src/services/dbService';
 import { Sidebar } from './components/Sidebar';
 import { LiveSessionOverlay } from './components/LiveSessionOverlay';
+import { ReleaseNotesModal } from './components/ReleaseNotesModal';
 export type Theme = 'light' | 'dark';
 
 export interface CurrentInputState {
@@ -68,6 +69,29 @@ const App: React.FC = () => {
   const [chatSessions, setChatSessions] = useState<ChatSession[]>([]);
   const [activeChatId, setActiveChatId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+
+  // Release Notes State
+  const CURRENT_VERSION = '1.6.6';
+  const [showReleaseNotes, setShowReleaseNotes] = useState(false);
+  const [hasUnreadNotifications, setHasUnreadNotifications] = useState(false);
+
+  useEffect(() => {
+    const seenVersion = localStorage.getItem('meteosran_version_seen');
+    if (seenVersion !== CURRENT_VERSION) {
+      setHasUnreadNotifications(true);
+      // Optional: Auto-show on first load. Delay slightly for smoother entrance.
+      const timer = setTimeout(() => {
+        setShowReleaseNotes(true);
+      }, 1500);
+      return () => clearTimeout(timer);
+    }
+  }, []);
+
+  const handleCloseReleaseNotes = () => {
+    setShowReleaseNotes(false);
+    setHasUnreadNotifications(false);
+    localStorage.setItem('meteosran_version_seen', CURRENT_VERSION);
+  };
 
   // Fetch messages when user logs in
   useEffect(() => {
@@ -474,6 +498,8 @@ const App: React.FC = () => {
           selectedMode={selectedMode}
           onModeChange={handleModeChange}
           onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
+          onOpenNotifications={() => setShowReleaseNotes(true)}
+          hasUnreadNotifications={hasUnreadNotifications}
         />
 
         <main className="flex-grow flex flex-col overflow-hidden px-1.5 sm:px-2 md:p-4 relative">
@@ -507,6 +533,10 @@ const App: React.FC = () => {
       />
 
       <PWAInstallPrompt theme={theme} />
+
+      {showReleaseNotes && (
+        <ReleaseNotesModal onClose={handleCloseReleaseNotes} />
+      )}
     </div>
   );
 };
