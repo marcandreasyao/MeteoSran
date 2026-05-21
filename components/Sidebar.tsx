@@ -190,7 +190,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               className="p-1 hover:text-emerald-400 transition-colors shrink-0"
               title="Save"
             >
-              <span className="material-symbols-outlined text-sm">check</span>
+              <span className="material-symbols-outlined notranslate text-sm" translate="no">check</span>
             </button>
             <button
               onClick={(e) => {
@@ -200,7 +200,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               className="p-1 hover:text-rose-400 transition-colors shrink-0"
               title="Cancel"
             >
-              <span className="material-symbols-outlined text-sm">close</span>
+              <span className="material-symbols-outlined notranslate text-sm" translate="no">close</span>
             </button>
           </div>
         ) : isConfirmingDelete ? (
@@ -215,7 +215,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 className="p-1 hover:text-emerald-400 transition-colors flex items-center justify-center hover:bg-emerald-500/10 rounded"
                 title="Confirm Delete"
               >
-                <span className="material-symbols-outlined text-sm font-bold">check</span>
+                <span className="material-symbols-outlined notranslate text-sm font-bold" translate="no">check</span>
               </button>
               <button
                 onClick={(e) => {
@@ -225,7 +225,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 className="p-1 hover:text-rose-400 transition-colors flex items-center justify-center hover:bg-rose-500/10 rounded"
                 title="Cancel"
               >
-                <span className="material-symbols-outlined text-sm">close</span>
+                <span className="material-symbols-outlined notranslate text-sm" translate="no">close</span>
               </button>
             </div>
           </div>
@@ -329,7 +329,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </button>
 
           <div className="relative mb-3 flex items-center gap-2.5 border-b border-slate-700/60 pb-2 focus-within:border-slate-500/80 transition-colors">
-            <span className="material-symbols-outlined text-slate-500 text-[18px] shrink-0 select-none">search</span>
+            <span className="material-symbols-outlined notranslate text-slate-500 text-[18px] shrink-0 select-none" translate="no">search</span>
             <input
               type="text"
               placeholder="Search history..."

@@ -175,7 +175,7 @@ export const Header: React.FC<HeaderProps> = ({
               aria-label="Toggle sidebar"
               title="Toggle sidebar"
             >
-              <span className="material-symbols-outlined text-xl sm:text-2xl">menu</span>
+              <span className="material-symbols-outlined notranslate text-xl sm:text-2xl" translate="no">menu</span>
             </button>
           )}
           {/* <img src="./Meteosran-logo.png" alt="MeteoSran-Logo" className="h-8 sm:h-10 w-auto mr-1 sm:mr-2" /> */}
@@ -200,8 +200,9 @@ export const Header: React.FC<HeaderProps> = ({
               <span className="text-sm sm:text-base leading-none">{selectedModeDetails.icon}</span>
               <span className="hidden sm:inline">{selectedModeDetails.name}</span>
               <span
-                className={`material-symbols-outlined transition-transform duration-200 ${isModeDropdownOpen ? 'rotate-180' : ''}`}
+                className={`material-symbols-outlined notranslate transition-transform duration-200 ${isModeDropdownOpen ? 'rotate-180' : ''}`}
                 style={{ fontSize: '16px' }}
+                translate="no"
               >
                 arrow_drop_down
               </span>
@@ -266,7 +267,7 @@ export const Header: React.FC<HeaderProps> = ({
               aria-label={isDownloadingPdf ? "Generating PDF..." : "Download chat as PDF"}
               title={messages.length <= 1 ? "Send a message to enable download" : (isDownloadingPdf ? "Generating PDF..." : "Download chat as PDF")}
             >
-              <span className="material-symbols-outlined text-slate-700 dark:text-slate-200 text-lg sm:text-xl">
+              <span className="material-symbols-outlined notranslate text-slate-700 dark:text-slate-200 text-lg sm:text-xl" translate="no">
                 {isDownloadingPdf ? 'hourglass_top' : 'download'}
               </span>
             </button>
@@ -277,7 +278,7 @@ export const Header: React.FC<HeaderProps> = ({
                 aria-label="Release Notes & Notifications"
                 title="What's New in 1.6.6"
               >
-                <span className="material-symbols-outlined text-lg sm:text-xl">campaign</span>
+                <span className="material-symbols-outlined notranslate text-lg sm:text-xl" translate="no">campaign</span>
                 {hasUnreadNotifications && (
                   <span className="absolute top-1.5 right-1.5 sm:top-2 sm:right-2 w-2 h-2 rounded-full bg-red-500 animate-pulse shadow-[0_0_8px_rgba(239,68,68,0.8)] border border-white dark:border-slate-800"></span>
                 )}
@@ -290,7 +291,7 @@ export const Header: React.FC<HeaderProps> = ({
               aria-label="Log out"
               title="Log out"
             >
-              <span className="material-symbols-outlined text-lg sm:text-xl">logout</span>
+              <span className="material-symbols-outlined notranslate text-lg sm:text-xl" translate="no">logout</span>
             </button>
             <div className="relative" ref={settingsDropdownRef}>
               <button
@@ -299,7 +300,7 @@ export const Header: React.FC<HeaderProps> = ({
                 aria-label="Open settings"
                 aria-expanded={showSettings}
               >
-                <span className="material-symbols-outlined text-lg sm:text-xl">settings</span>
+                <span className="material-symbols-outlined notranslate text-lg sm:text-xl" translate="no">settings</span>
               </button>
 
               {showSettings && (
@@ -314,7 +315,7 @@ export const Header: React.FC<HeaderProps> = ({
                     onClick={() => setShowSettings(false)}
                     aria-label="Close settings"
                   >
-                    <span className="material-symbols-outlined text-xl">close</span>
+                    <span className="material-symbols-outlined notranslate text-xl" translate="no">close</span>
                   </button>
 
                   <div className="flex flex-col items-start mb-6 pr-12">
@@ -331,7 +332,7 @@ export const Header: React.FC<HeaderProps> = ({
                     <div className="group flex items-center justify-between">
                       <div className="flex flex-col pr-4">
                         <span className="text-xs sm:text-sm text-slate-800 dark:text-slate-200 font-semibold flex items-center gap-2">
-                          <span className="material-symbols-outlined text-[18px] sm:text-[20px] text-sky-500 dark:text-sky-400">notifications</span>
+                          <span className="material-symbols-outlined notranslate text-[18px] sm:text-[20px] text-sky-500 dark:text-sky-400" translate="no">notifications</span>
                           Notifications
                         </span>
                         <span className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400 mt-0.5 ml-7 leading-relaxed">
@@ -354,7 +355,7 @@ export const Header: React.FC<HeaderProps> = ({
                     {/* Location preference */}
                     <div className="group flex flex-col">
                       <span className="text-xs sm:text-sm text-slate-800 dark:text-slate-200 font-semibold flex items-center gap-2 mb-3">
-                        <span className="material-symbols-outlined text-[18px] sm:text-[20px] text-sky-500 dark:text-sky-400">location_on</span>
+                        <span className="material-symbols-outlined notranslate text-[18px] sm:text-[20px] text-sky-500 dark:text-sky-400" translate="no">location_on</span>
                         Location Source
                       </span>
 
@@ -389,7 +390,7 @@ export const Header: React.FC<HeaderProps> = ({
                     {/* Notification type */}
                     <div className="group flex flex-col">
                       <span className="text-xs sm:text-sm text-slate-800 dark:text-slate-200 font-semibold flex items-center gap-2 mb-3">
-                        <span className="material-symbols-outlined text-[18px] sm:text-[20px] text-sky-500 dark:text-sky-400">list_alt</span>
+                        <span className="material-symbols-outlined notranslate text-[18px] sm:text-[20px] text-sky-500 dark:text-sky-400" translate="no">list_alt</span>
                         Update Type
                       </span>
                       <div className="relative">
@@ -405,7 +406,7 @@ export const Header: React.FC<HeaderProps> = ({
                           <option value="Rain Warnings">Rain Warnings</option>
                         </select>
                         <div className="absolute inset-y-0 right-3 top-0 flex items-center pointer-events-none text-slate-400">
-                          <span className="material-symbols-outlined text-lg">expand_more</span>
+                          <span className="material-symbols-outlined notranslate text-lg" translate="no">expand_more</span>
                         </div>
                       </div>
                     </div>

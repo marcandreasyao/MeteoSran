@@ -48,7 +48,7 @@ export const ReleaseNotesModal: React.FC<ReleaseNotesModalProps> = ({ onClose })
             className="p-2 rounded-full text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors focus:outline-none"
             aria-label="Close"
           >
-            <span className="material-symbols-outlined text-xl">close</span>
+            <span className="material-symbols-outlined notranslate text-xl" translate="no">close</span>
           </button>
         </div>
         
@@ -58,7 +58,7 @@ export const ReleaseNotesModal: React.FC<ReleaseNotesModalProps> = ({ onClose })
           <div className="space-y-4">
             <div className="flex gap-3">
               <div className="flex-shrink-0 w-8 h-8 rounded-full bg-fuchsia-100 dark:bg-fuchsia-500/20 flex items-center justify-center">
-                <span className="material-symbols-outlined text-[18px] text-fuchsia-600 dark:text-fuchsia-400">memory</span>
+                <span className="material-symbols-outlined notranslate text-[18px] text-fuchsia-600 dark:text-fuchsia-400" translate="no">memory</span>
               </div>
               <div>
                 <h4 className="text-sm font-semibold text-slate-800 dark:text-slate-200">Contextual Memory Intelligence</h4>
@@ -68,7 +68,7 @@ export const ReleaseNotesModal: React.FC<ReleaseNotesModalProps> = ({ onClose })
 
             <div className="flex gap-3">
               <div className="flex-shrink-0 w-8 h-8 rounded-full bg-violet-100 dark:bg-violet-500/20 flex items-center justify-center">
-                <span className="material-symbols-outlined text-[18px] text-violet-600 dark:text-violet-400">dark_mode</span>
+                <span className="material-symbols-outlined notranslate text-[18px] text-violet-600 dark:text-violet-400" translate="no">dark_mode</span>
               </div>
               <div>
                 <h4 className="text-sm font-semibold text-slate-800 dark:text-slate-200">Deep Theme Switch Transition</h4>
@@ -77,8 +77,18 @@ export const ReleaseNotesModal: React.FC<ReleaseNotesModalProps> = ({ onClose })
             </div>
 
             <div className="flex gap-3">
+              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-cyan-100 dark:bg-cyan-500/20 flex items-center justify-center">
+                <span className="material-symbols-outlined notranslate text-[18px] text-cyan-600 dark:text-cyan-400" translate="no">smartphone</span>
+              </div>
+              <div>
+                <h4 className="text-sm font-semibold text-slate-800 dark:text-slate-200">Mobile & Translation Optimizations</h4>
+                <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5 leading-relaxed">Perfected mobile display with Visual Viewport adaptation to prevent virtual keyboard layout deformation, and blocked browser translators from translating interface icons.</p>
+              </div>
+            </div>
+
+            <div className="flex gap-3">
               <div className="flex-shrink-0 w-8 h-8 rounded-full bg-amber-100 dark:bg-amber-500/20 flex items-center justify-center">
-                <span className="material-symbols-outlined text-[18px] text-amber-600 dark:text-amber-400">explore</span>
+                <span className="material-symbols-outlined notranslate text-[18px] text-amber-600 dark:text-amber-400" translate="no">explore</span>
               </div>
               <div>
                 <h4 className="text-sm font-semibold text-slate-800 dark:text-slate-200">Manual Location Intelligence</h4>
@@ -88,7 +98,7 @@ export const ReleaseNotesModal: React.FC<ReleaseNotesModalProps> = ({ onClose })
 
             <div className="flex gap-3">
               <div className="flex-shrink-0 w-8 h-8 rounded-full bg-rose-100 dark:bg-rose-500/20 flex items-center justify-center">
-                <span className="material-symbols-outlined text-[18px] text-rose-600 dark:text-rose-400">bug_report</span>
+                <span className="material-symbols-outlined notranslate text-[18px] text-rose-600 dark:text-rose-400" translate="no">bug_report</span>
               </div>
               <div>
                 <h4 className="text-sm font-semibold text-slate-800 dark:text-slate-200">System Datetime Crash Resolved</h4>
@@ -98,7 +108,7 @@ export const ReleaseNotesModal: React.FC<ReleaseNotesModalProps> = ({ onClose })
 
             <div className="flex gap-3">
               <div className="flex-shrink-0 w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
-                <span className="material-symbols-outlined text-[18px] text-slate-600 dark:text-slate-300">database</span>
+                <span className="material-symbols-outlined notranslate text-[18px] text-slate-600 dark:text-slate-300" translate="no">database</span>
               </div>
               <div>
                 <h4 className="text-sm font-semibold text-slate-800 dark:text-slate-200">Robust Core Architecture</h4>
@@ -108,7 +118,7 @@ export const ReleaseNotesModal: React.FC<ReleaseNotesModalProps> = ({ onClose })
 
             <div className="flex gap-3">
               <div className="flex-shrink-0 w-8 h-8 rounded-full bg-sky-100 dark:bg-sky-500/20 flex items-center justify-center">
-                <span className="material-symbols-outlined text-[18px] text-sky-600 dark:text-sky-400">water_drop</span>
+                <span className="material-symbols-outlined notranslate text-[18px] text-sky-600 dark:text-sky-400" translate="no">water_drop</span>
               </div>
               <div>
                 <h4 className="text-sm font-semibold text-slate-800 dark:text-slate-200">Liquid Aura Streaming</h4>
@@ -118,7 +128,7 @@ export const ReleaseNotesModal: React.FC<ReleaseNotesModalProps> = ({ onClose })
 
             <div className="flex gap-3">
               <div className="flex-shrink-0 w-8 h-8 rounded-full bg-indigo-100 dark:bg-indigo-500/20 flex items-center justify-center">
-                <span className="material-symbols-outlined text-[18px] text-indigo-600 dark:text-indigo-400">code_blocks</span>
+                <span className="material-symbols-outlined notranslate text-[18px] text-indigo-600 dark:text-indigo-400" translate="no">code_blocks</span>
               </div>
               <div>
                 <h4 className="text-sm font-semibold text-slate-800 dark:text-slate-200">Aurora Glass Code Blocks</h4>
@@ -128,7 +138,7 @@ export const ReleaseNotesModal: React.FC<ReleaseNotesModalProps> = ({ onClose })
 
             <div className="flex gap-3">
               <div className="flex-shrink-0 w-8 h-8 rounded-full bg-emerald-100 dark:bg-emerald-500/20 flex items-center justify-center">
-                <span className="material-symbols-outlined text-[18px] text-emerald-600 dark:text-emerald-400">side_navigation</span>
+                <span className="material-symbols-outlined notranslate text-[18px] text-emerald-600 dark:text-emerald-400" translate="no">side_navigation</span>
               </div>
               <div>
                 <h4 className="text-sm font-semibold text-slate-800 dark:text-slate-200">Minimalist Slate Sidebar</h4>

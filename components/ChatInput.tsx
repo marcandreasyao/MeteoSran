@@ -10,14 +10,23 @@ interface ChatInputProps {
   setCurrentInputState: (value: CurrentInputState) => void;
   inputRef: RefObject<HTMLTextAreaElement | null>;
   onStartLiveSession?: () => void;
+  isKeyboardOpen?: boolean;
 }
 
 
 const CloseIcon: React.FC = () => (
-  <span className="material-symbols-outlined text-xs">close</span>
+  <span className="material-symbols-outlined notranslate text-xs" translate="no">close</span>
 );
 
-export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading, currentInputState, setCurrentInputState, inputRef, onStartLiveSession }) => {
+export const ChatInput: React.FC<ChatInputProps> = ({ 
+  onSendMessage, 
+  isLoading, 
+  currentInputState, 
+  setCurrentInputState, 
+  inputRef, 
+  onStartLiveSession,
+  isKeyboardOpen = false
+}) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
   const [showToolsDropdown, setShowToolsDropdown] = useState(false);
@@ -122,7 +131,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading, 
   };
 
   return (
-    <div className="p-2 sm:p-3 md:p-4 pb-[calc(1rem+env(safe-area-inset-bottom,0px))] w-full relative z-10">
+    <div className={`p-2 sm:p-3 md:p-4 w-full relative z-10 ${isKeyboardOpen ? 'pb-1.5' : 'pb-[calc(1rem+env(safe-area-inset-bottom,0px))]'}`}>
       {imagePreviewUrl && (
         <div className="mb-2 p-2 bg-white/20 dark:bg-slate-700/30 rounded-lg relative w-fit max-w-[120px] sm:max-w-[200px]">
           <img src={imagePreviewUrl} alt="Selected preview" className="max-h-20 sm:max-h-32 rounded object-contain" />
@@ -156,7 +165,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading, 
               className={`p-1.5 sm:p-2 rounded-full transition-all duration-300 ${showToolsDropdown ? 'bg-blue-600 text-white rotate-45' : 'text-slate-500 hover:bg-black/5 dark:hover:bg-white/5'}`}
               aria-label="Tools menu"
             >
-              <span className="material-symbols-outlined text-[24px] sm:text-2xl">{showToolsDropdown ? 'close' : 'add'}</span>
+              <span className="material-symbols-outlined notranslate text-[24px] sm:text-2xl" translate="no">{showToolsDropdown ? 'close' : 'add'}</span>
             </button>
 
             {/* Soft Dropdown Menu */}
@@ -171,7 +180,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading, 
                     }}
                     className="flex items-center gap-3 w-full px-3 py-2.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 transition-colors group"
                   >
-                    <span className="material-symbols-outlined text-[22px] group-hover:scale-110 transition-transform">add_photo_alternate</span>
+                    <span className="material-symbols-outlined notranslate text-[22px] group-hover:scale-110 transition-transform" translate="no">add_photo_alternate</span>
                     <span className="text-sm font-medium">Image Upload</span>
                   </button>
 
@@ -183,9 +192,9 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading, 
                         setShowToolsDropdown(false);
                       }}
                       className="flex items-center gap-3 w-full px-3 py-2.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 transition-colors group"
-                    >
-                      <div className="relative">
-                        <span className="material-symbols-outlined text-[22px] group-hover:scale-110 transition-transform">graphic_eq</span>
+                  >
+                    <div className="relative">
+                        <span className="material-symbols-outlined notranslate text-[22px] group-hover:scale-110 transition-transform" translate="no">graphic_eq</span>
                         <span className="absolute -top-0.5 -right-0.5 flex h-2 w-2">
                           <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
                           <span className="relative inline-flex rounded-full h-2 w-2 bg-indigo-500"></span>
@@ -226,7 +235,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading, 
                 }`}
               aria-label={isListening ? "Stop listening" : "Start voice input"}
             >
-              <span className="material-symbols-outlined text-[22px] sm:text-2xl">
+              <span className="material-symbols-outlined notranslate text-[22px] sm:text-2xl" translate="no">
                 {isListening ? 'mic_off' : 'mic'}
               </span>
             </button>
@@ -278,11 +287,11 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading, 
           aria-label="Send message"
         >
           {isLoading ? (
-            <span className="material-symbols-outlined text-[22px]">
+            <span className="material-symbols-outlined notranslate text-[22px]" translate="no">
               stop
             </span>
           ) : (
-            <span className="material-symbols-outlined text-[22px] transform transition-transform group-hover:-translate-y-0.5 group-hover:scale-110">
+            <span className="material-symbols-outlined notranslate text-[22px] transform transition-transform group-hover:-translate-y-0.5 group-hover:scale-110" translate="no">
               arrow_upward
             </span>
           )}

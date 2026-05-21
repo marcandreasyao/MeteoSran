@@ -3,23 +3,30 @@ import { Message } from '../types';
 import { MessageBubble } from './MessageBubble';
 import { ErrorMessage } from './ErrorMessage';
 
-
 interface MessageListProps {
   messages: Message[];
   isLoading: boolean;
   error: string | null;
   onRegenerate: (messageId: string) => void;
   onSwitchAlternative: (messageId: string, direction: 'prev' | 'next') => void;
+  isKeyboardOpen?: boolean;
 }
 
-export const MessageList: React.FC<MessageListProps> = ({ messages, isLoading, error, onRegenerate, onSwitchAlternative }) => {
+export const MessageList: React.FC<MessageListProps> = ({ 
+  messages, 
+  isLoading, 
+  error, 
+  onRegenerate, 
+  onSwitchAlternative,
+  isKeyboardOpen = false
+}) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  useEffect(scrollToBottom, [messages, isLoading, error]);
+  useEffect(scrollToBottom, [messages, isLoading, error, isKeyboardOpen]);
 
   return (
     <div className="flex-grow p-4 md:p-6 space-y-4 overflow-y-auto"

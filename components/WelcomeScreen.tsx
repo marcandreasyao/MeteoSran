@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 interface WelcomeScreenProps {
   firstName: string;
   onSuggestionClick: (text: string) => void;
+  isKeyboardOpen?: boolean;
 }
 
 const allQuestions = [
@@ -33,7 +34,7 @@ const getRandomQuestions = (count: number) => {
   return shuffled.slice(0, count);
 };
 
-export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ firstName, onSuggestionClick }) => {
+export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ firstName, onSuggestionClick, isKeyboardOpen = false }) => {
   const [greeting] = useState(() => {
     const hour = new Date().getHours();
     if (hour < 12) return 'Good morning';
@@ -77,7 +78,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ firstName, onSugge
   }, []);
 
   return (
-    <div className="flex flex-col flex-1 overflow-y-auto px-4 sm:px-8 pt-8 sm:pt-16 pb-32 h-full custom-scrollbar">
+    <div className={`flex flex-col flex-1 overflow-y-auto px-4 sm:px-8 h-full custom-scrollbar ${isKeyboardOpen ? 'pt-2 pb-2' : 'pt-8 sm:pt-16 pb-32'}`}>
       <div className="max-w-4xl mx-auto w-full flex flex-col items-center sm:items-start text-center sm:text-left">
 
         {/* Header Greetings */}
@@ -92,39 +93,41 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ firstName, onSugge
         </p>
 
         {/* Suggestion List wrapped in Fade Mask */}
-        <div className="w-[calc(100%+2rem)] -ml-4 sm:w-[calc(100%+4rem)] sm:-ml-8 relative"
-          style={{
-            WebkitMaskImage: 'linear-gradient(to right, transparent 0%, black 5%, black 95%, transparent 100%)',
-            maskImage: 'linear-gradient(to right, transparent 0%, black 5%, black 95%, transparent 100%)'
-          }}>
-          <div className="w-full flex gap-4 overflow-x-auto pb-4 pt-2 px-4 sm:px-8 snap-x snap-mandatory hide-scrollbar">
-            {questions.map((suggestion, index) => (
-              <button
-                key={`${suggestion.text}-${index}`}
-                onClick={() => onSuggestionClick(suggestion.text)}
-                className={`group relative flex flex-col justify-between text-left p-5 min-w-[200px] w-56 sm:w-64 aspect-[4/3] h-auto flex-shrink-0
-                           rounded-2xl snap-start cursor-pointer transition-all duration-500
-                           bg-white/40 sm:hover:bg-white/70 active:bg-white/70 dark:bg-slate-800/40 dark:sm:hover:bg-slate-700/60 dark:active:bg-slate-700/60                           border border-slate-200/50 hover:border-slate-300 dark:border-slate-700/50 dark:hover:border-slate-600
-                           shadow-sm hover:shadow-md backdrop-blur-sm
-                           ${fadingIndex === index ? 'opacity-0 scale-95' : 'opacity-100 scale-100'}`}
-                aria-label={`Suggestion: ${suggestion.text}`}
-              >
-                <h4 className="text-fluid-base text-slate-700 dark:text-slate-300 font-medium leading-snug">
-                  {suggestion.text}
-                </h4>
+        {!isKeyboardOpen && (
+          <div className="w-[calc(100%+2rem)] -ml-4 sm:w-[calc(100%+4rem)] sm:-ml-8 relative"
+            style={{
+              WebkitMaskImage: 'linear-gradient(to right, transparent 0%, black 5%, black 95%, transparent 100%)',
+              maskImage: 'linear-gradient(to right, transparent 0%, black 5%, black 95%, transparent 100%)'
+            }}>
+            <div className="w-full flex gap-4 overflow-x-auto pb-4 pt-2 px-4 sm:px-8 snap-x snap-mandatory hide-scrollbar">
+              {questions.map((suggestion, index) => (
+                <button
+                  key={`${suggestion.text}-${index}`}
+                  onClick={() => onSuggestionClick(suggestion.text)}
+                  className={`group relative flex flex-col justify-between text-left p-5 min-w-[200px] w-56 sm:w-64 aspect-[4/3] h-auto flex-shrink-0
+                             rounded-2xl snap-start cursor-pointer transition-all duration-500
+                             bg-white/40 sm:hover:bg-white/70 active:bg-white/70 dark:bg-slate-800/40 dark:sm:hover:bg-slate-700/60 dark:active:bg-slate-700/60                           border border-slate-200/50 hover:border-slate-300 dark:border-slate-700/50 dark:hover:border-slate-600
+                             shadow-sm hover:shadow-md backdrop-blur-sm
+                             ${fadingIndex === index ? 'opacity-0 scale-95' : 'opacity-100 scale-100'}`}
+                  aria-label={`Suggestion: ${suggestion.text}`}
+                >
+                  <h4 className="text-fluid-base text-slate-700 dark:text-slate-300 font-medium leading-snug">
+                    {suggestion.text}
+                  </h4>
 
-                <div className="absolute bottom-4 right-4 w-10 h-10 flex flex-col items-center justify-center 
-                              rounded-full bg-white dark:bg-slate-900 
-                              text-slate-600 dark:text-slate-300 shadow-sm
-                              group-hover:scale-110 group-hover:bg-slate-50 dark:group-hover:bg-slate-800 transition-transform duration-200">
-                  <span className="material-symbols-outlined text-[1.3rem]">
-                    {suggestion.icon}
-                  </span>
-                </div>
-              </button>
-            ))}
+                  <div className="absolute bottom-4 right-4 w-10 h-10 flex flex-col items-center justify-center 
+                                rounded-full bg-white dark:bg-slate-900 
+                                text-slate-600 dark:text-slate-300 shadow-sm
+                                group-hover:scale-110 group-hover:bg-slate-50 dark:group-hover:bg-slate-800 transition-transform duration-200">
+                    <span className="material-symbols-outlined notranslate text-[1.3rem]" translate="no">
+                      {suggestion.icon}
+                    </span>
+                  </div>
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
 
       </div>
 

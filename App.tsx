@@ -85,6 +85,32 @@ const App: React.FC = () => {
   const [showReleaseNotes, setShowReleaseNotes] = useState(false);
   const [hasUnreadNotifications, setHasUnreadNotifications] = useState(false);
 
+  const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
+
+  useEffect(() => {
+    if (!window.visualViewport) return;
+
+    const handleResize = () => {
+      const height = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+      document.documentElement.style.setProperty('--visual-viewport-height', `${height}px`);
+
+      // Detect if keyboard is open (height is substantially less than window.innerHeight)
+      const isOpen = height < window.innerHeight * 0.85;
+      setIsKeyboardOpen(isOpen);
+    };
+
+    window.visualViewport.addEventListener('resize', handleResize);
+    window.visualViewport.addEventListener('scroll', handleResize);
+
+    // Initial run
+    handleResize();
+
+    return () => {
+      window.visualViewport?.removeEventListener('resize', handleResize);
+      window.visualViewport?.removeEventListener('scroll', handleResize);
+    };
+  }, []);
+
   useEffect(() => {
     const seenVersion = localStorage.getItem('meteosran_version_seen');
     if (seenVersion !== CURRENT_VERSION) {
@@ -668,7 +694,10 @@ const App: React.FC = () => {
   }
 
   return (
-    <div className={`flex w-full h-[100dvh] transition-opacity duration-500 overflow-hidden ${showGlassFade ? 'opacity-70' : 'opacity-100'} ${theme === 'dark' ? 'dark text-white' : 'text-slate-900'}`}>
+    <div 
+      className={`flex w-full h-[100dvh] transition-opacity duration-500 overflow-hidden ${showGlassFade ? 'opacity-70' : 'opacity-100'} ${theme === 'dark' ? 'dark text-white' : 'text-slate-900'}`}
+      style={{ height: 'var(--visual-viewport-height, 100dvh)' }}
+    >
       {showGlassFade && (
         <div className="fixed inset-0 z-[9999] pointer-events-none">
           <div className="glass-fade-overlay"></div>
@@ -691,11 +720,11 @@ const App: React.FC = () => {
         />
       )}
 
-      <div className="flex-1 flex flex-col h-full w-full relative overflow-hidden transition-all duration-300 pb-safe pt-safe">
+      <div className={`flex-1 flex flex-col h-full w-full relative overflow-hidden transition-all duration-300 pt-safe ${isKeyboardOpen ? '' : 'pb-safe'}`}>
         {locationError && (
           <div className={`${locationError.startsWith('Location set') ? 'bg-emerald-50 dark:bg-emerald-950/20 text-emerald-800 dark:text-emerald-300 border-b border-emerald-200/50 dark:border-emerald-900/20' : 'bg-amber-50 dark:bg-amber-950/20 text-amber-800 dark:text-amber-300 border-b border-amber-200/50 dark:border-amber-900/20'} p-2.5 text-center text-xs sm:text-sm z-30 flex items-center justify-between px-4 sm:px-6 transition-all duration-300`}>
             <div className="flex-grow flex items-center justify-center gap-2">
-              <span className="material-symbols-outlined text-base sm:text-lg leading-none">
+              <span className="material-symbols-outlined notranslate text-base sm:text-lg leading-none" translate="no">
                 {locationError.startsWith('Location set') ? 'check_circle' : 'warning'}
               </span>
               <span className="font-medium">{locationError}</span>
@@ -713,7 +742,7 @@ const App: React.FC = () => {
               className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1 rounded-full hover:bg-black/5 dark:hover:bg-white/5 transition-colors focus:outline-none flex items-center justify-center flex-shrink-0"
               aria-label="Dismiss message"
             >
-              <span className="material-symbols-outlined text-base sm:text-lg" style={{ fontSize: '18px' }}>close</span>
+              <span className="material-symbols-outlined notranslate text-base sm:text-lg" style={{ fontSize: '18px' }} translate="no">close</span>
             </button>
           </div>
         )}
@@ -734,7 +763,7 @@ const App: React.FC = () => {
 
         <main className="flex-grow flex flex-col overflow-hidden px-1.5 sm:px-2 md:p-4 relative">
           {error && <ErrorMessage message={error} />}
-          {showWeatherWidget && (
+          {showWeatherWidget && !isKeyboardOpen && (
             <div className="my-2 sm:my-4 flex justify-center px-1 sm:px-0 z-10">
               <WeatherWidget userLocation={userLocation} />
             </div>
@@ -752,9 +781,10 @@ const App: React.FC = () => {
             inputRef={inputRef}
             onStartLiveSession={() => setIsLiveSessionActive(true)}
             userFirstName={user?.displayName ? user.displayName.split(' ')[0] : ''}
+            isKeyboardOpen={isKeyboardOpen}
           />
         </main>
-        <Footer />
+        {!isKeyboardOpen && <Footer />}
       </div>
 
       <LiveSessionOverlay

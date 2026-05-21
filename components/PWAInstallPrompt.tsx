@@ -245,7 +245,7 @@ export const PWAInstallPrompt: React.FC<PWAInstallPromptProps> = ({ theme }) => 
             )}
             {isIOS && (
               <div className="flex items-center gap-2 text-blue-500 font-medium text-xs mt-2">
-                <span className="material-symbols-outlined text-sm">share</span>
+                <span className="material-symbols-outlined notranslate text-sm" translate="no">share</span>
                 <span>Share &gt; Add to Home Screen</span>
               </div>
             )}
