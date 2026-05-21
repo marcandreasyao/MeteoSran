@@ -50,6 +50,14 @@
     href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200"
     rel="stylesheet" />
   <style>
+    /* Global input reset — kills WebKit/browser bottom-bar line */
+    input[type="text"], input[type="search"], input {
+      -webkit-appearance: none;
+      -moz-appearance: none;
+      appearance: none;
+      border-style: solid;
+    }
+
     :root {
       --color-bg1-light: hsl(200, 100%, 95%);
       /* Very light blue */

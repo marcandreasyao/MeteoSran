@@ -8,6 +8,7 @@ export interface ChatSession {
   createdAt: Date;
   updatedAt: Date;
   memorySummary?: string;
+  isPinned?: boolean;
 }
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5005/api';
@@ -61,6 +62,50 @@ export const updateChatMemorySummary = async (userId: string, chatId: string, su
     if (!response.ok) throw new Error("Failed to update memory summary");
   } catch (error) {
     console.error("Error updating memory summary:", error);
+  }
+};
+
+export const renameChatSession = async (userId: string, chatId: string, title: string): Promise<boolean> => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/chats/${chatId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title })
+    });
+    if (!response.ok) throw new Error("Failed to rename chat session");
+    return true;
+  } catch (error) {
+    console.error("Error renaming chat session:", error);
+    return false;
+  }
+};
+
+export const deleteChatSession = async (userId: string, chatId: string): Promise<boolean> => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/chats/${chatId}`, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' }
+    });
+    if (!response.ok) throw new Error("Failed to delete chat session");
+    return true;
+  } catch (error) {
+    console.error("Error deleting chat session:", error);
+    return false;
+  }
+};
+
+export const pinChatSession = async (userId: string, chatId: string, isPinned: boolean): Promise<boolean> => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/chats/${chatId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ isPinned })
+    });
+    if (!response.ok) throw new Error("Failed to pin/unpin chat session");
+    return true;
+  } catch (error) {
+    console.error("Error pinning chat session:", error);
+    return false;
   }
 };
 

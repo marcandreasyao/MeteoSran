@@ -12,6 +12,7 @@ model ChatSession {
   userId        String    // Firebase UID
   title         String    @default("New Chat")
   memorySummary String?
+  isPinned      Boolean   @default(false)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
   messages      Message[]

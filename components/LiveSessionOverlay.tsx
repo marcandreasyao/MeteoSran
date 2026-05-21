@@ -5,9 +5,10 @@ import { AudioContextService } from '../services/audioContextService';
 interface LiveSessionOverlayProps {
   isActive: boolean;
   onClose: () => void;
+  userLocation: { lat: number; lon: number } | null;
 }
 
-export const LiveSessionOverlay: React.FC<LiveSessionOverlayProps> = ({ isActive, onClose }) => {
+export const LiveSessionOverlay: React.FC<LiveSessionOverlayProps> = ({ isActive, onClose, userLocation }) => {
   const [status, setStatus] = useState<'connecting' | 'listening' | 'speaking' | 'error'>('connecting');
   const liveApiService = useRef<LiveApiService | null>(null);
   const audioService = useRef<AudioContextService | null>(null);
@@ -18,7 +19,7 @@ export const LiveSessionOverlay: React.FC<LiveSessionOverlayProps> = ({ isActive
 
     setStatus('connecting');
     audioService.current = new AudioContextService();
-    liveApiService.current = new LiveApiService();
+    liveApiService.current = new LiveApiService(userLocation);
 
     liveApiService.current.onConnected = async () => {
       try {
@@ -59,7 +60,7 @@ export const LiveSessionOverlay: React.FC<LiveSessionOverlayProps> = ({ isActive
       audioService.current?.stopRecording();
       liveApiService.current?.disconnect();
     };
-  }, [isActive, onClose]);
+  }, [isActive, onClose, userLocation]);
 
   if (!isActive) return null;
 

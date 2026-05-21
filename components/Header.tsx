@@ -14,6 +14,9 @@ interface HeaderProps {
   onToggleSidebar?: () => void;
   onOpenNotifications?: () => void;
   hasUnreadNotifications?: boolean;
+  locationMode: 'auto' | 'manual' | 'ip' | 'fixed';
+  setLocationMode: (mode: 'auto' | 'manual' | 'ip' | 'fixed') => void;
+  onManualLocationRequested: () => void;
 }
 
 const ResponseModeDetails = {
@@ -50,20 +53,16 @@ const ResponseModeDetails = {
 };
 
 export const Header: React.FC<HeaderProps> = ({ 
-  theme, toggleTheme, messages, selectedMode, onModeChange, onToggleSidebar, onOpenNotifications, hasUnreadNotifications 
+  theme, toggleTheme, messages, selectedMode, onModeChange, onToggleSidebar, onOpenNotifications, hasUnreadNotifications,
+  locationMode, setLocationMode, onManualLocationRequested
 }) => {
   const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
   const [isModeDropdownOpen, setIsModeDropdownOpen] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
-  // Notification and location preferences
+  // Notification preferences
   const [notificationsEnabled, setNotificationsEnabled] = useState(() => {
     const stored = localStorage.getItem('notificationsEnabled');
     return stored ? stored === 'true' : false;
-  });
-  const [locationMode, setLocationMode] = useState<'auto' | 'manual' | 'ip' | 'fixed'>(() => {
-    const stored = localStorage.getItem('locationMode');
-    if (stored === 'manual' || stored === 'ip' || stored === 'fixed') return stored;
-    return 'auto';
   });
   const [notificationType, setNotificationType] = useState(() => {
     return localStorage.getItem('notificationType') || 'Daily Summary';
@@ -83,9 +82,6 @@ export const Header: React.FC<HeaderProps> = ({
   useEffect(() => {
     localStorage.setItem('notificationsEnabled', notificationsEnabled.toString());
   }, [notificationsEnabled]);
-  useEffect(() => {
-    localStorage.setItem('locationMode', locationMode);
-  }, [locationMode]);
   useEffect(() => {
     localStorage.setItem('notificationType', notificationType);
   }, [notificationType]);
@@ -385,7 +381,12 @@ export const Header: React.FC<HeaderProps> = ({
                               ${locationMode === mode.id
                                 ? 'bg-sky-500 text-white shadow-[0_2px_8px_rgba(14,165,233,0.3)]'
                                 : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'}`}
-                            onClick={() => setLocationMode(mode.id as any)}
+                            onClick={() => {
+                              setLocationMode(mode.id as any);
+                              if (mode.id === 'manual') {
+                                onManualLocationRequested();
+                              }
+                            }}
                           >
                             {mode.label}
                           </button>

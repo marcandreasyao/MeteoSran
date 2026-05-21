@@ -19,6 +19,7 @@ const PORT = process.env.PORT || 5005;
 // SECURITY NOTE: I have redacted your AccuWeather key here. 
 // Make sure to use process.env in production so bots don't steal it!
 const ACCUWEATHER_API_KEY = process.env.ACCUWEATHER_API_KEY || 'YOUR_ACCUWEATHER_KEY_HERE';
+const OPENWEATHER_API_KEY = process.env.OPENWEATHER_API_KEY || '1bd935b392a1cecddcf1c018a57e5511';
 const ABIDJAN_LOCATION_KEY = '223019';
 
 app.use(cors());
@@ -49,82 +50,397 @@ if (GEMINI_KEYS.length === 0) {
 // ==========================================
 // 1. ACCUWEATHER PROXY (Unchanged)
 // ==========================================
-app.get('/api/weather/current', async (req, res) => {
-    let lat, lon, locationKey, locationLabel;
-
-    if (req.query.fixed) {
-        locationKey = ABIDJAN_LOCATION_KEY;
-        locationLabel = "Abidjan, Ivory Coast";
-    } else {
-        if (req.query.lat && req.query.lon) {
-            lat = req.query.lat;
-            lon = req.query.lon;
-            try {
-                const isNewKey = ACCUWEATHER_API_KEY.startsWith('zpka_');
-                const authHeader = isNewKey ? { 'Authorization': `Bearer ${ACCUWEATHER_API_KEY}` } : {};
-                const geoUrl = isNewKey
-                    ? `https://dataservice.accuweather.com/locations/v1/cities/geoposition/search?q=${lat},${lon}`
-                    : `http://dataservice.accuweather.com/locations/v1/cities/geoposition/search?apikey=${ACCUWEATHER_API_KEY}&q=${lat},${lon}`;
-
-                const geoResp = await fetch(geoUrl, { headers: authHeader });
-                if (geoResp.ok) {
-                    const geoData = await geoResp.json();
-                    if (geoData && geoData.Key) {
-                        locationKey = geoData.Key;
-                        locationLabel = geoData.LocalizedName + (geoData.AdministrativeArea ? ', ' + geoData.AdministrativeArea.LocalizedName : '') + (geoData.Country ? ', ' + geoData.Country.LocalizedName : '');
-                    }
-                }
-            } catch (e) { }
+const isLocalIp = (ip) => {
+    if (!ip) return true;
+    const cleanIp = ip.toLowerCase().trim();
+    if (cleanIp === '::1' || cleanIp === '127.0.0.1' || cleanIp.includes('localhost') || cleanIp.includes('127.0.0.1')) {
+        return true;
+    }
+    if (cleanIp.startsWith('192.168.') || cleanIp.startsWith('10.') || cleanIp.startsWith('::ffff:127.0.0.1') || cleanIp.startsWith('::ffff:192.168.') || cleanIp.startsWith('::ffff:10.')) {
+        return true;
+    }
+    if (cleanIp.startsWith('172.')) {
+        const parts = cleanIp.split('.');
+        if (parts.length >= 2) {
+            const secondOctet = parseInt(parts[1], 10);
+            if (secondOctet >= 16 && secondOctet <= 31) {
+                return true;
+            }
         }
+    }
+    return false;
+};
 
-        if (!locationKey) {
-            try {
+const mapOpenWeather25ToSchema = (currentData, forecastData, locationLabel) => {
+    const uv = currentData.uvi || 0; 
+    let uvText = "Faible";
+    if (uv >= 11) uvText = "Extrême";
+    else if (uv >= 8) uvText = "Très fort";
+    else if (uv >= 6) uvText = "Fort";
+    else if (uv >= 3) uvText = "Modéré";
+
+    const hasPrecip = !!(currentData.rain || currentData.snow);
+    const precipType = currentData.rain ? "Rain" : (currentData.snow ? "Snow" : null);
+    const precipMm = (currentData.rain && (currentData.rain['1h'] || currentData.rain['3h'])) ||
+                     (currentData.snow && (currentData.snow['1h'] || currentData.snow['3h'])) || 0;
+
+    const weatherDesc = currentData.weather[0].description;
+    const capitalizedWeatherDesc = weatherDesc.charAt(0).toUpperCase() + weatherDesc.slice(1);
+    const iconUrl = `https://openweathermap.org/img/wn/${currentData.weather[0].icon}@2x.png`;
+
+    const isDayTime = currentData.dt >= currentData.sys.sunrise && currentData.dt <= currentData.sys.sunset;
+
+    // Group 3-hourly forecast by day
+    const dayGroups = {};
+    forecastData.list.forEach(item => {
+        const dateObj = new Date(item.dt * 1000);
+        const dateStr = dateObj.toISOString().split('T')[0];
+        
+        if (!dayGroups[dateStr]) {
+            dayGroups[dateStr] = [];
+        }
+        dayGroups[dateStr].push(item);
+    });
+
+    const daysFr = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'];
+    const forecast = Object.keys(dayGroups).slice(0, 6).map(dateStr => {
+        const items = dayGroups[dateStr];
+        const dateObj = new Date(dateStr);
+        const dayOfWeek = daysFr[dateObj.getDay()];
+
+        let minTemp = Infinity;
+        let maxTemp = -Infinity;
+        let sumTemp = 0;
+        let maxPop = 0;
+        let sumPrecip = 0;
+
+        let midItem = items[0];
+        let minDiff = Infinity;
+        items.forEach(item => {
+            if (item.main.temp_min < minTemp) minTemp = item.main.temp_min;
+            if (item.main.temp_max > maxTemp) maxTemp = item.main.temp_max;
+            sumTemp += item.main.temp;
+            if (item.pop > maxPop) maxPop = item.pop;
+            
+            const itemPrecip = (item.rain && (item.rain['3h'] || item.rain['1h'])) ||
+                               (item.snow && (item.snow['3h'] || item.snow['1h'])) || 0;
+            sumPrecip += itemPrecip;
+
+            const timeStr = item.dt_txt.split(' ')[1];
+            const hour = parseInt(timeStr.split(':')[0], 10);
+            const diff = Math.abs(hour - 12);
+            if (diff < minDiff) {
+                minDiff = diff;
+                midItem = item;
+            }
+        });
+
+        const avgTemp = sumTemp / items.length;
+        const condText = midItem.weather[0].description;
+        const capitalizedCondText = condText.charAt(0).toUpperCase() + condText.slice(1);
+        const fdIcon = `https://openweathermap.org/img/wn/${midItem.weather[0].icon}@2x.png`;
+
+        return {
+            date: dateStr,
+            dayOfWeek: dayOfWeek,
+            temp: parseFloat(avgTemp.toFixed(1)),
+            maxTemp: parseFloat(maxTemp.toFixed(1)),
+            minTemp: parseFloat(minTemp.toFixed(1)),
+            conditionText: capitalizedCondText,
+            iconUrl: fdIcon,
+            precip_mm: parseFloat(sumPrecip.toFixed(1)),
+            chanceOfRain: Math.round(maxPop * 100)
+        };
+    });
+
+    const degToCompass = (num) => {
+        const val = Math.floor((num / 22.5) + 0.5);
+        const arr = ["N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE", "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW"];
+        return arr[(val % 16)];
+    };
+
+    return {
+        location: locationLabel,
+        temperature: currentData.main.temp,
+        unit: "C",
+        weatherText: capitalizedWeatherDesc,
+        hasPrecipitation: hasPrecip,
+        isDayTime: isDayTime,
+        weatherIcon: 1,
+        iconUrl: iconUrl,
+        relativeHumidity: currentData.main.humidity,
+        wind: {
+            speed: parseFloat((currentData.wind.speed * 3.6).toFixed(1)),
+            unit: "km/h",
+            direction: degToCompass(currentData.wind.deg),
+        },
+        pressure: {
+            value: currentData.main.pressure,
+            unit: "mb",
+        },
+        realFeelTemperature: {
+            value: currentData.main.feels_like,
+            unit: "C",
+        },
+        uvIndex: uv,
+        uvIndexText: uvText,
+        precipitationType: precipType,
+        precip_mm: parseFloat(precipMm.toFixed(1)),
+        forecast: forecast
+    };
+};
+
+app.get('/api/weather/current', async (req, res) => {
+    const WEATHERAPI_KEY = process.env.WEATHERAPI_API_KEY || process.env.WEATHERAPI_KEY || '029386abbd2e4300b3920520262005';
+    
+    if (OPENWEATHER_API_KEY) {
+        try {
+            let lat = null;
+            let lon = null;
+            let locationLabel = '';
+
+            if (req.query.fixed) {
+                lat = 5.3453;
+                lon = -4.0244;
+                locationLabel = "Abidjan, Côte d'Ivoire";
+            } else if (req.query.lat && req.query.lon) {
+                lat = parseFloat(req.query.lat);
+                lon = parseFloat(req.query.lon);
+                locationLabel = `Coordinates: ${lat.toFixed(4)}, ${lon.toFixed(4)}`;
+            } else {
                 const ip = req.headers['x-forwarded-for']?.split(',')[0] || req.connection.remoteAddress;
-                const ipGeoResp = await fetch(`http://ip-api.com/json/${ip}`);
-                if (ipGeoResp.ok) {
-                    const ipGeoData = await ipGeoResp.json();
-                    if (ipGeoData && ipGeoData.status === 'success') {
-                        lat = ipGeoData.lat;
-                        lon = ipGeoData.lon;
-                        const isNewKey = ACCUWEATHER_API_KEY.startsWith('zpka_');
-                        const authHeader = isNewKey ? { 'Authorization': `Bearer ${ACCUWEATHER_API_KEY}` } : {};
-                        const geoUrl = isNewKey
-                            ? `https://dataservice.accuweather.com/locations/v1/cities/geoposition/search?q=${lat},${lon}`
-                            : `http://dataservice.accuweather.com/locations/v1/cities/geoposition/search?apikey=${ACCUWEATHER_API_KEY}&q=${lat},${lon}`;
-
-                        const geoResp = await fetch(geoUrl, { headers: authHeader });
-                        if (geoResp.ok) {
-                            const geoData = await geoResp.json();
-                            if (geoData && geoData.Key) {
-                                locationKey = geoData.Key;
-                                locationLabel = geoData.LocalizedName + (geoData.AdministrativeArea ? ', ' + geoData.AdministrativeArea.LocalizedName : '') + (geoData.Country ? ', ' + geoData.Country.LocalizedName : '');
+                if (ip && !isLocalIp(ip)) {
+                    try {
+                        const ipGeoResp = await fetch(`http://ip-api.com/json/${ip}`);
+                        if (ipGeoResp.ok) {
+                            const ipGeoData = await ipGeoResp.json();
+                            if (ipGeoData && ipGeoData.status === 'success') {
+                                lat = ipGeoData.lat;
+                                lon = ipGeoData.lon;
+                                locationLabel = `${ipGeoData.city}, ${ipGeoData.country}`;
                             }
                         }
+                    } catch (e) {
+                        console.warn("[MeteoSran Server] IP Geolocation failed, using default Abidjan coordinates.", e.message);
                     }
                 }
-            } catch (e) { }
-        }
+                
+                if (!lat || !lon) {
+                    lat = 5.3453;
+                    lon = -4.0244;
+                    locationLabel = "Abidjan, Côte d'Ivoire";
+                }
+            }
 
-        if (!locationKey) {
-            locationKey = ABIDJAN_LOCATION_KEY;
-            locationLabel = "Abidjan, Ivory Coast";
+            if (req.query.lat && req.query.lon) {
+                try {
+                    const geoUrl = `http://api.openweathermap.org/geo/1.0/reverse?lat=${lat}&lon=${lon}&limit=1&appid=${OPENWEATHER_API_KEY}`;
+                    const geoResp = await fetch(geoUrl);
+                    if (geoResp.ok) {
+                        const geoData = await geoResp.json();
+                        if (geoData && geoData.length > 0) {
+                             const g = geoData[0];
+                             let countryName = g.country;
+                             try {
+                                 const regionNames = new Intl.DisplayNames(['fr'], {type: 'region'});
+                                 countryName = regionNames.of(g.country) || g.country;
+                             } catch (intlErr) {}
+                             locationLabel = g.name + (g.state ? `, ${g.state}` : '') + `, ${countryName}`;
+                        }
+                    }
+                } catch (e) {
+                    console.warn("[MeteoSran Server] OpenWeather reverse geocode failed.", e.message);
+                }
+            }
+
+            console.log(`[MeteoSran Server] Querying OpenWeather 2.5 APIs for: ${lat}, ${lon}`);
+            const weatherUrl = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&units=metric&lang=fr&appid=${OPENWEATHER_API_KEY}`;
+            const forecastUrl = `https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&units=metric&lang=fr&appid=${OPENWEATHER_API_KEY}`;
+
+            const [wRes, fRes] = await Promise.all([fetch(weatherUrl), fetch(forecastUrl)]);
+            if (!wRes.ok || !fRes.ok) {
+                throw new Error(`OpenWeather endpoints returned bad status: weather ${wRes.status}, forecast ${fRes.status}`);
+            }
+
+            const wData = await wRes.json();
+            const fData = await fRes.json();
+
+            const mappedData = mapOpenWeather25ToSchema(wData, fData, locationLabel);
+            return res.json(mappedData);
+
+        } catch (owError) {
+            console.error("[MeteoSran Server] OpenWeather failed, falling back to WeatherAPI proxy...", owError.message);
         }
     }
 
-    const isNewKey = ACCUWEATHER_API_KEY.startsWith('zpka_');
-    const authHeader = isNewKey ? { 'Authorization': `Bearer ${ACCUWEATHER_API_KEY}` } : {};
-    const accuweatherUrl = isNewKey
-        ? `https://dataservice.accuweather.com/currentconditions/v1/${locationKey}?details=true&metric=true`
-        : `http://dataservice.accuweather.com/currentconditions/v1/${locationKey}?apikey=${ACCUWEATHER_API_KEY}&details=true&metric=true`;
+    let query = '';
+
+    if (req.query.fixed) {
+        query = 'Abidjan';
+    } else if (req.query.lat && req.query.lon) {
+        query = `${req.query.lat},${req.query.lon}`;
+    } else {
+        const ip = req.headers['x-forwarded-for']?.split(',')[0] || req.connection.remoteAddress;
+        if (ip && !isLocalIp(ip)) {
+            query = ip;
+        } else {
+            query = 'Abidjan';
+        }
+    }
 
     try {
-        const response = await fetch(accuweatherUrl, { headers: authHeader });
-        if (!response.ok) {
-            const errorBody = await response.text();
-            console.error(`AccuWeather API error: ${response.status} - ${response.statusText}`, errorBody);
+        console.log(`[MeteoSran Server] Querying WeatherAPI for: ${query}`);
+        let response = await fetch(`http://api.weatherapi.com/v1/forecast.json?key=${WEATHERAPI_KEY}&q=${encodeURIComponent(query)}&days=6&lang=fr&aqi=no&alerts=no`);
+        
+        if (!response.ok && query !== 'Abidjan') {
+            console.warn(`[MeteoSran Server] WeatherAPI failed for query "${query}". Retrying with default "Abidjan"...`);
+            query = 'Abidjan';
+            response = await fetch(`http://api.weatherapi.com/v1/forecast.json?key=${WEATHERAPI_KEY}&q=${encodeURIComponent(query)}&days=6&lang=fr&aqi=no&alerts=no`);
+        }
 
-            if (response.status === 403 || response.status === 503) {
-                console.log("Using mock AccuWeather data due to API limit.");
+        if (!response.ok) {
+            throw new Error(`WeatherAPI returned status ${response.status}`);
+        }
+
+        const data = await response.json();
+        
+        const uv = data.current.uv;
+        let uvText = "Faible";
+        if (uv >= 11) uvText = "Extrême";
+        else if (uv >= 8) uvText = "Très fort";
+        else if (uv >= 6) uvText = "Fort";
+        else if (uv >= 3) uvText = "Modéré";
+
+        const locationLabel = `${data.location.name}, ${data.location.country}`;
+        const iconUrl = data.current.condition.icon.startsWith('http') 
+            ? data.current.condition.icon 
+            : `https:${data.current.condition.icon}`;
+
+        // Map forecast days
+        const forecast = data.forecast.forecastday.map(fd => {
+            const dateObj = new Date(fd.date);
+            const daysFr = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'];
+            const dayOfWeek = daysFr[dateObj.getDay()];
+            const fdIcon = fd.day.condition.icon.startsWith('http') 
+                ? fd.day.condition.icon 
+                : `https:${fd.day.condition.icon}`;
+            return {
+                date: fd.date,
+                dayOfWeek: dayOfWeek,
+                temp: fd.day.avgtemp_c,
+                maxTemp: fd.day.maxtemp_c,
+                minTemp: fd.day.mintemp_c,
+                conditionText: fd.day.condition.text,
+                iconUrl: fdIcon,
+                precip_mm: fd.day.totalprecip_mm,
+                chanceOfRain: fd.day.daily_chance_of_rain
+            };
+        });
+
+        return res.json({
+            location: locationLabel,
+            temperature: data.current.temp_c,
+            unit: "C",
+            weatherText: data.current.condition.text,
+            hasPrecipitation: data.current.precip_mm > 0,
+            isDayTime: data.current.is_day === 1,
+            weatherIcon: 1, // Fallback placeholder index
+            iconUrl: iconUrl,
+            relativeHumidity: data.current.humidity,
+            wind: {
+                speed: data.current.wind_kph,
+                unit: "km/h",
+                direction: data.current.wind_dir,
+            },
+            pressure: {
+                value: data.current.pressure_mb,
+                unit: "mb",
+            },
+            realFeelTemperature: {
+                value: data.current.feelslike_c,
+                unit: "C",
+            },
+            uvIndex: uv,
+            uvIndexText: uvText,
+            precipitationType: data.current.precip_mm > 0 ? "Rain" : null,
+            precip_mm: data.current.precip_mm,
+            forecast: forecast
+        });
+
+    } catch (weatherApiError) {
+        console.warn("[MeteoSran Server] WeatherAPI fetch failed, falling back to AccuWeather proxy...", weatherApiError.message);
+        
+        let lat, lon, locationKey, locationLabel;
+
+        if (req.query.fixed) {
+            locationKey = ABIDJAN_LOCATION_KEY;
+            locationLabel = "Abidjan, Ivory Coast";
+        } else {
+            if (req.query.lat && req.query.lon) {
+                lat = req.query.lat;
+                lon = req.query.lon;
+                try {
+                    const isNewKey = ACCUWEATHER_API_KEY.startsWith('zpka_');
+                    const authHeader = isNewKey ? { 'Authorization': `Bearer ${ACCUWEATHER_API_KEY}` } : {};
+                    const geoUrl = isNewKey
+                        ? `https://dataservice.accuweather.com/locations/v1/cities/geoposition/search?q=${lat},${lon}`
+                        : `http://dataservice.accuweather.com/locations/v1/cities/geoposition/search?apikey=${ACCUWEATHER_API_KEY}&q=${lat},${lon}`;
+
+                    const geoResp = await fetch(geoUrl, { headers: authHeader });
+                    if (geoResp.ok) {
+                        const geoData = await geoResp.json();
+                        if (geoData && geoData.Key) {
+                            locationKey = geoData.Key;
+                            locationLabel = geoData.LocalizedName + (geoData.AdministrativeArea ? ', ' + geoData.AdministrativeArea.LocalizedName : '') + (geoData.Country ? ', ' + geoData.Country.LocalizedName : '');
+                        }
+                    }
+                } catch (e) { }
+            }
+
+            if (!locationKey) {
+                try {
+                    const ip = req.headers['x-forwarded-for']?.split(',')[0] || req.connection.remoteAddress;
+                    const ipGeoResp = await fetch(`http://ip-api.com/json/${ip}`);
+                    if (ipGeoResp.ok) {
+                        const ipGeoData = await ipGeoResp.json();
+                        if (ipGeoData && ipGeoData.status === 'success') {
+                            lat = ipGeoData.lat;
+                            lon = ipGeoData.lon;
+                            const isNewKey = ACCUWEATHER_API_KEY.startsWith('zpka_');
+                            const authHeader = isNewKey ? { 'Authorization': `Bearer ${ACCUWEATHER_API_KEY}` } : {};
+                            const geoUrl = isNewKey
+                                ? `https://dataservice.accuweather.com/locations/v1/cities/geoposition/search?q=${lat},${lon}`
+                                : `http://dataservice.accuweather.com/locations/v1/cities/geoposition/search?apikey=${ACCUWEATHER_API_KEY}&q=${lat},${lon}`;
+
+                            const geoResp = await fetch(geoUrl, { headers: authHeader });
+                            if (geoResp.ok) {
+                                const geoData = await geoResp.json();
+                                if (geoData && geoData.Key) {
+                                    locationKey = geoData.Key;
+                                    locationLabel = geoData.LocalizedName + (geoData.AdministrativeArea ? ', ' + geoData.AdministrativeArea.LocalizedName : '') + (geoData.Country ? ', ' + geoData.Country.LocalizedName : '');
+                                }
+                            }
+                        }
+                    }
+                } catch (e) { }
+            }
+
+            if (!locationKey) {
+                locationKey = ABIDJAN_LOCATION_KEY;
+                locationLabel = "Abidjan, Ivory Coast";
+            }
+        }
+
+        const isNewKey = ACCUWEATHER_API_KEY.startsWith('zpka_');
+        const authHeader = isNewKey ? { 'Authorization': `Bearer ${ACCUWEATHER_API_KEY}` } : {};
+        const accuweatherUrl = isNewKey
+            ? `https://dataservice.accuweather.com/currentconditions/v1/${locationKey}?details=true&metric=true`
+            : `http://dataservice.accuweather.com/currentconditions/v1/${locationKey}?apikey=${ACCUWEATHER_API_KEY}&details=true&metric=true`;
+
+        try {
+            const response = await fetch(accuweatherUrl, { headers: authHeader });
+            if (!response.ok) {
+                console.log("[MeteoSran Server Fallback] AccuWeather API error, returning mock data.");
                 return res.json({
                     location: locationLabel || "Abidjan, Ivory Coast (Mocked)",
                     temperature: 28.5, unit: "C", weatherText: "Partly sunny",
@@ -136,47 +452,60 @@ app.get('/api/weather/current', async (req, res) => {
                     uvIndex: 6, uvIndexText: "High", precipitationType: null,
                 });
             }
-
-            return res.status(response.status).json({
-                error: `Failed to fetch weather data: ${response.statusText}`,
-                details: errorBody
+            const data = await response.json();
+            if (data && data.length > 0) {
+                const currentConditions = data[0];
+                return res.json({
+                    location: locationLabel,
+                    temperature: currentConditions.Temperature.Metric.Value,
+                    unit: currentConditions.Temperature.Metric.Unit,
+                    weatherText: currentConditions.WeatherText,
+                    hasPrecipitation: currentConditions.HasPrecipitation,
+                    isDayTime: currentConditions.IsDayTime,
+                    weatherIcon: currentConditions.WeatherIcon,
+                    relativeHumidity: currentConditions.RelativeHumidity,
+                    wind: {
+                        speed: currentConditions.Wind.Speed.Metric.Value,
+                        unit: currentConditions.Wind.Speed.Metric.Unit,
+                        direction: currentConditions.Wind.Direction.Localized,
+                    },
+                    pressure: {
+                        value: currentConditions.Pressure.Metric.Value,
+                        unit: currentConditions.Pressure.Metric.Unit,
+                    },
+                    realFeelTemperature: {
+                        value: currentConditions.RealFeelTemperature.Metric.Value,
+                        unit: currentConditions.RealFeelTemperature.Metric.Unit,
+                    },
+                    uvIndex: currentConditions.UVIndex,
+                    uvIndexText: currentConditions.UVIndexText,
+                    precipitationType: currentConditions.PrecipitationType,
+                });
+            } else {
+                return res.json({
+                    location: locationLabel || "Abidjan, Ivory Coast (Mocked)",
+                    temperature: 28.5, unit: "C", weatherText: "Partly sunny",
+                    hasPrecipitation: false, isDayTime: true, weatherIcon: 3,
+                    relativeHumidity: 78,
+                    wind: { speed: 15.2, unit: "km/h", direction: "SW" },
+                    pressure: { value: 1012, unit: "mb" },
+                    realFeelTemperature: { value: 32.1, unit: "C" },
+                    uvIndex: 6, uvIndexText: "High", precipitationType: null,
+                });
+            }
+        } catch (error) {
+            console.log("[MeteoSran Server Fallback] AccuWeather catch error, returning mock data.");
+            return res.json({
+                location: locationLabel || "Abidjan, Ivory Coast (Mocked)",
+                temperature: 28.5, unit: "C", weatherText: "Partly sunny",
+                hasPrecipitation: false, isDayTime: true, weatherIcon: 3,
+                relativeHumidity: 78,
+                wind: { speed: 15.2, unit: "km/h", direction: "SW" },
+                pressure: { value: 1012, unit: "mb" },
+                realFeelTemperature: { value: 32.1, unit: "C" },
+                uvIndex: 6, uvIndexText: "High", precipitationType: null,
             });
         }
-        const data = await response.json();
-        if (data && data.length > 0) {
-            const currentConditions = data[0];
-            res.json({
-                location: locationLabel,
-                temperature: currentConditions.Temperature.Metric.Value,
-                unit: currentConditions.Temperature.Metric.Unit,
-                weatherText: currentConditions.WeatherText,
-                hasPrecipitation: currentConditions.HasPrecipitation,
-                isDayTime: currentConditions.IsDayTime,
-                weatherIcon: currentConditions.WeatherIcon,
-                relativeHumidity: currentConditions.RelativeHumidity,
-                wind: {
-                    speed: currentConditions.Wind.Speed.Metric.Value,
-                    unit: currentConditions.Wind.Speed.Metric.Unit,
-                    direction: currentConditions.Wind.Direction.Localized,
-                },
-                pressure: {
-                    value: currentConditions.Pressure.Metric.Value,
-                    unit: currentConditions.Pressure.Metric.Unit,
-                },
-                realFeelTemperature: {
-                    value: currentConditions.RealFeelTemperature.Metric.Value,
-                    unit: currentConditions.RealFeelTemperature.Metric.Unit,
-                },
-                uvIndex: currentConditions.UVIndex,
-                uvIndexText: currentConditions.UVIndexText,
-                precipitationType: currentConditions.PrecipitationType,
-            });
-        } else {
-            res.status(404).json({ error: 'No weather data found.' });
-        }
-    } catch (error) {
-        console.error('Error fetching weather data:', error);
-        res.status(500).json({ error: 'Internal server error.' });
     }
 });
 
@@ -262,6 +591,76 @@ app.post('/api/ai/chat', async (req, res) => {
     }
 });
 
+// Smart chat titling endpoint
+app.post('/api/ai/title', async (req, res) => {
+    try {
+        const { text } = req.body;
+        if (!text) {
+            return res.status(400).json({ error: "Text is required to generate a title." });
+        }
+
+        // We instruct Gemini to be extremely brief, maximum 3-4 words.
+        // It should match the language of the message (French/English usually).
+        const prompt = `Based on the following first message from a user in a weather chat assistant, generate a super concise, short title (maximum 3 to 4 words). Do not use quotes, punctuation, or explanations. Respond with ONLY the title itself.
+User message: "${text}"`;
+
+        const SUPPORTED_MODELS = [
+            'gemini-flash-latest',
+            'gemini-3.1-flash',
+            'gemini-3.1-flash-lite',
+            'gemini-3.0-flash',
+            'gemini-2.5-flash',
+            'gemini-2.0-flash'
+        ];
+
+        let lastError = null;
+
+        for (const modelName of SUPPORTED_MODELS) {
+            for (let k = 0; k < GEMINI_KEYS.length; k++) {
+                const currentKey = GEMINI_KEYS[k];
+                const genAIInstance = new GoogleGenAI({ apiKey: currentKey, vertexai: false });
+
+                try {
+                    console.log(`[MeteoSran Server] Smart Title: Attempting with model: ${modelName} (Key ${k + 1}/${GEMINI_KEYS.length})`);
+
+                    const response = await genAIInstance.models.generateContent({
+                        model: modelName,
+                        contents: [{ role: 'user', parts: [{ text: prompt }] }],
+                        config: {
+                            temperature: 0.5,
+                            maxOutputTokens: 20
+                        }
+                    });
+
+                    let title = response.text ? response.text.trim() : null;
+                    if (title) {
+                        // Strip quotes if Gemini wrapped the response in quotes
+                        title = title.replace(/^["']|["']$/g, '').trim();
+                        return res.json({ title });
+                    }
+                } catch (err) {
+                    console.warn(`[MeteoSran Server] Smart Title: Model ${modelName} with Key ${k + 1} failed: ${err.message}`);
+                    lastError = err;
+
+                    if (err.status === 429 || err.status === 403) {
+                        continue;
+                    }
+                    break;
+                }
+            }
+        }
+
+        throw lastError || new Error("Failed to generate title with all models and keys.");
+
+    } catch (error) {
+        console.error('[MeteoSran Server] AI Title Error:', error);
+        res.status(error.status || 500).json({
+            error: error.message || "Failed to generate AI title",
+            status: error.status
+        });
+    }
+});
+
 // ==========================================
 // 3. POSTGRESQL (PRISMA) DATABASE ROUTES
 // ==========================================
@@ -291,7 +690,10 @@ app.get('/api/chats/:userId', async (req, res) => {
         const { userId } = req.params;
         const chats = await prisma.chatSession.findMany({
             where: { userId },
-            orderBy: { updatedAt: 'desc' }
+            orderBy: [
+                { isPinned: 'desc' },
+                { updatedAt: 'desc' }
+            ]
         });
         res.json(chats);
     } catch (error) {
@@ -300,19 +702,39 @@ app.get('/api/chats/:userId', async (req, res) => {
     }
 });
 
-// Update chat memory summary
+// Update chat session (memorySummary, title, or isPinned)
 app.put('/api/chats/:chatId', async (req, res) => {
     try {
         const { chatId } = req.params;
-        const { memorySummary } = req.body;
+        const { memorySummary, title, isPinned } = req.body;
+        
+        const updateData = {};
+        if (memorySummary !== undefined) updateData.memorySummary = memorySummary;
+        if (title !== undefined) updateData.title = title;
+        if (isPinned !== undefined) updateData.isPinned = isPinned;
+        
         const chat = await prisma.chatSession.update({
             where: { id: chatId },
-            data: { memorySummary }
+            data: updateData
         });
         res.json(chat);
     } catch (error) {
         console.error("Error updating chat:", error);
         res.status(500).json({ error: "Failed to update chat" });
+    }
+});
+
+// Delete a chat session
+app.delete('/api/chats/:chatId', async (req, res) => {
+    try {
+        const { chatId } = req.params;
+        await prisma.chatSession.delete({
+            where: { id: chatId }
+        });
+        res.json({ success: true });
+    } catch (error) {
+        console.error("Error deleting chat:", error);
+        res.status(500).json({ error: "Failed to delete chat" });
     }
 });
 

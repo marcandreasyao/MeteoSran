@@ -81,22 +81,18 @@ Remember to:
 
 // --- HELPER FUNCTIONS FOR PROMPT INTELLIGENCE ---
 
-const isTimeRelatedQuery = (text: string): boolean => {
-  const timeKeywords = [
-    'time', 'hour', 'minute', 'clock', 'when', 'now', 'current', 'today', 'tonight',
-    'morning', 'afternoon', 'evening', 'night', 'dawn', 'dusk', 'sunrise', 'sunset',
-    'schedule', 'timing', 'duration', 'period', 'moment', 'instant', 'nowadays',
-    'currently', 'presently', 'at this time', 'right now', 'what time', 'when is',
-    'time of day', 'time of year', 'seasonal', 'daily', 'hourly', 'momentary',
-    'greeting', 'hello', 'hi', 'good morning', 'good afternoon', 'good evening',
-    'good night', 'how are you', 'howdy', 'hey there', 'sup', 'yo'
+const isWeatherRelatedQuery = (text: string): boolean => {
+  const keywords = [
+    // English
+    'weather', 'forecast', 'temperature', 'temp', 'rain', 'precip', 'storm', 'wind', 'humidity', 'climate', 'warm', 'hot', 'cold', 'sun', 'cloud',
+    // French
+    'météo', 'meteo', 'prévision', 'prevision', 'température', 'temperature', 'pluie', 'averse', 'tempête', 'tempete', 'vent', 'humidité', 'humidite', 'climat', 'chaud', 'froid', 'soleil', 'nuage', 'temps', 'saison'
   ];
-
   const lowerText = text.toLowerCase();
-  return timeKeywords.some(keyword => lowerText.includes(keyword));
+  return keywords.some(keyword => lowerText.includes(keyword));
 };
 
-const getCurrentTimeContext = (): string => {
+export const getCurrentTimeContext = (): string => {
   const now = new Date();
   const timeString = now.toLocaleTimeString('en-US', {
     hour12: true,
@@ -145,7 +141,7 @@ const getCurrentTimeContext = (): string => {
 [MONTH]: ${now.toLocaleDateString('en-US', { month: 'long' })}`;
 };
 
-const getTimeBasedGreeting = (): string => {
+export const getTimeBasedGreeting = (): string => {
   const now = new Date();
   const hour = now.getHours();
   const timeOfDay = now.toLocaleTimeString('en-US', { hour12: true, hour: 'numeric', minute: '2-digit' });
@@ -164,7 +160,7 @@ const getTimeBasedGreeting = (): string => {
   return greeting;
 };
 
-const getSeasonalContext = (): string => {
+export const getSeasonalContext = (): string => {
   const now = new Date();
   const month = now.getMonth();
   let season = '';
@@ -184,7 +180,26 @@ const getSeasonalContext = (): string => {
     seasonalInfo = 'Winter brings cold temperatures, snow, and clear, crisp air. Perfect for studying precipitation types and atmospheric conditions!';
   }
 
-  return `[SEASONAL_CONTEXT]: It's ${season} - ${seasonalInfo}`;
+  let ciSeason = '';
+  if (month >= 4 && month <= 6) {
+    ciSeason = "Grande saison des pluies (Major rainy season) in Côte d'Ivoire, characterized by heavy rains and frequent storms, particularly in the south.";
+  } else if (month === 7 || month === 8) {
+    ciSeason = "Petite saison sèche (Minor dry season) in Côte d'Ivoire, featuring cooler and relatively dry weather.";
+  } else if (month === 9 || month === 10) {
+    ciSeason = "Petite saison des pluies (Minor rainy season) in Côte d'Ivoire, with moderate and localized precipitation.";
+  } else {
+    ciSeason = "Grande saison sèche (Major dry season) in Côte d'Ivoire, which is warm and dry. Between December and February, the Harmattan wind often brings dusty, dry winds from the Sahara.";
+  }
+
+  return `[SEASONAL_CONTEXT]: It's ${season} - ${seasonalInfo}\n[COTE_D_IVOIRE_SEASONAL_CONTEXT]: ${ciSeason}`;
+};
+
+export const getDynamicSystemInstruction = (): string => {
+  return `${SYSTEM_INSTRUCTION}
+
+[REAL-TIME CONTEXT]
+${getCurrentTimeContext()}
+${getSeasonalContext()}`;
 };
 
 // --- CORE MESSAGE SERVICE ---
@@ -196,7 +211,9 @@ export const sendMessageToAI = async (
   messages: Message[],
   mode: ResponseMode = ResponseMode.DEFAULT,
   userName: string | null = null,
-  memorySummary: string | null = null
+  memorySummary: string | null = null,
+  latitude: number | null = null,
+  longitude: number | null = null
 ): Promise<Message> => {
   console.log("[MeteoSran] Building advanced prompt and sending via proxy...");
 
@@ -215,12 +232,12 @@ export const sendMessageToAI = async (
     // 1. Build invisible context for the current turn
     let invisibleContext = `[SYSTEM NOTE: Current response mode is ${mode}. ${modeInstructions[mode]}]\n`;
 
-    // Time & Seasonal context
-    if (isTimeRelatedQuery(lastMessage.text)) {
-      invisibleContext += `\n${getCurrentTimeContext()}\n${getSeasonalContext()}`;
-      if (lastMessage.text.toLowerCase().match(/\b(hi|hello|hey|good morning|good afternoon|good evening|how are you|greetings)\b/)) {
-        invisibleContext += `\n[GREETING_CONTEXT]: ${getTimeBasedGreeting()}`;
-      }
+    // Time & Seasonal context is always provided to keep the model anchored in time
+    invisibleContext += `\n${getCurrentTimeContext()}\n${getSeasonalContext()}`;
+    const lowerText = lastMessage.text.toLowerCase();
+    const isGreeting = lowerText.match(/\b(hi|hello|hey|good morning|good afternoon|good evening|how are you|greetings|salut|bonjour|bonsoir|coucou)\b/);
+    if (isGreeting) {
+      invisibleContext += `\n[GREETING_CONTEXT]: ${getTimeBasedGreeting()}`;
     }
 
     if (userName) {
@@ -231,18 +248,21 @@ export const sendMessageToAI = async (
       invisibleContext += `\n[MEMORY_SUMMARY]: ${memorySummary}`;
     }
 
-    // Weather & Climatology for Ivory Coast
-    const isWeatherQueryForCI = lastMessage.text.toLowerCase().includes('weather') &&
-      (lastMessage.text.toLowerCase().includes('ivory coast') || lastMessage.text.toLowerCase().includes('abidjan'));
+    // Weather & Climatology for user location (defaults to Ivory Coast/Abidjan)
+    const isWeatherQuery = isWeatherRelatedQuery(lastMessage.text);
 
-    if (isWeatherQueryForCI) {
+    if (isWeatherQuery) {
       try {
-        const weatherResponse = await fetch('/api/weather/current');
+        const weatherUrl = (latitude !== null && longitude !== null)
+          ? `/api/weather/current?lat=${latitude}&lon=${longitude}`
+          : '/api/weather/current';
+        const weatherResponse = await fetch(weatherUrl);
         if (weatherResponse.ok) {
           const weatherData = await weatherResponse.json();
           invisibleContext += `\n[CURRENT_WEATHER_DATA_FOR_IVORY_COAST]: ${JSON.stringify(weatherData)}`;
-          // Hardcoding Abidjan coordinates for climatology as per original logic
-          const historicalContext = await getClimateNormals(5.30966, -4.01266);
+          const lat = latitude ?? 5.30966;
+          const lon = longitude ?? -4.01266;
+          const historicalContext = await getClimateNormals(lat, lon);
           invisibleContext += `\n${historicalContext}`;
         }
       } catch (fetchError) {
@@ -334,4 +354,35 @@ export const sendMessageToAI = async (
  */
 export const initChatService = async (): Promise<string | null> => {
   return null;
+};
+
+/**
+ * Generates an AI-powered smart chat title based on the user's first message.
+ */
+export const generateSmartTitle = async (firstMessageText: string): Promise<string> => {
+  if (!firstMessageText || !firstMessageText.trim()) {
+    return "Image Analysis...";
+  }
+
+  try {
+    const response = await fetch('/api/ai/title', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ text: firstMessageText }),
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      if (data.title && data.title.trim()) {
+        return data.title.trim();
+      }
+    }
+  } catch (error) {
+    console.error('Error in generateSmartTitle:', error);
+  }
+
+  // Fallback to the 5-word cutoff if anything goes wrong
+  return firstMessageText.split(" ").slice(0, 5).join(" ") + "...";
 };

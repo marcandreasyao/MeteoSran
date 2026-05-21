@@ -1,4 +1,5 @@
-import { SYSTEM_INSTRUCTION } from './geminiService';
+import { SYSTEM_INSTRUCTION, getDynamicSystemInstruction } from './geminiService';
+import { getClimateNormals } from './historicalWeatherService';
 
 const GEMINI_KEYS: string[] = [];
 for (let i = 1; i <= 10; i++) {
@@ -24,6 +25,8 @@ export class LiveApiService {
   public onDisconnected: (() => void) | null = null;
   public onInterrupted: (() => void) | null = null;
 
+  constructor(private userLocation: { lat: number; lon: number } | null = null) {}
+
   connect() {
     if (GEMINI_KEYS.length === 0) {
       console.error("[Live API] No Gemini API keys found for rotation.");
@@ -36,10 +39,10 @@ export class LiveApiService {
     console.log(`[Live API] Connecting with key ${this.currentKeyIndex + 1}/${GEMINI_KEYS.length}...`);
     this.ws = new WebSocket(url);
 
-    this.ws.onopen = () => {
+    this.ws.onopen = async () => {
       console.log(`[Live API] Connected successfully using key ${this.currentKeyIndex + 1}`);
       this.reconnectAttempts = 0; // Reset attempts on successful connection
-      this.sendSetup();
+      await this.sendSetup();
       this.onConnected?.();
     };
 
@@ -120,11 +123,34 @@ export class LiveApiService {
     }
   }
 
-  private sendSetup() {
+  private async sendSetup() {
+    let weatherContext = '';
+    try {
+      const lat = this.userLocation?.lat;
+      const lon = this.userLocation?.lon;
+      const weatherUrl = (lat !== undefined && lon !== undefined)
+        ? `/api/weather/current?lat=${lat}&lon=${lon}`
+        : '/api/weather/current';
+        
+      const response = await fetch(weatherUrl);
+      if (response.ok) {
+        const weatherData = await response.json();
+        weatherContext += `\n[CURRENT_WEATHER_DATA_FOR_IVORY_COAST]: ${JSON.stringify(weatherData)}`;
+        const actualLat = lat ?? 5.30966;
+        const actualLon = lon ?? -4.01266;
+        const historicalContext = await getClimateNormals(actualLat, actualLon);
+        weatherContext += `\n${historicalContext}`;
+      }
+    } catch (e) {
+      console.error("[Live API] Error fetching weather data for voice setup:", e);
+    }
+
+    const dynamicInstruction = getDynamicSystemInstruction() + weatherContext;
+
     // Setup message with the MeteoSran persona 
     const setupMessage = {
       setup: {
-        // Use Gemini 2.5 Flash because it officially supports Native Audio Dialogs
+        // Use Gemini 2.0 Flash because it officially supports Native Audio Dialogs
         model: "models/gemini-2.0-flash",
         generationConfig: {
           responseModalities: ["AUDIO"], // We want voice back!
@@ -139,7 +165,7 @@ export class LiveApiService {
           }
         },
         systemInstruction: {
-          parts: [{ text: SYSTEM_INSTRUCTION }]
+          parts: [{ text: dynamicInstruction }]
         }
       }
     };

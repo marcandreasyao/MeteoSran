@@ -3,7 +3,7 @@ import { track } from '@vercel/analytics';
 import { Header } from './components/Header';
 import { ChatInterface } from './components/ChatInterface';
 import { Message, MessageRole, ResponseMode } from './types';
-import { initChatService, sendMessageToAI } from './services/geminiService';
+import { initChatService, sendMessageToAI, generateSmartTitle } from './services/geminiService';
 import { ErrorMessage } from './components/ErrorMessage';
 import { Footer } from './components/Footer';
 import { LoadingProgress } from './components/LoadingProgress';
@@ -13,7 +13,7 @@ import { useGeolocation } from './src/hooks/useGeolocation';
 import { useTouchDevice } from './src/hooks/useTouchDevice';
 import { useAuth } from './src/contexts/AuthContext';
 import { LoginScreen } from './components/LoginScreen';
-import { saveMessageToDB, fetchUserMessages, fetchChatSessions, createChatSession, ChatSession } from './src/services/dbService';
+import { saveMessageToDB, fetchUserMessages, fetchChatSessions, createChatSession, ChatSession, renameChatSession, deleteChatSession, pinChatSession } from './src/services/dbService';
 import { Sidebar } from './components/Sidebar';
 import { LiveSessionOverlay } from './components/LiveSessionOverlay';
 import { ReleaseNotesModal } from './components/ReleaseNotesModal';
@@ -63,6 +63,15 @@ const App: React.FC = () => {
   const [userLocation, setUserLocation] = useState<{ lat: number; lon: number } | null>(null);
   const [locationError, setLocationError] = useState<string | null>(null);
   const [locationPrompt, setLocationPrompt] = useState(false);
+  const [locationMode, setLocationMode] = useState<'auto' | 'manual' | 'ip' | 'fixed'>(() => {
+    const stored = localStorage.getItem('locationMode');
+    if (stored === 'manual' || stored === 'ip' || stored === 'fixed') return stored;
+    return 'auto';
+  });
+
+  useEffect(() => {
+    localStorage.setItem('locationMode', locationMode);
+  }, [locationMode]);
   const { user, loading: authLoading } = useAuth();
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -197,37 +206,110 @@ const App: React.FC = () => {
   }, []);
 
   // Advanced Geolocation hook handling Android best practices
-  const { location: geoLoc, error: geoErr } = useGeolocation(true);
+  const { location: geoLoc, error: geoErr } = useGeolocation(locationMode === 'auto');
 
   useEffect(() => {
-    if (geoLoc) {
-      setUserLocation({ lat: geoLoc.lat, lon: geoLoc.lon });
-      setLocationError(null);
-      setLocationPrompt(false);
+    if (locationMode === 'auto') {
+      if (geoLoc) {
+        setUserLocation({ lat: geoLoc.lat, lon: geoLoc.lon });
+        setLocationError(null);
+        setLocationPrompt(false);
+      }
+      if (geoErr) {
+        setLocationError(geoErr);
+        setLocationPrompt(true);
+      }
     }
-    if (geoErr) {
-      setLocationError(geoErr);
-      setLocationPrompt(true);
-    }
-  }, [geoLoc, geoErr]);
+  }, [geoLoc, geoErr, locationMode]);
 
-  const handleManualLocation = () => {
-    const manual = prompt('Enter your city or coordinates (lat,lon):');
-    if (manual) {
-      const parts = manual.split(',');
+  const handleManualLocation = async () => {
+    const cityName = prompt('Enter your city name (e.g., Abidjan, Yamoussoukro, Paris):');
+    if (!cityName || cityName.trim() === '') return;
+
+    setIsLoading(true);
+    setLocationError(`Resolving "${cityName}"...`);
+    try {
+      // 1. Check local dictionary first for quick matches (helps with Ivory Coast regions)
+      const localDictionary: Record<string, { lat: number; lon: number; name: string }> = {
+        'abidjan': { lat: 5.30966, lon: -4.01266, name: 'Abidjan' },
+        'yamoussoukro': { lat: 6.81881, lon: -5.27674, name: 'Yamoussoukro' },
+        'bouaké': { lat: 7.69385, lon: -5.03079, name: 'Bouaké' },
+        'bouake': { lat: 7.69385, lon: -5.03079, name: 'Bouaké' },
+        'san pédro': { lat: 4.74851, lon: -6.6363, name: 'San Pédro' },
+        'san pedro': { lat: 4.74851, lon: -6.6363, name: 'San Pédro' },
+        'korhogo': { lat: 9.45803, lon: -5.62961, name: 'Korhogo' },
+        'man': { lat: 7.41251, lon: -7.55383, name: 'Man' },
+        'daloa': { lat: 6.87735, lon: -6.45022, name: 'Daloa' },
+        'gagnoa': { lat: 6.13193, lon: -5.9506, name: 'Gagnoa' },
+        'grand-bassam': { lat: 5.2118, lon: -3.7388, name: 'Grand-Bassam' },
+        'grand bassam': { lat: 5.2118, lon: -3.7388, name: 'Grand-Bassam' },
+        'assinie': { lat: 5.1584, lon: -3.2929, name: 'Assinie' },
+        'odienné': { lat: 9.5051, lon: -7.5643, name: 'Odienné' },
+        'odienne': { lat: 9.5051, lon: -7.5643, name: 'Odienné' },
+        'ferkessédougou': { lat: 9.5928, lon: -5.1983, name: 'Ferkessédougou' },
+        'ferkessedougou': { lat: 9.5928, lon: -5.1983, name: 'Ferkessédougou' }
+      };
+
+      const normalized = cityName.trim().toLowerCase();
+      if (localDictionary[normalized]) {
+        const entry = localDictionary[normalized];
+        setUserLocation({ lat: entry.lat, lon: entry.lon });
+        setLocationError(`Location set manually to: ${entry.name}`);
+        setLocationPrompt(true);
+        return;
+      }
+
+      // 2. Query free Open-Meteo Geocoding API (no keys needed, works in browser context)
+      const response = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(cityName)}&count=1&language=en&format=json`);
+      if (response.ok) {
+        const data = await response.json();
+        if (data.results && data.results.length > 0) {
+          const firstResult = data.results[0];
+          setUserLocation({
+            lat: firstResult.latitude,
+            lon: firstResult.longitude
+          });
+          const adminStr = firstResult.admin1 ? `, ${firstResult.admin1}` : '';
+          const countryStr = firstResult.country ? `, ${firstResult.country}` : '';
+          setLocationError(`Location set manually to: ${firstResult.name}${adminStr}${countryStr}`);
+          setLocationPrompt(true);
+          return;
+        }
+      }
+      
+      // 3. Fallback: Parse if they typed comma separated numbers directly (e.g. 5.34,-4.03)
+      const parts = cityName.split(',');
       if (parts.length === 2) {
         const lat = parseFloat(parts[0]);
         const lon = parseFloat(parts[1]);
         if (!isNaN(lat) && !isNaN(lon)) {
           setUserLocation({ lat, lon });
-          setLocationError(null);
-          setLocationPrompt(false);
+          setLocationError(`Location set manually to: ${lat.toFixed(2)}, ${lon.toFixed(2)}`);
+          setLocationPrompt(true);
           return;
         }
       }
-      setLocationError('Invalid format. Please enter as lat,lon (e.g., 5.34,-4.03)');
+
+      setLocationError(`Could not find location for "${cityName}". Please try again.`);
+      setLocationPrompt(true);
+    } catch (error) {
+      console.error('Geocoding error:', error);
+      setLocationError(`Failed to resolve "${cityName}" due to network error.`);
+      setLocationPrompt(true);
+    } finally {
+      setIsLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (locationMode === 'ip' || locationMode === 'fixed') {
+      setUserLocation(null);
+      setLocationError(null);
+      setLocationPrompt(false);
+    } else if (locationMode === 'manual' && !userLocation) {
+      handleManualLocation();
+    }
+  }, [locationMode]);
 
   const handleSelectChat = async (chatId: string) => {
     if (chatId === activeChatId) return;
@@ -252,6 +334,50 @@ const App: React.FC = () => {
     setIsLoading(false);
     setIsFetchingActiveChat(false);
     if (window.innerWidth < 768) setIsSidebarOpen(false);
+  };
+
+  const handleRenameChat = async (chatId: string, newTitle: string) => {
+    if (!user) return;
+    try {
+      const success = await renameChatSession(user.uid, chatId, newTitle);
+      if (success) {
+        setChatSessions(prev => prev.map(c => c.id === chatId ? { ...c, title: newTitle } : c));
+      }
+    } catch (err) {
+      console.error("Failed to rename chat session:", err);
+    }
+  };
+
+  const handleDeleteChat = async (chatId: string) => {
+    if (!user) return;
+    try {
+      const success = await deleteChatSession(user.uid, chatId);
+      if (success) {
+        setChatSessions(prev => prev.filter(c => c.id !== chatId));
+        if (activeChatId === chatId) {
+          const remainingChats = chatSessions.filter(c => c.id !== chatId);
+          if (remainingChats.length > 0) {
+            handleSelectChat(remainingChats[0].id);
+          } else {
+            handleNewChat();
+          }
+        }
+      }
+    } catch (err) {
+      console.error("Failed to delete chat session:", err);
+    }
+  };
+
+  const handlePinChat = async (chatId: string, isPinned: boolean) => {
+    if (!user) return;
+    try {
+      const success = await pinChatSession(user.uid, chatId, isPinned);
+      if (success) {
+        setChatSessions(prev => prev.map(c => c.id === chatId ? { ...c, isPinned } : c));
+      }
+    } catch (err) {
+      console.error("Failed to pin chat session:", err);
+    }
   };
 
   const triggerGlassFade = () => {
@@ -316,7 +442,14 @@ const App: React.FC = () => {
       // Send that exact array to the API. No stale state!
       const currentChat = chatSessions.find(c => c.id === activeChatId);
       const memorySummary = currentChat?.memorySummary || null;
-      const response = await sendMessageToAI(currentConversation, selectedMode, user?.displayName || null, memorySummary);
+      const response = await sendMessageToAI(
+        currentConversation,
+        selectedMode,
+        user?.displayName || null,
+        memorySummary,
+        userLocation?.lat || null,
+        userLocation?.lon || null
+      );
       setMessages(prev => [...prev, response]);
 
       let finalChatId = activeChatId;
@@ -324,7 +457,7 @@ const App: React.FC = () => {
       (async () => {
         if (!finalChatId && user) {
           const promptText = userMessage.text;
-          const newTitle = promptText ? promptText.split(" ").slice(0, 5).join(" ") + "..." : "Image Analysis...";
+          const newTitle = await generateSmartTitle(promptText);
           finalChatId = await createChatSession(user.uid, newTitle);
 
           if (finalChatId) {
@@ -373,7 +506,14 @@ const App: React.FC = () => {
     try {
       const currentChat = chatSessions.find(c => c.id === activeChatId);
       const memorySummary = currentChat?.memorySummary || null;
-      const response = await sendMessageToAI(historyToResend, selectedMode, user?.displayName || null, memorySummary);
+      const response = await sendMessageToAI(
+        historyToResend,
+        selectedMode,
+        user?.displayName || null,
+        memorySummary,
+        userLocation?.lat || null,
+        userLocation?.lon || null
+      );
 
       setMessages(prev => {
         const newMessages = [...prev];
@@ -481,13 +621,36 @@ const App: React.FC = () => {
           onNewChat={handleNewChat}
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
+          onRenameChat={handleRenameChat}
+          onDeleteChat={handleDeleteChat}
+          onPinChat={handlePinChat}
         />
       )}
 
       <div className="flex-1 flex flex-col h-full w-full relative overflow-hidden transition-all duration-300 pb-safe pt-safe">
         {locationError && (
-          <div className="bg-yellow-100 text-yellow-800 p-2 text-center text-xs sm:text-sm z-30">
-            {locationError} {locationPrompt && <button className="ml-1 sm:ml-2 underline" onClick={handleManualLocation}>Enter manually</button>}
+          <div className={`${locationError.startsWith('Location set') ? 'bg-emerald-50 dark:bg-emerald-950/20 text-emerald-800 dark:text-emerald-300 border-b border-emerald-200/50 dark:border-emerald-900/20' : 'bg-amber-50 dark:bg-amber-950/20 text-amber-800 dark:text-amber-300 border-b border-amber-200/50 dark:border-amber-900/20'} p-2.5 text-center text-xs sm:text-sm z-30 flex items-center justify-between px-4 sm:px-6 transition-all duration-300`}>
+            <div className="flex-grow flex items-center justify-center gap-2">
+              <span className="material-symbols-outlined text-base sm:text-lg leading-none">
+                {locationError.startsWith('Location set') ? 'check_circle' : 'warning'}
+              </span>
+              <span className="font-medium">{locationError}</span>
+              {locationPrompt && (
+                <button 
+                  className="underline font-bold ml-1.5 hover:opacity-80 transition-opacity" 
+                  onClick={handleManualLocation}
+                >
+                  Enter manually
+                </button>
+              )}
+            </div>
+            <button 
+              onClick={() => setLocationError(null)} 
+              className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1 rounded-full hover:bg-black/5 dark:hover:bg-white/5 transition-colors focus:outline-none flex items-center justify-center flex-shrink-0"
+              aria-label="Dismiss message"
+            >
+              <span className="material-symbols-outlined text-base sm:text-lg" style={{ fontSize: '18px' }}>close</span>
+            </button>
           </div>
         )}
 
@@ -500,6 +663,9 @@ const App: React.FC = () => {
           onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
           onOpenNotifications={() => setShowReleaseNotes(true)}
           hasUnreadNotifications={hasUnreadNotifications}
+          locationMode={locationMode}
+          setLocationMode={setLocationMode}
+          onManualLocationRequested={handleManualLocation}
         />
 
         <main className="flex-grow flex flex-col overflow-hidden px-1.5 sm:px-2 md:p-4 relative">
@@ -530,6 +696,7 @@ const App: React.FC = () => {
       <LiveSessionOverlay
         isActive={isLiveSessionActive}
         onClose={() => setIsLiveSessionActive(false)}
+        userLocation={userLocation}
       />
 
       <PWAInstallPrompt theme={theme} />
