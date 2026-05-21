@@ -60,6 +60,9 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading, 
       reader.readAsDataURL(imageFile);
     } else {
       setImagePreviewUrl(null);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
     }
   }, [imageFile]);
 

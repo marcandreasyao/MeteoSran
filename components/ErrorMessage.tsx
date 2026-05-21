@@ -7,7 +7,7 @@ interface ErrorMessageProps {
 }
 
 const ErrorIcon: React.FC<{ className?: string }> = ({ className = "" }) => (
-  <span className={`material-symbols-outlined mr-2 text-xl ${className}`}>error</span>
+  <span className={`material-symbols-outlined notranslate mr-2 text-xl ${className}`} translate="no">error</span>
 );
 
 export const ErrorMessage: React.FC<ErrorMessageProps> = ({ message, isCritical = false }) => {

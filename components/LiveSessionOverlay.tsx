@@ -100,7 +100,7 @@ export const LiveSessionOverlay: React.FC<LiveSessionOverlayProps> = ({ isActive
                   status === 'connecting' ? 'bg-gradient-to-br from-yellow-400 to-orange-500 scale-90' :
                   'bg-gradient-to-br from-red-500 to-rose-600'}
             `}>
-                <span className="material-symbols-outlined text-white text-4xl">
+                <span className="material-symbols-outlined notranslate text-white text-4xl" translate="no">
                     {status === 'speaking' ? 'graphic_eq' : 
                      status === 'listening' ? 'mic' : 
                      status === 'connecting' ? 'sync' : 'error'}
@@ -112,7 +112,7 @@ export const LiveSessionOverlay: React.FC<LiveSessionOverlayProps> = ({ isActive
             onClick={onClose}
             className="z-10 mt-4 px-8 py-3 rounded-full bg-white/10 hover:bg-red-500/80 hover:text-white border border-white/20 text-slate-200 transition-all font-medium backdrop-blur-sm flex items-center gap-2"
         >
-            <span className="material-symbols-outlined text-xl">call_end</span>
+            <span className="material-symbols-outlined notranslate text-xl" translate="no">call_end</span>
             End Session
         </button>
       </div>

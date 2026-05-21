@@ -174,24 +174,24 @@ export const LoginScreen: React.FC = () => {
               className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-white transition-colors focus:outline-none"
               aria-label={showPassword ? "Hide password" : "Show password"}
             >
-              <span className="material-symbols-outlined text-xl">
+              <span className="material-symbols-outlined notranslate text-xl" translate="no">
                 {showPassword ? 'visibility_off' : 'visibility'}
               </span>
             </button>
           </div>
-
+ 
           {!isLogin && (
             <div className="space-y-2 py-2 text-xs font-medium animate-fade-up-soft">
               <div className={`flex items-center gap-2 transition-colors ${hasMinLength ? 'text-green-500 dark:text-green-400' : 'text-slate-400 dark:text-slate-500'}`}>
-                <span className="material-symbols-outlined text-sm">{hasMinLength ? 'check_circle' : 'radio_button_unchecked'}</span>
+                <span className="material-symbols-outlined notranslate text-sm" translate="no">{hasMinLength ? 'check_circle' : 'radio_button_unchecked'}</span>
                 <span>At least 8 characters</span>
               </div>
               <div className={`flex items-center gap-2 transition-colors ${hasUpperCase ? 'text-green-500 dark:text-green-400' : 'text-slate-400 dark:text-slate-500'}`}>
-                <span className="material-symbols-outlined text-sm">{hasUpperCase ? 'check_circle' : 'radio_button_unchecked'}</span>
+                <span className="material-symbols-outlined notranslate text-sm" translate="no">{hasUpperCase ? 'check_circle' : 'radio_button_unchecked'}</span>
                 <span>At least 1 uppercase letter</span>
               </div>
               <div className={`flex items-center gap-2 transition-colors ${hasSymbol ? 'text-green-500 dark:text-green-400' : 'text-slate-400 dark:text-slate-500'}`}>
-                <span className="material-symbols-outlined text-sm">{hasSymbol ? 'check_circle' : 'radio_button_unchecked'}</span>
+                <span className="material-symbols-outlined notranslate text-sm" translate="no">{hasSymbol ? 'check_circle' : 'radio_button_unchecked'}</span>
                 <span>At least 1 special character (e.g., !@#$%)</span>
               </div>
             </div>

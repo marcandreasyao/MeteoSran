@@ -1313,6 +1313,13 @@
     body.dark .premium-tooltip::after {
       border-color: rgba(30, 41, 59, 0.85) transparent transparent transparent;
     }
+
+    /* Custom View Transition overrides for smooth circular reveal */
+    ::view-transition-old(root),
+    ::view-transition-new(root) {
+      animation: none;
+      mix-blend-mode: normal;
+    }
   </style>
   <link rel="stylesheet" href="/index.css">
   <!-- Google tag (gtag.js) -->

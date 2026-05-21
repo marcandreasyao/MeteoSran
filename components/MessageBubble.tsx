@@ -76,7 +76,7 @@ const CodeBlock: React.FC<{ language: string; children: React.ReactNode }> = ({ 
               : 'bg-white/50 dark:bg-slate-700/50 border-slate-200/50 dark:border-slate-600/50 text-slate-500 dark:text-slate-400 hover:bg-white/80 dark:hover:bg-slate-700/80 hover:text-sky-600 dark:hover:text-sky-400'
             }`}
         >
-          <span className="material-symbols-outlined text-[14px]">
+          <span className="material-symbols-outlined notranslate text-[14px]" translate="no">
             {copied ? 'check' : 'content_copy'}
           </span>
           {copied ? 'Copied' : 'Copy'}

@@ -4,10 +4,11 @@ import { Message, ResponseMode } from '../types';
 import { generateChatPdf } from '../services/pdfService';
 import { auth } from '../src/firebase';
 import { signOut } from 'firebase/auth';
+import { AnimatedThemeToggler } from './magicui/AnimatedThemeToggler';
 
 interface HeaderProps {
   theme: Theme;
-  toggleTheme: () => void;
+  toggleTheme: (event?: React.MouseEvent<HTMLButtonElement>) => void;
   messages: Message[]; // Pass messages to determine if download is possible and to pass to PDF generator
   selectedMode: ResponseMode;
   onModeChange: (mode: ResponseMode) => void;
@@ -282,18 +283,7 @@ export const Header: React.FC<HeaderProps> = ({
                 )}
               </button>
             </div>
-            <button
-              onClick={toggleTheme}
-              className="p-1.5 sm:p-2 rounded-full hover:bg-black/10 dark:hover:bg-white/10 
-                        focus:outline-none focus:ring-2 focus:ring-sky-500 dark:focus:ring-sky-400 
-                        transition-colors"
-              aria-label={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
-              title={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
-            >
-              <span className="material-symbols-outlined text-slate-700 dark:text-slate-200 text-lg sm:text-xl">
-                {theme === 'light' ? 'dark_mode' : 'light_mode'}
-              </span>
-            </button>
+            <AnimatedThemeToggler theme={theme} toggleTheme={toggleTheme} />
             <button
               className="p-1.5 sm:p-2 rounded-full hover:bg-black/10 dark:hover:bg-white/10 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-sky-500 dark:focus:ring-sky-400 transition-colors"
               onClick={() => signOut(auth)}

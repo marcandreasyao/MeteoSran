@@ -67,6 +67,16 @@ export const ReleaseNotesModal: React.FC<ReleaseNotesModalProps> = ({ onClose })
             </div>
 
             <div className="flex gap-3">
+              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-violet-100 dark:bg-violet-500/20 flex items-center justify-center">
+                <span className="material-symbols-outlined text-[18px] text-violet-600 dark:text-violet-400">dark_mode</span>
+              </div>
+              <div>
+                <h4 className="text-sm font-semibold text-slate-800 dark:text-slate-200">Deep Theme Switch Transition</h4>
+                <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5 leading-relaxed">Experience a smooth circular wipe transition (utilizing the View Transitions API) combined with MagicUI-inspired animated toggling icons, replacing noisy instant switches.</p>
+              </div>
+            </div>
+
+            <div className="flex gap-3">
               <div className="flex-shrink-0 w-8 h-8 rounded-full bg-amber-100 dark:bg-amber-500/20 flex items-center justify-center">
                 <span className="material-symbols-outlined text-[18px] text-amber-600 dark:text-amber-400">explore</span>
               </div>

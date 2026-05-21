@@ -126,8 +126,10 @@ const App: React.FC = () => {
 
   useEffect(() => {
     if (theme === 'dark') {
+      document.documentElement.classList.add('dark');
       document.body.classList.add('dark');
     } else {
+      document.documentElement.classList.remove('dark');
       document.body.classList.remove('dark');
     }
     localStorage.setItem('theme', theme);
@@ -386,20 +388,66 @@ const App: React.FC = () => {
     setTimeout(() => setShowGlassFade(false), 900);
   };
 
-  const toggleTheme = () => {
+  const toggleTheme = (event?: React.MouseEvent) => {
     track('theme_toggle', {
       from: theme,
       to: theme === 'light' ? 'dark' : 'light'
     });
 
-    triggerGlassFade();
-    setTimeout(() => {
-      setTheme(prevTheme => (prevTheme === 'light' ? 'dark' : 'light'));
-    }, 450);
+    const nextTheme = theme === 'light' ? 'dark' : 'light';
+
+    // Support standard View Transitions API (Chrome 111+, Safari 18+, Edge)
+    const isTransitionSupported = 
+      typeof document !== 'undefined' && 
+      'startViewTransition' in document &&
+      window.matchMedia('(prefers-reduced-motion: no-preference)').matches;
+
+    if (!isTransitionSupported || !event) {
+      // Fallback transition
+      triggerGlassFade();
+      setTimeout(() => {
+        setTheme(nextTheme);
+      }, 450);
+      return;
+    }
+
+    const x = event.clientX;
+    const y = event.clientY;
+    const endRadius = Math.hypot(
+      Math.max(x, window.innerWidth - x),
+      Math.max(y, window.innerHeight - y)
+    );
+
+    const transition = (document as any).startViewTransition(() => {
+      setTheme(nextTheme);
+    });
+
+    transition.ready.then(() => {
+      const clipPath = [
+        `circle(0px at ${x}px ${y}px)`,
+        `circle(${endRadius}px at ${x}px ${y}px)`,
+      ];
+      document.documentElement.animate(
+        {
+          clipPath: clipPath,
+        },
+        {
+          duration: 450,
+          easing: 'cubic-bezier(0.4, 0, 0.2, 1)',
+          pseudoElement: '::view-transition-new(root)',
+        }
+      );
+    });
   };
 
   const handleSendMessage = async (text: string, imageFile?: File | null) => {
     if (!text.trim() && !imageFile) return;
+
+    // Reset prompt immediately
+    setCurrentInput({ text: '', imageFile: null });
+    if (inputRef.current) {
+      inputRef.current.style.height = 'auto';
+    }
 
     track('message_sent', {
       hasText: !!text.trim(),
