@@ -661,6 +661,73 @@ User message: "${text}"`;
     }
 });
 
+// ─────────────────────────────────────────────────────────────────
+// Memory Summarization Endpoint
+// ─────────────────────────────────────────────────────────────────
+app.post('/api/ai/memory', async (req, res) => {
+    try {
+        const { transcript, existingSummary } = req.body;
+        if (!transcript) return res.status(400).json({ error: 'Missing transcript' });
+
+        const MEMORY_SYSTEM_PROMPT = `You are a memory extraction system for MeteoSran, an AI weather assistant.
+Your ONLY job is to read a conversation transcript and produce a compact, structured memory summary.
+This summary will be injected into future conversations so the AI remembers key facts about the user.
+
+Output EXACTLY this structure (fill in only what is present, omit empty sections):
+PREFERENCES: [units preference, communication style, topics of interest, dislikes]
+TOPICS_DISCUSSED: [list of weather topics already covered]
+LOCATION: [cities/regions the user mentioned or asked about]
+USER_CONTEXT: [occupation, planned events, reason for asking, personal details]
+OUTSTANDING_QUESTIONS: [things the user wanted to know but weren't fully resolved]
+LAST_DISCUSSED: [1-sentence summary of the most recent exchange]
+
+Rules:
+- Be extremely concise. Each section: max 1 line, max 20 words.
+- Merge with the EXISTING SUMMARY if provided — don't lose old facts.
+- NEVER invent facts not present in the transcript.
+- Output ONLY the structured memory block. No preamble, no explanation.`;
+
+        const memoryModels = ['gemini-2.0-flash', 'gemini-2.5-flash', 'gemini-flash-latest'];
+        let lastError = null;
+
+        const existingBlock = existingSummary
+            ? `\n\nEXISTING SUMMARY TO MERGE INTO:\n${existingSummary}`
+            : '';
+
+        const userContent = `CONVERSATION TRANSCRIPT:\n${transcript}${existingBlock}\n\nProduce the updated memory summary now:`;
+
+        for (const modelName of memoryModels) {
+            for (let k = 0; k < GEMINI_KEYS.length; k++) {
+                try {
+                    const genAIInstance = new GoogleGenAI({ apiKey: GEMINI_KEYS[k] });
+                    const response = await genAIInstance.models.generateContent({
+                        model: modelName,
+                        contents: [{ role: 'user', parts: [{ text: userContent }] }],
+                        config: {
+                            systemInstruction: MEMORY_SYSTEM_PROMPT,
+                            temperature: 0.2,
+                            maxOutputTokens: 300,
+                        }
+                    });
+                    const summary = response.text?.trim();
+                    if (summary) {
+                        console.log(`[MeteoSran Server] Memory summarized via ${modelName}`);
+                        return res.json({ summary });
+                    }
+                } catch (err) {
+                    lastError = err;
+                    if (err.status === 429 || err.status === 403) continue;
+                    break;
+                }
+            }
+        }
+        throw lastError || new Error('Memory summarization failed');
+    } catch (error) {
+        console.error('[MeteoSran Server] Memory Error:', error);
+        res.status(500).json({ error: error.message || 'Failed to summarize memory' });
+    }
+});
+
 // ==========================================
 // 3. POSTGRESQL (PRISMA) DATABASE ROUTES
 // ==========================================

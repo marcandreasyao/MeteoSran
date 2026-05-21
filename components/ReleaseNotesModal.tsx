@@ -57,6 +57,36 @@ export const ReleaseNotesModal: React.FC<ReleaseNotesModalProps> = ({ onClose })
           
           <div className="space-y-4">
             <div className="flex gap-3">
+              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-fuchsia-100 dark:bg-fuchsia-500/20 flex items-center justify-center">
+                <span className="material-symbols-outlined text-[18px] text-fuchsia-600 dark:text-fuchsia-400">memory</span>
+              </div>
+              <div>
+                <h4 className="text-sm font-semibold text-slate-800 dark:text-slate-200">Contextual Memory Intelligence</h4>
+                <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5 leading-relaxed">MeteoSran now remembers your preferences, topics, and past conversations seamlessly across sessions for true long-term AI recall.</p>
+              </div>
+            </div>
+
+            <div className="flex gap-3">
+              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-amber-100 dark:bg-amber-500/20 flex items-center justify-center">
+                <span className="material-symbols-outlined text-[18px] text-amber-600 dark:text-amber-400">explore</span>
+              </div>
+              <div>
+                <h4 className="text-sm font-semibold text-slate-800 dark:text-slate-200">Manual Location Intelligence</h4>
+                <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5 leading-relaxed">Enhanced location awareness allows the AI to smartly default to manually specified or previously discussed regions automatically.</p>
+              </div>
+            </div>
+
+            <div className="flex gap-3">
+              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-rose-100 dark:bg-rose-500/20 flex items-center justify-center">
+                <span className="material-symbols-outlined text-[18px] text-rose-600 dark:text-rose-400">bug_report</span>
+              </div>
+              <div>
+                <h4 className="text-sm font-semibold text-slate-800 dark:text-slate-200">System Datetime Crash Resolved</h4>
+                <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5 leading-relaxed">Fixed a critical issue causing instability related to system datetime context injection. Everything is rock-solid now.</p>
+              </div>
+            </div>
+
+            <div className="flex gap-3">
               <div className="flex-shrink-0 w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
                 <span className="material-symbols-outlined text-[18px] text-slate-600 dark:text-slate-300">database</span>
               </div>

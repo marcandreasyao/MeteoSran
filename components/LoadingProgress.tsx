@@ -125,7 +125,7 @@ export const LoadingProgress: React.FC<LoadingProgressProps> = ({ progress, mess
     // Badge
     badgeBg:      'linear-gradient(135deg, rgba(56,189,248,0.11), rgba(99,102,241,0.09))',
     badgeBorder:  'rgba(56,189,248,0.2)',
-    badgeText:    'linear-gradient(135deg, #7dd3fc, #a5b4fc)',
+    badgeTextColor: '#7dd3fc',
     badgeBeam:    'rgba(255,255,255,0.35)',
     // Bar
     barTrack:     'linear-gradient(90deg, rgba(15,23,42,0.9), rgba(30,41,59,0.7))',
@@ -136,7 +136,7 @@ export const LoadingProgress: React.FC<LoadingProgressProps> = ({ progress, mess
     dotActive:    'radial-gradient(circle at 35% 35%, #ffffff, #7dd3fc 60%, #38bdf8)',
     dotBorderDone:'rgba(56,189,248,0.22)',
     dotBorderAct: 'rgba(56,189,248,0.55)',
-    brandGrad:    'linear-gradient(90deg, rgba(56,189,248,0.55), rgba(99,102,241,0.55))',
+    brandColor:   'rgba(125,211,252,0.65)',
     trackInner:   'rgba(255,255,255,0.055)',
     filterBlur:   'blur(40px) saturate(180%) brightness(1.05)',
   } : {
@@ -165,7 +165,7 @@ export const LoadingProgress: React.FC<LoadingProgressProps> = ({ progress, mess
     // Badge
     badgeBg:      'linear-gradient(135deg, rgba(14,165,233,0.1), rgba(99,102,241,0.07))',
     badgeBorder:  'rgba(14,165,233,0.25)',
-    badgeText:    'linear-gradient(135deg, #0284c7, #6366f1)',
+    badgeTextColor: '#0369a1',
     badgeBeam:    'rgba(255,255,255,0.7)',
     // Bar
     barTrack:     'linear-gradient(90deg, rgba(226,232,240,0.9), rgba(241,245,249,0.8))',
@@ -176,7 +176,7 @@ export const LoadingProgress: React.FC<LoadingProgressProps> = ({ progress, mess
     dotActive:    'radial-gradient(circle at 35% 35%, #ffffff, #7dd3fc 60%, #38bdf8)',
     dotBorderDone:'rgba(14,165,233,0.3)',
     dotBorderAct: 'rgba(14,165,233,0.6)',
-    brandGrad:    'linear-gradient(90deg, rgba(14,165,233,0.7), rgba(99,102,241,0.7))',
+    brandColor:   'rgba(14,165,233,0.75)',
     trackInner:   'rgba(255,255,255,0.6)',
     filterBlur:   'blur(32px) saturate(160%) brightness(1.02)',
   };
@@ -244,7 +244,7 @@ export const LoadingProgress: React.FC<LoadingProgressProps> = ({ progress, mess
 
               {/* Text */}
               <div>
-                <div style={{ fontSize:'0.58rem', fontWeight:700, letterSpacing:'0.16em', textTransform:'uppercase', background:t.brandGrad, WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent', backgroundClip:'text', lineHeight:1, marginBottom:'3px' }}>
+                <div style={{ fontSize:'0.58rem', fontWeight:700, letterSpacing:'0.16em', textTransform:'uppercase', color:t.brandColor, lineHeight:1, marginBottom:'3px' }}>
                   MeteoSran
                 </div>
                 <div key={message} className="lp-msg-in" style={{ fontSize:'0.9rem', fontWeight:600, color:t.msgColor, lineHeight:1.25 }}>
@@ -256,7 +256,7 @@ export const LoadingProgress: React.FC<LoadingProgressProps> = ({ progress, mess
             {/* Badge */}
             <div style={{ position:'relative', overflow:'hidden', background:t.badgeBg, border:`1px solid ${t.badgeBorder}`, borderRadius:'10px', padding:'0.28rem 0.6rem', backdropFilter:'blur(12px)' }}>
               <div style={{ position:'absolute', top:0, left:0, right:0, height:'1px', background:`linear-gradient(90deg, transparent, ${t.badgeBeam}, transparent)` }}/>
-              <span style={{ fontSize:'0.82rem', fontWeight:700, fontVariantNumeric:'tabular-nums', background:t.badgeText, WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent', backgroundClip:'text' }}>
+              <span style={{ fontSize:'0.82rem', fontWeight:700, fontVariantNumeric:'tabular-nums', color:t.badgeTextColor }}>
                 {progress}%
               </span>
             </div>

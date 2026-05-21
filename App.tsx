@@ -4,6 +4,7 @@ import { Header } from './components/Header';
 import { ChatInterface } from './components/ChatInterface';
 import { Message, MessageRole, ResponseMode } from './types';
 import { initChatService, sendMessageToAI, generateSmartTitle } from './services/geminiService';
+import { maybeUpdateMemory } from './services/memoryService';
 import { ErrorMessage } from './components/ErrorMessage';
 import { Footer } from './components/Footer';
 import { LoadingProgress } from './components/LoadingProgress';
@@ -469,6 +470,21 @@ const App: React.FC = () => {
         if (user && finalChatId) {
           await saveMessageToDB(user.uid, finalChatId, userMessage);
           await saveMessageToDB(user.uid, finalChatId, response);
+
+          // ── Long-term memory: background summarizer ──────────────
+          const allMessages = [...currentConversation, response];
+          const currentSummary = chatSessions.find(c => c.id === finalChatId)?.memorySummary || null;
+          maybeUpdateMemory(
+            allMessages,
+            currentSummary,
+            finalChatId,
+            user.uid,
+            (chatId, newSummary) => {
+              setChatSessions(prev =>
+                prev.map(c => c.id === chatId ? { ...c, memorySummary: newSummary } : c)
+              );
+            }
+          );
         }
       })().catch(err => console.error("Background DB save failed:", err));
 
