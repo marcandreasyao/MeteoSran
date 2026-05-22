@@ -157,6 +157,36 @@ export const ReleaseNotesModal: React.FC<ReleaseNotesModalProps> = ({ onClose })
                 <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5 leading-relaxed">{t('releaseNotes.features.bilingualDesc')}</p>
               </div>
             </div>
+
+            <div className="flex gap-3">
+              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-orange-100 dark:bg-orange-500/20 flex items-center justify-center">
+                <span className="material-symbols-outlined notranslate text-[18px] text-orange-600 dark:text-orange-400" translate="no">download</span>
+              </div>
+              <div>
+                <h4 className="text-sm font-semibold text-slate-800 dark:text-slate-200">{t('releaseNotes.features.downloadTitle')}</h4>
+                <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5 leading-relaxed">{t('releaseNotes.features.downloadDesc')}</p>
+              </div>
+            </div>
+
+            <div className="flex gap-3">
+              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-pink-100 dark:bg-pink-500/20 flex items-center justify-center">
+                <span className="material-symbols-outlined notranslate text-[18px] text-pink-600 dark:text-pink-400" translate="no">fingerprint</span>
+              </div>
+              <div>
+                <h4 className="text-sm font-semibold text-slate-800 dark:text-slate-200">{t('releaseNotes.features.loginTitle')}</h4>
+                <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5 leading-relaxed">{t('releaseNotes.features.loginDesc')}</p>
+              </div>
+            </div>
+
+            <div className="flex gap-3">
+              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-500/20 flex items-center justify-center">
+                <span className="material-symbols-outlined notranslate text-[18px] text-blue-600 dark:text-blue-400" translate="no">g_translate</span>
+              </div>
+              <div>
+                <h4 className="text-sm font-semibold text-slate-800 dark:text-slate-200">{t('releaseNotes.features.iconGuardTitle')}</h4>
+                <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5 leading-relaxed">{t('releaseNotes.features.iconGuardDesc')}</p>
+              </div>
+            </div>
           </div>
           
         </div>

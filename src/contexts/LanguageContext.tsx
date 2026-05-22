@@ -260,7 +260,13 @@ export const translations = {
         sidebarTitle: "Minimalist Slate Sidebar",
         sidebarDesc: "Experience a typography-driven history, animated hover glides, glowing active blue dot indicators, and a sleek bottom-line search.",
         bilingualTitle: "Full Bilingual Support",
-        bilingualDesc: "Experience MeteoSran completely localized. Seamlessly switch between English and French interfaces with full dynamic translation across all components."
+        bilingualDesc: "Experience MeteoSran completely localized. Seamlessly switch between English and French interfaces with full dynamic translation across all components.",
+        downloadTitle: "Navigation Space Optimization",
+        downloadDesc: "Moved the 'Download Chat' PDF button into Settings, cleaning up the navigation bar and keeping settings fully visible on mobile.",
+        loginTitle: "Liquid Glass Login",
+        loginDesc: "Overhauled the authentication screen with premium liquid glassmorphism background effects and animated, glowing input containers.",
+        iconGuardTitle: "Translation Guard for Icons",
+        iconGuardDesc: "Applied a specialized system translation bypass to all UI icons, preventing browsers (Chrome/Safari) from translating and breaking them."
       }
     }
   },
@@ -521,7 +527,13 @@ export const translations = {
         sidebarTitle: "Barre Latérale Épurée",
         sidebarDesc: "Découvre un historique axé sur la typographie, des animations de survol fluides, un indicateur d'activité bleu lumineux et une barre de recherche discrète.",
         bilingualTitle: "Support Bilingue Complet",
-        bilingualDesc: "Vis l'expérience MeteoSran entièrement localisée. Bascule de manière fluide entre les interfaces anglaise et française avec une traduction dynamique complète sur tous les composants."
+        bilingualDesc: "Vis l'expérience MeteoSran entièrement localisée. Bascule de manière fluide entre les interfaces anglaise et française avec une traduction dynamique complète sur tous les composants.",
+        downloadTitle: "Optimisation de l'espace navbar",
+        downloadDesc: "Déplacement du bouton PDF 'Télécharger le chat' dans tes paramètres pour épurer la barre de navigation, garantissant la visibilité totale de la configuration sur mobile.",
+        loginTitle: "Portail Liquid Glass",
+        loginDesc: "Découvre la refonte de ton écran de connexion avec des effets d'arrière-plan en morphisme de verre liquide premium et des conteneurs de saisie animés et lumineux.",
+        iconGuardTitle: "Protection des icônes d'interface",
+        iconGuardDesc: "Application d'un blocage de traduction système sur toutes tes icônes interactives pour empêcher les traducteurs automatiques de déformer la mise en page."
       }
     }
   }
