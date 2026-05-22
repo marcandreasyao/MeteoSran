@@ -1,5 +1,6 @@
 import { Message, MessageRole, ResponseMode } from "../types";
 import { getClimateNormals } from "./historicalWeatherService";
+import { generateUUID } from "../src/utils/uuid";
 
 const CORE_INSTRUCTION = `You are 'MeteoSran', a friendly and highly knowledgeable meteorologist. 
 Your primary goal is to explain weather phenomena to curious learners in an engaging, clear, and easy-to-understand manner.
@@ -332,7 +333,7 @@ ${memorySummary}
     const data = await response.json();
 
     return {
-      id: crypto.randomUUID(),
+      id: generateUUID(),
       role: MessageRole.MODEL,
       text: data.text,
       timestamp: new Date()
@@ -351,7 +352,7 @@ ${memorySummary}
     }
 
     return {
-      id: crypto.randomUUID(),
+      id: generateUUID(),
       role: MessageRole.MODEL,
       text: errorMessage,
       timestamp: new Date()

@@ -18,6 +18,7 @@ import { saveMessageToDB, fetchUserMessages, fetchChatSessions, createChatSessio
 import { Sidebar } from './components/Sidebar';
 import { LiveSessionOverlay } from './components/LiveSessionOverlay';
 import { ReleaseNotesModal } from './components/ReleaseNotesModal';
+import { generateUUID } from './src/utils/uuid';
 export type Theme = 'light' | 'dark';
 
 export interface CurrentInputState {
@@ -479,51 +480,60 @@ const App: React.FC = () => {
   const handleSendMessage = async (text: string, imageFile?: File | null) => {
     if (!text.trim() && !imageFile) return;
 
-    // Reset prompt immediately
+    // Save current input values in case we need to restore them on error
+    const originalText = text;
+    const originalImage = imageFile;
+
+    // Reset prompt immediately in the UI for responsiveness
     setCurrentInput({ text: '', imageFile: null });
     if (inputRef.current) {
       inputRef.current.style.height = 'auto';
     }
 
-    track('message_sent', {
-      hasText: !!text.trim(),
-      hasImage: !!imageFile,
-      mode: selectedMode,
-      messageLength: text.length
-    });
-
-    const isWeatherQueryForCI = text.toLowerCase().includes('weather') &&
-      (text.toLowerCase().includes('ivory coast') || text.toLowerCase().includes('abidjan'));
-
-    if (isWeatherQueryForCI) {
-      track('weather_widget_shown', { query: 'ivory_coast_weather' });
-    }
-
-    setShowWeatherWidget(isWeatherQueryForCI);
-
-    const userMessage: Message = {
-      id: crypto.randomUUID(),
-      role: MessageRole.USER,
-      text: text.trim(),
-      timestamp: new Date(),
-      ...(imageFile && {
-        image: {
-          data: await readFileAsBase64(imageFile),
-          mimeType: imageFile.type,
-          name: imageFile.name
-        }
-      })
-    };
-
-    // FIX 1: Create a definitive, synchronous array of the history PLUS the new message
-    const currentConversation = [...messages, userMessage];
-
-    // Update the UI using that exact array
-    setMessages(currentConversation);
-    setIsLoading(true);
-    setError(null);
-
     try {
+      track('message_sent', {
+        hasText: !!text.trim(),
+        hasImage: !!imageFile,
+        mode: selectedMode,
+        messageLength: text.length
+      });
+
+      const isWeatherQueryForCI = text.toLowerCase().includes('weather') &&
+        (text.toLowerCase().includes('ivory coast') || text.toLowerCase().includes('abidjan'));
+
+      if (isWeatherQueryForCI) {
+        track('weather_widget_shown', { query: 'ivory_coast_weather' });
+      }
+
+      setShowWeatherWidget(isWeatherQueryForCI);
+
+      let imageData = null;
+      if (imageFile) {
+        imageData = await readFileAsBase64(imageFile);
+      }
+
+      const userMessage: Message = {
+        id: generateUUID(),
+        role: MessageRole.USER,
+        text: text.trim(),
+        timestamp: new Date(),
+        ...(imageData && imageFile && {
+          image: {
+            data: imageData,
+            mimeType: imageFile.type,
+            name: imageFile.name
+          }
+        })
+      };
+
+      // FIX 1: Create a definitive, synchronous array of the history PLUS the new message
+      const currentConversation = [...messages, userMessage];
+
+      // Update the UI using that exact array
+      setMessages(currentConversation);
+      setIsLoading(true);
+      setError(null);
+
       // Send that exact array to the API. No stale state!
       const currentChat = chatSessions.find(c => c.id === activeChatId);
       const memorySummary = currentChat?.memorySummary || null;
@@ -575,9 +585,10 @@ const App: React.FC = () => {
     } catch (err) {
       console.error('Error sending message:', err);
       setError(err instanceof Error ? err.message : 'Failed to send message');
+      // Restore input values since message creation or sending failed
+      setCurrentInput({ text: originalText, imageFile: originalImage });
     } finally {
       setIsLoading(false);
-      setCurrentInput({ text: '', imageFile: null });
       if (inputRef.current) {
         inputRef.current.focus();
       }
