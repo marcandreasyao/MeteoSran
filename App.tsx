@@ -251,6 +251,16 @@ const App: React.FC = () => {
     }
   }, [geoLoc, geoErr, locationMode]);
 
+  // Auto-dismiss location status messages after 8 seconds to prevent permanent UI clutter
+  useEffect(() => {
+    if (locationError) {
+      const timer = setTimeout(() => {
+        setLocationError(null);
+      }, 8000);
+      return () => clearTimeout(timer);
+    }
+  }, [locationError]);
+
   const handleManualLocation = async () => {
     const cityName = prompt('Enter your city name (e.g., Abidjan, Yamoussoukro, Paris):');
     if (!cityName || cityName.trim() === '') return;
@@ -722,10 +732,10 @@ const App: React.FC = () => {
 
       <div className={`flex-1 flex flex-col h-full w-full relative overflow-hidden transition-all duration-300 pt-safe ${isKeyboardOpen ? '' : 'pb-safe'}`}>
         {locationError && (
-          <div className={`${locationError.startsWith('Location set') ? 'bg-emerald-50 dark:bg-emerald-950/20 text-emerald-800 dark:text-emerald-300 border-b border-emerald-200/50 dark:border-emerald-900/20' : 'bg-amber-50 dark:bg-amber-950/20 text-amber-800 dark:text-amber-300 border-b border-amber-200/50 dark:border-amber-900/20'} p-2.5 text-center text-xs sm:text-sm z-30 flex items-center justify-between px-4 sm:px-6 transition-all duration-300`}>
+          <div className={`${locationError.startsWith('Location set') || locationError.includes('Using IP-based') ? 'bg-emerald-50 dark:bg-emerald-950/20 text-emerald-800 dark:text-emerald-300 border-b border-emerald-200/50 dark:border-emerald-900/20' : 'bg-amber-50 dark:bg-amber-950/20 text-amber-800 dark:text-amber-300 border-b border-amber-200/50 dark:border-amber-900/20'} p-2.5 text-center text-xs sm:text-sm z-30 flex items-center justify-between px-4 sm:px-6 transition-all duration-300`}>
             <div className="flex-grow flex items-center justify-center gap-2">
               <span className="material-symbols-outlined notranslate text-base sm:text-lg leading-none" translate="no">
-                {locationError.startsWith('Location set') ? 'check_circle' : 'warning'}
+                {locationError.startsWith('Location set') || locationError.includes('Using IP-based') ? 'check_circle' : 'warning'}
               </span>
               <span className="font-medium">{locationError}</span>
               {locationPrompt && (

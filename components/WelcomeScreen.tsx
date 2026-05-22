@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { SparklesText } from './magicui/SparklesText';
 
 interface WelcomeScreenProps {
   firstName: string;
@@ -82,13 +83,15 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ firstName, onSugge
       <div className="max-w-4xl mx-auto w-full flex flex-col items-center sm:items-start text-center sm:text-left">
 
         {/* Header Greetings */}
-        <h1 className="font-semibold text-slate-800 dark:text-slate-200 mb-2 md:mb-4 tracking-tight leading-tight text-[clamp(2.5rem,8vw,4.5rem)]">
+        <h1 className="font-semibold text-slate-800 dark:text-slate-200 mb-2 md:mb-4 tracking-tight leading-tight text-[clamp(2.5rem,8vw,4.5rem)]" style={{ filter: 'drop-shadow(0 1px 2px rgba(0, 0, 0, 0.15))' }}>
           {greeting},{' '}
-          <span className="bg-clip-text text-transparent bg-gradient-to-r from-sky-500 to-indigo-500">
-            {firstName || 'there'}!
-          </span>
+          <SparklesText colors={{ first: '#0ea5e9', second: '#6366f1' }} sparklesCount={6}>
+            <span className="bg-clip-text text-transparent bg-gradient-to-r from-sky-500 to-indigo-500">
+              {firstName || 'there'}!
+            </span>
+          </SparklesText>
         </h1>
-        <p className="text-slate-500 dark:text-slate-400 font-medium mb-8 md:mb-12 text-[clamp(1.25rem,4vw,1.75rem)]">
+        <p className="text-slate-500 dark:text-slate-400 font-medium mb-8 md:mb-12 text-[clamp(1.25rem,4vw,1.75rem)]" style={{ textShadow: '0 1px 2px rgba(0, 0, 0, 0.12)' }}>
           How can I assist you with the weather today?
         </p>
 

@@ -226,7 +226,10 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, onRegener
             <span className="text-[10px] md:text-xs text-slate-400 dark:text-slate-500">{timeString}</span>
           </div>
 
-          <div className={`text-slate-800 dark:text-slate-200 text-[14px] md:text-[15px] leading-relaxed transition-opacity duration-300 ${isTyping ? 'opacity-100' : ''}`}>
+          <div 
+            className={`text-slate-800 dark:text-slate-200 text-[14px] md:text-[15px] leading-relaxed transition-opacity duration-300 ${isTyping ? 'opacity-100' : ''}`}
+            style={{ textShadow: '0 0.5px 1.5px rgba(0, 0, 0, 0.12)' }}
+          >
             <ReactMarkdown
               remarkPlugins={[remarkGfm]}
               components={{

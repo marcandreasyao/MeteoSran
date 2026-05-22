@@ -231,12 +231,30 @@
       background: linear-gradient(40deg, var(--color-bg1-dark), var(--color-bg2-dark));
     }
 
+    .gradients-blur-wrapper {
+      width: 100%;
+      height: 100%;
+      position: absolute;
+      -webkit-filter: blur(50px);
+      filter: blur(50px);
+      will-change: transform, filter;
+      -webkit-transform: translate3d(0, 0, 0);
+      transform: translate3d(0, 0, 0);
+      -webkit-backface-visibility: hidden;
+      backface-visibility: hidden;
+    }
+
     .gradients-container {
       width: 100%;
       height: 100%;
-      filter: url(#goo) blur(30px);
-      /* Adjusted blur for potentially better perf */
       position: relative;
+      -webkit-filter: url(#goo);
+      filter: url(#goo);
+      will-change: transform;
+      -webkit-transform: translate3d(0, 0, 0);
+      transform: translate3d(0, 0, 0);
+      -webkit-backface-visibility: hidden;
+      backface-visibility: hidden;
     }
 
     .g1,
@@ -251,6 +269,11 @@
       border-radius: 50%;
       /* Orbs are circular */
       opacity: 0.8;
+      will-change: transform;
+      -webkit-transform: translateZ(0);
+      transform: translateZ(0);
+      -webkit-backface-visibility: hidden;
+      backface-visibility: hidden;
     }
 
     /* Light Mode Orb Colors & Blending */
@@ -402,10 +425,15 @@
       /* Same level as gradient-bg or just above it, but behind content */
       opacity: 0.03;
       /* Very subtle noise */
-      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100' height='100' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+      background-size: 100px 100px;
+      background-repeat: repeat;
       pointer-events: none;
       /* Make sure it doesn't interfere with interactions */
       mix-blend-mode: overlay;
+      will-change: transform;
+      -webkit-transform: translate3d(0, 0, 0);
+      transform: translate3d(0, 0, 0);
     }
 
     body.dark .noise-overlay {
@@ -1328,6 +1356,32 @@
       animation: none;
       mix-blend-mode: normal;
     }
+
+    /* Safari and iOS backdrop-filter global compatibility patch */
+    .backdrop-blur-sm {
+      -webkit-backdrop-filter: blur(4px) !important;
+      backdrop-filter: blur(4px) !important;
+    }
+    .backdrop-blur-md {
+      -webkit-backdrop-filter: blur(12px) !important;
+      backdrop-filter: blur(12px) !important;
+    }
+    .backdrop-blur-lg {
+      -webkit-backdrop-filter: blur(16px) !important;
+      backdrop-filter: blur(16px) !important;
+    }
+    .backdrop-blur-xl {
+      -webkit-backdrop-filter: blur(24px) !important;
+      backdrop-filter: blur(24px) !important;
+    }
+    .backdrop-blur-2xl {
+      -webkit-backdrop-filter: blur(40px) !important;
+      backdrop-filter: blur(40px) !important;
+    }
+    .backdrop-blur-3xl {
+      -webkit-backdrop-filter: blur(64px) !important;
+      backdrop-filter: blur(64px) !important;
+    }
   </style>
   <link rel="stylesheet" href="/index.css">
   <!-- Google tag (gtag.js) -->
@@ -1342,9 +1396,9 @@
 </head>
 
 <body>
-  <svg style="display:none;" width="0" height="0" xmlns="http://www.w3.org/2000/svg">
+  <svg style="position: absolute; width: 0; height: 0; pointer-events: none; opacity: 0; overflow: hidden;" xmlns="http://www.w3.org/2000/svg">
     <defs>
-      <filter id="goo">
+      <filter id="goo" x="-20%" y="-20%" width="140%" height="140%" color-interpolation-filters="sRGB">
         <feGaussianBlur in="SourceGraphic" stdDeviation="10" result="blur" />
         <feColorMatrix in="blur" mode="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 18 -8" result="goo" />
         <feBlend in="SourceGraphic" in2="goo" />
@@ -1353,15 +1407,17 @@
   </svg>
 
   <div class="gradient-bg">
-    <div class="gradients-container">
-      <div class="g1"></div>
-      <div class="g2"></div>
-      <div class="g3"></div>
-      <div class="g4"></div>
-      <div class="g5"></div>
-      <div class="g6"></div>
-      <div class="g7"></div>
-      <div class="interactive-orb"></div>
+    <div class="gradients-blur-wrapper">
+      <div class="gradients-container">
+        <div class="g1"></div>
+        <div class="g2"></div>
+        <div class="g3"></div>
+        <div class="g4"></div>
+        <div class="g5"></div>
+        <div class="g6"></div>
+        <div class="g7"></div>
+        <div class="interactive-orb"></div>
+      </div>
     </div>
   </div>
   <div class="noise-overlay"></div>

@@ -60,39 +60,57 @@ export const useGeolocation = (startAcquisition = true) => {
       return;
     }
 
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        setState(prev => ({
-          ...prev,
-          location: {
-            lat: position.coords.latitude,
-            lon: position.coords.longitude,
-          },
-          error: null,
-          isLoading: false
-        }));
-      },
-      (error) => {
-        let errorMessage = 'An unknown error occurred.';
-        switch (error.code) {
-          case error.PERMISSION_DENIED:
-            errorMessage = 'Location access denied. Please enter your location manually.';
-            break;
-          case error.POSITION_UNAVAILABLE:
-            errorMessage = 'Location information is unavailable.';
-            break;
-          case error.TIMEOUT:
-            errorMessage = 'The request to get user location timed out. Sensors might be unresponsive.';
-            break;
-        }
-        setState(prev => ({
-          ...prev,
-          error: errorMessage,
-          isLoading: false
-        }));
-      },
-      GEOLOCATION_OPTIONS
-    );
+    const tryGetPosition = (highAccuracy: boolean) => {
+      const options: PositionOptions = {
+        enableHighAccuracy: highAccuracy,
+        timeout: highAccuracy ? 8000 : 10000, // 8 seconds for first try, 10 seconds for fallback
+        maximumAge: 300000                     // 5 minutes cache
+      };
+
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setState(prev => ({
+            ...prev,
+            location: {
+              lat: position.coords.latitude,
+              lon: position.coords.longitude,
+            },
+            error: null,
+            isLoading: false
+          }));
+        },
+        (error) => {
+          // If high accuracy query fails, try again with low accuracy
+          if (highAccuracy && (error.code === error.POSITION_UNAVAILABLE || error.code === error.TIMEOUT)) {
+            console.warn("[MeteoSran] High accuracy geolocation failed/timed out. Retrying with low accuracy...");
+            tryGetPosition(false);
+            return;
+          }
+
+          let errorMessage = 'An unknown error occurred.';
+          switch (error.code) {
+            case error.PERMISSION_DENIED:
+              errorMessage = 'Location access denied. Using IP-based fallback.';
+              break;
+            case error.POSITION_UNAVAILABLE:
+              errorMessage = 'Location unavailable. Using IP-based fallback.';
+              break;
+            case error.TIMEOUT:
+              errorMessage = 'Location request timed out. Using IP-based fallback.';
+              break;
+          }
+
+          setState(prev => ({
+            ...prev,
+            error: errorMessage,
+            isLoading: false
+          }));
+        },
+        options
+      );
+    };
+
+    tryGetPosition(true);
   }, []);
 
   useEffect(() => {
