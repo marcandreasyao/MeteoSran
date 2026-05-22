@@ -258,19 +258,7 @@ export const Header: React.FC<HeaderProps> = ({
 
         <div className="flex items-center space-x-1 sm:space-x-2">
           <div className="flex items-center gap-1 sm:gap-2">
-            <button
-              onClick={handleDownloadPdf}
-              disabled={!canDownload}
-              className="p-1.5 sm:p-2 rounded-full hover:bg-black/10 dark:hover:bg-white/10 
-                        focus:outline-none focus:ring-2 focus:ring-sky-500 dark:focus:ring-sky-400 
-                        disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              aria-label={isDownloadingPdf ? "Generating PDF..." : "Download chat as PDF"}
-              title={messages.length <= 1 ? "Send a message to enable download" : (isDownloadingPdf ? "Generating PDF..." : "Download chat as PDF")}
-            >
-              <span className="material-symbols-outlined notranslate text-slate-700 dark:text-slate-200 text-lg sm:text-xl" translate="no">
-                {isDownloadingPdf ? 'hourglass_top' : 'download'}
-              </span>
-            </button>
+
             <div className="relative">
               <button
                 onClick={onOpenNotifications}
@@ -328,6 +316,28 @@ export const Header: React.FC<HeaderProps> = ({
                   </div>
 
                   <div className="space-y-6">
+                    {/* Chat Download Action */}
+                    <div className="group flex flex-col">
+                      <span className="text-xs sm:text-sm text-slate-800 dark:text-slate-200 font-semibold flex items-center gap-2 mb-3">
+                        <span className="material-symbols-outlined notranslate text-[18px] sm:text-[20px] text-sky-500 dark:text-sky-400" translate="no">file_download</span>
+                        Export Chat
+                      </span>
+                      <button
+                        onClick={handleDownloadPdf}
+                        disabled={!canDownload}
+                        className="w-full py-2.5 sm:py-3 text-xs sm:text-sm rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 
+                                   text-slate-800 dark:text-slate-200 font-medium shadow-sm active:scale-95 transition-all 
+                                   disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2 min-h-[44px] border border-slate-200/50 dark:border-slate-700/50"
+                        title={messages.length <= 1 ? "Send a message to enable download" : (isDownloadingPdf ? "Generating PDF..." : "Download chat as PDF")}
+                      >
+                        <span className="material-symbols-outlined notranslate text-lg" translate="no">
+                          {isDownloadingPdf ? 'hourglass_top' : 'download'}
+                        </span>
+                        {isDownloadingPdf ? 'Generating PDF...' : 'Download as PDF'}
+                      </button>
+                    </div>
+
+                    <div className="h-px bg-slate-200/50 dark:bg-slate-700/50 w-full" />
                     {/* Notification toggle */}
                     <div className="group flex items-center justify-between">
                       <div className="flex flex-col pr-4">
