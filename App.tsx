@@ -158,9 +158,11 @@ const App: React.FC = () => {
     if (theme === 'dark') {
       document.documentElement.classList.add('dark');
       document.body.classList.add('dark');
+      document.documentElement.style.colorScheme = 'dark';
     } else {
       document.documentElement.classList.remove('dark');
       document.body.classList.remove('dark');
+      document.documentElement.style.colorScheme = 'light';
     }
     localStorage.setItem('theme', theme);
   }, [theme]);
@@ -601,7 +603,7 @@ const App: React.FC = () => {
       console.error('Error sending message:', err);
       setError(err instanceof Error ? err.message : 'Failed to send message');
       // Restore input values since message creation or sending failed
-      setCurrentInput({ text: originalText, imageFile: originalImage });
+      setCurrentInput({ text: originalText, imageFile: originalImage ?? null });
     } finally {
       setIsLoading(false);
       if (inputRef.current) {

@@ -103,19 +103,6 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, onRegener
   const hasImage = message.image && message.image.data && message.image.mimeType;
   const timeString = new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
-  // Dark-mode helper for button resting state
-  const isDark = () => document.body.classList.contains('dark');
-  const restingBg  = () => isDark() ? 'rgba(30,41,59,0.65)' : 'rgba(255,255,255,0.55)';
-  const restingBorder = 'rgba(148,163,184,0.18)';
-  const restingColor  = 'rgb(100,116,139)';
-  const restingShadow = '0 1px 4px rgba(0,0,0,0.06)';
-
-  // Unified Hover Theme (Sky Blue)
-  const hoverBg = 'rgba(14,165,233,0.08)';
-  const hoverBorder = '1px solid rgba(14,165,233,0.28)';
-  const hoverColor = 'rgb(14,165,233)';
-  const hoverShadow = '0 0 12px rgba(14,165,233,0.18), 0 2px 8px rgba(14,165,233,0.10)';
-
   const handleCopy = () => {
     navigator.clipboard.writeText(message.text);
     setCopied(true);
@@ -275,178 +262,59 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, onRegener
               <div className="premium-tooltip">{copied ? t('common.copied') : t('common.copy')}</div>
               <button
                 onClick={handleCopy}
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '5px',
-                  padding: '5px 10px',
-                  borderRadius: '999px',
-                  border: copied
-                    ? '1px solid rgba(34,197,94,0.35)'
-                    : '1px solid rgba(148,163,184,0.18)',
-                  background: copied
-                    ? 'rgba(34,197,94,0.08)'
-                    : 'rgba(255,255,255,0.55)',
-                  backdropFilter: 'blur(12px)',
-                  WebkitBackdropFilter: 'blur(12px)',
-                  boxShadow: copied
-                    ? '0 0 0 1px rgba(34,197,94,0.15), 0 2px 8px rgba(34,197,94,0.12)'
-                    : '0 1px 4px rgba(0,0,0,0.06)',
-                  color: copied ? 'rgb(22,163,74)' : 'rgb(100,116,139)',
-                  fontSize: '11.5px',
-                  fontWeight: 500,
-                  letterSpacing: '0.01em',
-                  cursor: 'pointer',
-                  transition: 'all 0.22s cubic-bezier(0.34,1.56,0.64,1)',
-                  whiteSpace: 'nowrap',
-                  minHeight: 'auto',
-                  minWidth: 'auto',
-                }}
-              onMouseEnter={e => {
-                if (!copied) {
-                  const el = e.currentTarget as HTMLButtonElement;
-                  el.style.background = hoverBg;
-                  el.style.border = hoverBorder;
-                  el.style.color = hoverColor;
-                  el.style.boxShadow = hoverShadow;
-                  el.style.transform = 'scale(1.04)';
-                }
-              }}
-              onMouseLeave={e => {
-                const el = e.currentTarget as HTMLButtonElement;
-                if (copied) {
-                  el.style.background = 'rgba(34,197,94,0.08)';
-                  el.style.border = '1px solid rgba(34,197,94,0.35)';
-                  el.style.color = 'rgb(22,163,74)';
-                  el.style.boxShadow = '0 0 0 1px rgba(34,197,94,0.15), 0 2px 8px rgba(34,197,94,0.12)';
-                } else {
-                  el.style.background = restingBg();
-                  el.style.border = `1px solid ${restingBorder}`;
-                  el.style.color = restingColor;
-                  el.style.boxShadow = restingShadow;
-                }
-                el.style.transform = 'scale(1)';
-              }}
-            >
-              {copied ? (
-                <>
-                  <svg style={{width:'13px',height:'13px',flexShrink:0}} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
-                  </svg>
-                  <span>{t('common.copied')}</span>
-                </>
-              ) : (
-                <>
-                  <svg style={{width:'13px',height:'13px',flexShrink:0}} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                  </svg>
-                  <span>{t('common.copy')}</span>
-                </>
-              )}
-            </button>
-          </div>
-
-          {/* ── Share Button ── */}
-          <div className="relative tooltip-container">
-            <div className="premium-tooltip">{t('common.share')}</div>
-            <button
-              onClick={handleExport}
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '5px',
-                padding: '5px 10px',
-                borderRadius: '999px',
-                border: '1px solid rgba(148,163,184,0.18)',
-                background: restingBg(),
-                backdropFilter: 'blur(12px)',
-                WebkitBackdropFilter: 'blur(12px)',
-                boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
-                color: 'rgb(100,116,139)',
-                fontSize: '11.5px',
-                fontWeight: 500,
-                letterSpacing: '0.01em',
-                cursor: 'pointer',
-                transition: 'all 0.22s cubic-bezier(0.34,1.56,0.64,1)',
-                whiteSpace: 'nowrap',
-                minHeight: 'auto',
-                minWidth: 'auto',
-              }}
-              onMouseEnter={e => {
-                const el = e.currentTarget as HTMLButtonElement;
-                el.style.background = hoverBg;
-                el.style.border = hoverBorder;
-                el.style.color = hoverColor;
-                el.style.boxShadow = hoverShadow;
-                el.style.transform = 'scale(1.04)';
-              }}
-              onMouseLeave={e => {
-                const el = e.currentTarget as HTMLButtonElement;
-                el.style.background = restingBg();
-                el.style.border = `1px solid ${restingBorder}`;
-                el.style.color = restingColor;
-                el.style.boxShadow = restingShadow;
-                el.style.transform = 'scale(1)';
-              }}
-            >
-              <svg style={{width:'13px',height:'13px',flexShrink:0}} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-              </svg>
-              <span>{t('common.share')}</span>
-            </button>
-          </div>
-
-          {/* ── Regenerate Button ── */}
-          {onRegenerate && (
-            <div className="relative tooltip-container">
-              <div className="premium-tooltip">{t('chat.regenerate')}</div>
-              <button
-                onClick={() => onRegenerate(message.id)}
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '5px',
-                  padding: '5px 10px',
-                  borderRadius: '999px',
-                  border: '1px solid rgba(148,163,184,0.18)',
-                  background: restingBg(),
-                  backdropFilter: 'blur(12px)',
-                  WebkitBackdropFilter: 'blur(12px)',
-                  boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
-                  color: 'rgb(100,116,139)',
-                  fontSize: '11.5px',
-                  fontWeight: 500,
-                  letterSpacing: '0.01em',
-                  cursor: 'pointer',
-                  transition: 'all 0.22s cubic-bezier(0.34,1.56,0.64,1)',
-                  whiteSpace: 'nowrap',
-                  minHeight: 'auto',
-                  minWidth: 'auto',
-                }}
-                onMouseEnter={e => {
-                  const el = e.currentTarget as HTMLButtonElement;
-                  el.style.background = hoverBg;
-                  el.style.border = hoverBorder;
-                  el.style.color = hoverColor;
-                  el.style.boxShadow = hoverShadow;
-                  el.style.transform = 'scale(1.04)';
-                }}
-                onMouseLeave={e => {
-                  const el = e.currentTarget as HTMLButtonElement;
-                  el.style.background = restingBg();
-                  el.style.border = `1px solid ${restingBorder}`;
-                  el.style.color = restingColor;
-                  el.style.boxShadow = restingShadow;
-                  el.style.transform = 'scale(1)';
-                }}
+                className={`inline-flex items-center gap-[5px] px-2.5 py-[5px] rounded-full border backdrop-blur-md shadow-sm text-[11.5px] font-medium tracking-wide cursor-pointer transition-all duration-200 hover:scale-[1.04] active:scale-[0.95] whitespace-nowrap min-h-0 min-w-0
+                  ${copied
+                    ? 'bg-emerald-500/10 border-emerald-500/35 text-emerald-600 dark:text-emerald-400 shadow-[0_0_0_1px_rgba(34,197,94,0.15),0_2px_8px_rgba(34,197,94,0.12)]'
+                    : 'bg-white/55 dark:bg-slate-800/65 border-slate-400/20 dark:border-slate-500/20 text-slate-500 dark:text-slate-400 hover:bg-sky-500/10 hover:text-sky-500 hover:border-sky-500/30 hover:shadow-[0_0_12px_rgba(14,165,233,0.18),0_2px_8px_rgba(14,165,233,0.1)]'
+                  }`}
               >
-                <svg style={{width:'13px',height:'13px',flexShrink:0}} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                </svg>
-                <span>{t('chat.regenerate')}</span>
+                {copied ? (
+                  <>
+                    <svg style={{width:'13px',height:'13px',flexShrink:0}} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                    </svg>
+                    <span>{t('common.copied')}</span>
+                  </>
+                ) : (
+                  <>
+                    <svg style={{width:'13px',height:'13px',flexShrink:0}} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                    </svg>
+                    <span>{t('common.copy')}</span>
+                  </>
+                )}
               </button>
             </div>
-          )}
+
+            {/* ── Share Button ── */}
+            <div className="relative tooltip-container">
+              <div className="premium-tooltip">{t('common.share')}</div>
+              <button
+                onClick={handleExport}
+                className="inline-flex items-center gap-[5px] px-2.5 py-[5px] rounded-full border border-slate-400/20 dark:border-slate-500/20 bg-white/55 dark:bg-slate-800/65 text-slate-500 dark:text-slate-400 backdrop-blur-md shadow-sm text-[11.5px] font-medium tracking-wide cursor-pointer transition-all duration-200 hover:scale-[1.04] active:scale-[0.95] whitespace-nowrap min-h-0 min-w-0 hover:bg-sky-500/10 hover:text-sky-500 hover:border-sky-500/30 hover:shadow-[0_0_12px_rgba(14,165,233,0.18),0_2px_8px_rgba(14,165,233,0.1)]"
+              >
+                <svg style={{width:'13px',height:'13px',flexShrink:0}} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                </svg>
+                <span>{t('common.share')}</span>
+              </button>
+            </div>
+
+            {/* ── Regenerate Button ── */}
+            {onRegenerate && (
+              <div className="relative tooltip-container">
+                <div className="premium-tooltip">{t('chat.regenerate')}</div>
+                <button
+                  onClick={() => onRegenerate(message.id)}
+                  className="inline-flex items-center gap-[5px] px-2.5 py-[5px] rounded-full border border-slate-400/20 dark:border-slate-500/20 bg-white/55 dark:bg-slate-800/65 text-slate-500 dark:text-slate-400 backdrop-blur-md shadow-sm text-[11.5px] font-medium tracking-wide cursor-pointer transition-all duration-200 hover:scale-[1.04] active:scale-[0.95] whitespace-nowrap min-h-0 min-w-0 hover:bg-sky-500/10 hover:text-sky-500 hover:border-sky-500/30 hover:shadow-[0_0_12px_rgba(14,165,233,0.18),0_2px_8px_rgba(14,165,233,0.1)]"
+                >
+                  <svg style={{width:'13px',height:'13px',flexShrink:0}} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                  <span>{t('chat.regenerate')}</span>
+                </button>
+              </div>
+            )}
 
             {/* ── Alternatives Pagination ── */}
             {message.alternatives && message.alternatives.length > 1 && (

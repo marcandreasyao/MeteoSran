@@ -282,7 +282,7 @@ export const translations = {
       share: "Partager",
     },
     login: {
-      tagline: "Intelligence Climatique de Nouvelle Génération",
+      tagline: "Météo-Intelligence Avancée de Nouvelle Génération",
       firstName: "Prénom",
       lastName: "Nom",
       email: "Adresse e-mail",
@@ -421,7 +421,7 @@ export const translations = {
       noMatchingChats: "Aucune discussion correspondante",
     },
     chat: {
-      placeholder: "Demande n'importe quoi sur la météo à MeteoSran...",
+      placeholder: "Demande à MeteoSran",
       micPermissionDenied: "Permission de microphone refusée",
       recordTooltip: "Enregistrer une entrée vocale",
       recordingTooltip: "Enregistrement...",
@@ -497,8 +497,8 @@ export const translations = {
       shareGuide: "Partager &gt; Sur l'écran d'accueil"
     },
     releaseNotes: {
-      title: "Nouveautés de la version 1.6.6",
-      subtitle: "Mise à Jour corrective d'esthétique premium & Stabilité",
+      title: "Nouveautés de MeteoSran 1.6.6",
+      subtitle: "Version corrective de stabilité & d'esthétique",
       close: "Fermer",
       gotIt: "Compris, merci !",
       features: {
