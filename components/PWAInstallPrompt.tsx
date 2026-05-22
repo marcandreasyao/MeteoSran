@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useLanguage } from '../src/contexts/LanguageContext';
 
 interface PWAInstallPromptProps {
   theme: 'light' | 'dark';
@@ -19,6 +20,7 @@ declare global {
 }
 
 export const PWAInstallPrompt: React.FC<PWAInstallPromptProps> = ({ theme }) => {
+  const { t } = useLanguage();
   const [isVisible, setIsVisible] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [isInstalled, setIsInstalled] = useState(false);
@@ -116,7 +118,7 @@ export const PWAInstallPrompt: React.FC<PWAInstallPromptProps> = ({ theme }) => 
         <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
           <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
         </svg>
-        <span class="font-medium">MeteoSran installed successfully!</span>
+        <span class="font-medium">${t('pwa.success')}</span>
       </div>
     `;
     
@@ -207,12 +209,12 @@ export const PWAInstallPrompt: React.FC<PWAInstallPromptProps> = ({ theme }) => 
           </div>
           <div className="flex-1">
             <h3 className="font-semibold text-sm mb-1">
-              Install MeteoSran
+              {t('pwa.title')}
             </h3>
             <p className={`text-xs mb-3 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>
               {isIOS 
-                ? "Tap the Share button below and select 'Add to Home Screen' for a premium weather experience!" 
-                : "Get instant access to weather insights with our PWA. Works offline and feels like a native app!"
+                ? t('pwa.iosDesc') 
+                : t('pwa.androidDesc')
               }
             </p>
             {!isIOS && (
@@ -227,7 +229,7 @@ export const PWAInstallPrompt: React.FC<PWAInstallPromptProps> = ({ theme }) => 
                     }
                   `}
                 >
-                  Install
+                  {t('pwa.install')}
                 </button>
                 <button
                   onClick={handleDismiss}
@@ -239,14 +241,14 @@ export const PWAInstallPrompt: React.FC<PWAInstallPromptProps> = ({ theme }) => 
                     }
                   `}
                 >
-                  Later
+                  {t('pwa.later')}
                 </button>
               </div>
             )}
             {isIOS && (
               <div className="flex items-center gap-2 text-blue-500 font-medium text-xs mt-2">
                 <span className="material-symbols-outlined notranslate text-sm" translate="no">share</span>
-                <span>Share &gt; Add to Home Screen</span>
+                <span dangerouslySetInnerHTML={{ __html: t('pwa.shareGuide') }} />
               </div>
             )}
           </div>

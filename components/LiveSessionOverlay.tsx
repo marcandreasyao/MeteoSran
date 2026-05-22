@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { LiveApiService } from '../services/liveApiService';
 import { AudioContextService } from '../services/audioContextService';
+import { useLanguage } from '../src/contexts/LanguageContext';
 
 interface LiveSessionOverlayProps {
   isActive: boolean;
@@ -9,6 +10,7 @@ interface LiveSessionOverlayProps {
 }
 
 export const LiveSessionOverlay: React.FC<LiveSessionOverlayProps> = ({ isActive, onClose, userLocation }) => {
+  const { t } = useLanguage();
   const [status, setStatus] = useState<'connecting' | 'listening' | 'speaking' | 'error'>('connecting');
   const liveApiService = useRef<LiveApiService | null>(null);
   const audioService = useRef<AudioContextService | null>(null);
@@ -79,10 +81,10 @@ export const LiveSessionOverlay: React.FC<LiveSessionOverlayProps> = ({ isActive
         <div className="z-10 text-center space-y-2">
             <h2 className="text-2xl font-bold text-white tracking-tight">MeteoSran Live</h2>
             <p className="text-slate-300 text-sm">
-                {status === 'connecting' && "Connecting to Gemini 2.5 Live API..."}
-                {status === 'listening' && "Listening... Talk to MeteoSran."}
-                {status === 'speaking' && "MeteoSran is speaking..."}
-                {status === 'error' && "Microphone or Connection Error."}
+                {status === 'connecting' && t('chat.liveConnecting')}
+                {status === 'listening' && t('chat.liveListening')}
+                {status === 'speaking' && t('chat.liveSpeaking')}
+                {status === 'error' && t('chat.liveError')}
             </p>
         </div>
 
@@ -113,7 +115,7 @@ export const LiveSessionOverlay: React.FC<LiveSessionOverlayProps> = ({ isActive
             className="z-10 mt-4 px-8 py-3 rounded-full bg-white/10 hover:bg-red-500/80 hover:text-white border border-white/20 text-slate-200 transition-all font-medium backdrop-blur-sm flex items-center gap-2"
         >
             <span className="material-symbols-outlined notranslate text-xl" translate="no">call_end</span>
-            End Session
+            {t('chat.liveEndSession')}
         </button>
       </div>
     </div>

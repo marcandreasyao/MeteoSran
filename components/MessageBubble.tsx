@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Message, MessageRole } from '../types';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { useLanguage } from '../src/contexts/LanguageContext';
 
 interface MessageBubbleProps {
   message: Message;
@@ -44,6 +45,7 @@ const AuraCursor: React.FC = () => (
 
 // Aurora Glass Code Block Component
 const CodeBlock: React.FC<{ language: string; children: React.ReactNode }> = ({ language, children }) => {
+  const { t } = useLanguage();
   const [copied, setCopied] = useState(false);
 
   const handleCopy = () => {
@@ -79,7 +81,7 @@ const CodeBlock: React.FC<{ language: string; children: React.ReactNode }> = ({ 
           <span className="material-symbols-outlined notranslate text-[14px]" translate="no">
             {copied ? 'check' : 'content_copy'}
           </span>
-          {copied ? 'Copied' : 'Copy'}
+          {copied ? t('common.copied') : t('common.copy')}
         </button>
       </div>
       
@@ -92,6 +94,7 @@ const CodeBlock: React.FC<{ language: string; children: React.ReactNode }> = ({ 
 };
 
 export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, onRegenerate, onSwitchAlternative }) => {
+  const { t } = useLanguage();
   const [copied, setCopied] = useState(false);
   const isUser = message.role === MessageRole.USER;
   const isSystem = message.role === MessageRole.SYSTEM;
@@ -158,7 +161,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, onRegener
     const textToExport = message.text;
     if (navigator.share) {
       navigator.share({
-        title: 'MeteoSran Response',
+        title: `${t('common.appName')} ${t('chat.response')}`,
         text: textToExport,
       }).catch(console.error);
     } else {
@@ -166,7 +169,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, onRegener
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = 'meteosran-response.txt';
+      a.download = `${t('common.appName').toLowerCase()}-${t('chat.response').toLowerCase()}.txt`;
       a.click();
       URL.revokeObjectURL(url);
     }
@@ -269,7 +272,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, onRegener
 
             {/* ── Copy Button ── */}
             <div className="relative tooltip-container">
-              <div className="premium-tooltip">{copied ? 'Copié !' : 'Copier'}</div>
+              <div className="premium-tooltip">{copied ? t('common.copied') : t('common.copy')}</div>
               <button
                 onClick={handleCopy}
                 style={{
@@ -330,14 +333,14 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, onRegener
                   <svg style={{width:'13px',height:'13px',flexShrink:0}} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
                   </svg>
-                  <span>Copié !</span>
+                  <span>{t('common.copied')}</span>
                 </>
               ) : (
                 <>
                   <svg style={{width:'13px',height:'13px',flexShrink:0}} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
                   </svg>
-                  <span>Copier</span>
+                  <span>{t('common.copy')}</span>
                 </>
               )}
             </button>
@@ -345,7 +348,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, onRegener
 
           {/* ── Share Button ── */}
           <div className="relative tooltip-container">
-            <div className="premium-tooltip">Partager</div>
+            <div className="premium-tooltip">{t('common.share')}</div>
             <button
               onClick={handleExport}
               style={{
@@ -389,14 +392,14 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, onRegener
               <svg style={{width:'13px',height:'13px',flexShrink:0}} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
               </svg>
-              <span>Partager</span>
+              <span>{t('common.share')}</span>
             </button>
           </div>
 
           {/* ── Regenerate Button ── */}
           {onRegenerate && (
             <div className="relative tooltip-container">
-              <div className="premium-tooltip">Régénérer</div>
+              <div className="premium-tooltip">{t('chat.regenerate')}</div>
               <button
                 onClick={() => onRegenerate(message.id)}
                 style={{
@@ -440,7 +443,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, onRegener
                 <svg style={{width:'13px',height:'13px',flexShrink:0}} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                 </svg>
-                <span>Régénérer</span>
+                <span>{t('chat.regenerate')}</span>
               </button>
             </div>
           )}
@@ -452,7 +455,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, onRegener
                   onClick={() => onSwitchAlternative && onSwitchAlternative(message.id, 'prev')}
                   disabled={message.currentAlternativeIndex === 0}
                   className="p-0.5 rounded-full hover:bg-slate-200/70 dark:hover:bg-slate-600/70 disabled:opacity-30 transition-colors"
-                  title="Version précédente"
+                  title={t('chat.prevVersion')}
                   style={{minHeight:'auto',minWidth:'auto'}}
                 >
                   <svg className="w-3 h-3 md:w-3.5 md:h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
@@ -462,7 +465,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, onRegener
                   onClick={() => onSwitchAlternative && onSwitchAlternative(message.id, 'next')}
                   disabled={message.currentAlternativeIndex === message.alternatives.length - 1}
                   className="p-0.5 rounded-full hover:bg-slate-200/70 dark:hover:bg-slate-600/70 disabled:opacity-30 transition-colors"
-                  title="Version suivante"
+                  title={t('chat.nextVersion')}
                   style={{minHeight:'auto',minWidth:'auto'}}
                 >
                   <svg className="w-3 h-3 md:w-3.5 md:h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>

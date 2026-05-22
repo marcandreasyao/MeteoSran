@@ -5,6 +5,7 @@ import { Analytics } from '@vercel/analytics/react';
 import { SpeedInsights } from '@vercel/speed-insights/react';
 import App from './App';
 import { AuthProvider } from './src/contexts/AuthContext';
+import { LanguageProvider } from './src/contexts/LanguageContext';
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {
@@ -15,9 +16,11 @@ const root = ReactDOM.createRoot(rootElement);
 root.render(
   <React.StrictMode>
     <AuthProvider>
-      <App />
-      <Analytics />
-      <SpeedInsights />
+      <LanguageProvider>
+        <App />
+        <Analytics />
+        <SpeedInsights />
+      </LanguageProvider>
     </AuthProvider>
   </React.StrictMode>
 );

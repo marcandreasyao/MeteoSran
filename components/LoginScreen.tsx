@@ -8,8 +8,10 @@ import {
   OAuthProvider,
   updateProfile
 } from 'firebase/auth';
+import { useLanguage } from '../src/contexts/LanguageContext';
 
 export const LoginScreen: React.FC = () => {
+  const { t } = useLanguage();
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -29,25 +31,25 @@ export const LoginScreen: React.FC = () => {
     const code = error?.code || '';
     switch (code) {
       case 'auth/invalid-credential':
-        return 'Incorrect email or password. Please try again.';
+        return t('login.errors.invalidCredential');
       case 'auth/user-not-found':
-        return 'No account found with this email.';
+        return t('login.errors.userNotFound');
       case 'auth/wrong-password':
-        return 'Incorrect password. Please try again.';
+        return t('login.errors.wrongPassword');
       case 'auth/email-already-in-use':
-        return 'This email is already registered. Try logging in instead.';
+        return t('login.errors.emailInUse');
       case 'auth/weak-password':
-        return 'Password is too weak. Please use at least 6 characters.';
+        return t('login.errors.weakPassword');
       case 'auth/too-many-requests':
-        return 'Too many failed attempts. Please try again later.';
+        return t('login.errors.tooManyRequests');
       case 'auth/popup-closed-by-user':
-        return 'The sign-in window was closed. Please try again.';
+        return t('login.errors.popupClosed');
       case 'auth/network-request-failed':
-        return 'Network error. Please check your connection.';
+        return t('login.errors.networkFailed');
       case 'auth/operation-not-allowed':
-        return 'This sign-in method is currently disabled.';
+        return t('login.errors.operationNotAllowed');
       default:
-        return error.message || 'An unexpected error occurred. Please try again.';
+        return error.message || t('login.errors.default');
     }
   };
 
@@ -56,7 +58,7 @@ export const LoginScreen: React.FC = () => {
     setError(null);
 
     if (!isLogin && !isPasswordValid) {
-      setError("Please meet all password requirements.");
+      setError(t("login.passRequirements"));
       return;
     }
 
@@ -117,7 +119,7 @@ export const LoginScreen: React.FC = () => {
             <img src="/Meteosran-logo.png" alt="MeteoSran Logo" className="w-10 h-10 object-contain drop-shadow-md" />
           </div>
           <h1 className="text-3xl font-bold text-slate-900 dark:text-white tracking-tight text-glow-none">MeteoSran</h1>
-          <p className="text-slate-500 dark:text-slate-400 mt-2 text-sm font-medium">Next-Level Climate Intelligence</p>
+          <p className="text-slate-500 dark:text-slate-400 mt-2 text-sm font-medium">{t('login.tagline')}</p>
         </div>
 
         {error && (
@@ -131,7 +133,7 @@ export const LoginScreen: React.FC = () => {
             <div className="overflow-hidden flex gap-3">
               <input
                 type="text"
-                placeholder="First Name"
+                placeholder={t('login.firstName')}
                 value={firstName}
                 onChange={(e) => setFirstName(e.target.value)}
                 required={!isLogin}
@@ -139,7 +141,7 @@ export const LoginScreen: React.FC = () => {
               />
               <input
                 type="text"
-                placeholder="Last Name"
+                placeholder={t('login.lastName')}
                 value={lastName}
                 onChange={(e) => setLastName(e.target.value)}
                 required={!isLogin}
@@ -151,7 +153,7 @@ export const LoginScreen: React.FC = () => {
           <div className="mb-4">
             <input
               type="email"
-              placeholder="Email address"
+              placeholder={t('login.email')}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
@@ -162,7 +164,7 @@ export const LoginScreen: React.FC = () => {
           <div className="relative mb-4">
             <input
               type={showPassword ? "text" : "password"}
-              placeholder="Password"
+              placeholder={t('login.password')}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
@@ -172,7 +174,7 @@ export const LoginScreen: React.FC = () => {
               type="button"
               onClick={() => setShowPassword(!showPassword)}
               className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-white transition-colors focus:outline-none"
-              aria-label={showPassword ? "Hide password" : "Show password"}
+              aria-label={showPassword ? t('login.hidePassword') : t('login.showPassword')}
             >
               <span className="material-symbols-outlined notranslate text-xl" translate="no">
                 {showPassword ? 'visibility_off' : 'visibility'}
@@ -185,15 +187,15 @@ export const LoginScreen: React.FC = () => {
               <div className="pt-2"></div>
               <div className={`flex items-center gap-2 transition-colors ${hasMinLength ? 'text-green-500 dark:text-green-400' : 'text-slate-400 dark:text-slate-500'}`}>
                 <span className="material-symbols-outlined notranslate text-sm" translate="no">{hasMinLength ? 'check_circle' : 'radio_button_unchecked'}</span>
-                <span>At least 8 characters</span>
+                <span>{t('login.minChar')}</span>
               </div>
               <div className={`flex items-center gap-2 transition-colors ${hasUpperCase ? 'text-green-500 dark:text-green-400' : 'text-slate-400 dark:text-slate-500'}`}>
                 <span className="material-symbols-outlined notranslate text-sm" translate="no">{hasUpperCase ? 'check_circle' : 'radio_button_unchecked'}</span>
-                <span>At least 1 uppercase letter</span>
+                <span>{t('login.uppercase')}</span>
               </div>
               <div className={`flex items-center gap-2 transition-colors ${hasSymbol ? 'text-green-500 dark:text-green-400' : 'text-slate-400 dark:text-slate-500'}`}>
                 <span className="material-symbols-outlined notranslate text-sm" translate="no">{hasSymbol ? 'check_circle' : 'radio_button_unchecked'}</span>
-                <span>At least 1 special character (e.g., !@#$%)</span>
+                <span>{t('login.specialChar')}</span>
               </div>
               <div className="pb-2"></div>
             </div>
@@ -204,13 +206,13 @@ export const LoginScreen: React.FC = () => {
             disabled={loading}
             className="w-full bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white font-semibold rounded-full px-4 py-3 transition-all transform active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-blue-500/25 mt-2"
           >
-            {loading ? 'Authenticating...' : (isLogin ? 'Sign In' : 'Create Account')}
+            {loading ? t('login.authenticating') : (isLogin ? t('login.signInBtn') : t('login.createAccountBtn'))}
           </button>
         </form>
 
         <div className="mt-6 flex items-center justify-center space-x-4">
           <div className="h-px bg-slate-200 dark:bg-slate-700 flex-1"></div>
-          <span className="text-slate-400 dark:text-slate-500 text-xs font-semibold uppercase tracking-wider">OR</span>
+          <span className="text-slate-400 dark:text-slate-500 text-xs font-semibold uppercase tracking-wider">{t('login.or')}</span>
           <div className="h-px bg-slate-200 dark:bg-slate-700 flex-1"></div>
         </div>
 
@@ -226,7 +228,7 @@ export const LoginScreen: React.FC = () => {
               <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
               <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
             </svg>
-            Continue with Google
+            {t('login.googleBtn')}
           </button>
 
           <button
@@ -238,17 +240,17 @@ export const LoginScreen: React.FC = () => {
             <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
               <path d="M12.152 6.896c-.948 0-2.415-1.078-3.96-1.04-2.04.027-3.91 1.183-4.961 3.014-2.117 3.675-.546 9.103 1.519 12.09 1.013 1.454 2.208 3.09 3.792 3.039 1.52-.065 2.09-.987 3.935-.987 1.831 0 2.35.987 3.96.948 1.637-.026 2.62-1.48 3.605-2.935 1.156-1.69 1.632-3.326 1.662-3.415-.039-.013-3.182-1.221-3.22-4.857-.026-3.04 2.484-4.524 2.597-4.594-1.425-2.078-3.623-2.364-4.42-2.43-1.896-.2-3.55 1.066-4.51 1.066zm2.42-2.906c.829-1.004 1.385-2.408 1.233-3.806-1.2.052-2.656.805-3.52 1.815-.76.853-1.42 2.296-1.233 3.665 1.35.105 2.684-.663 3.52-1.674z" />
             </svg>
-            Continue with Apple
+            {t('login.appleBtn')}
           </button>
         </div>
 
         <p className="mt-8 text-center text-slate-500 dark:text-slate-400 text-sm font-medium">
-          {isLogin ? "Don't have an account? " : "Already have an account? "}
+          {isLogin ? t('login.noAccount') : t('login.hasAccount')}
           <button
             onClick={() => setIsLogin(!isLogin)}
             className="text-blue-600 dark:text-blue-400 hover:text-blue-500 dark:hover:text-blue-300 font-semibold transition-colors"
           >
-            {isLogin ? 'Sign up' : 'Log in'}
+            {isLogin ? t('login.switchSignUp') : t('login.switchSignIn')}
           </button>
         </p>
       </div>

@@ -5,6 +5,7 @@ import { generateChatPdf } from '../services/pdfService';
 import { auth } from '../src/firebase';
 import { signOut } from 'firebase/auth';
 import { AnimatedThemeToggler } from './magicui/AnimatedThemeToggler';
+import { useLanguage } from '../src/contexts/LanguageContext';
 
 interface HeaderProps {
   theme: Theme;
@@ -57,6 +58,7 @@ export const Header: React.FC<HeaderProps> = ({
   theme, toggleTheme, messages, selectedMode, onModeChange, onToggleSidebar, onOpenNotifications, hasUnreadNotifications,
   locationMode, setLocationMode, onManualLocationRequested
 }) => {
+  const { language, setLanguage, t } = useLanguage();
   const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
   const [isModeDropdownOpen, setIsModeDropdownOpen] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
@@ -194,11 +196,11 @@ export const Header: React.FC<HeaderProps> = ({
                          text-slate-700 dark:text-slate-200 transition-colors text-xs sm:text-sm"
               aria-haspopup="listbox"
               aria-expanded={isModeDropdownOpen}
-              aria-label={`Current response style: ${selectedModeDetails.name}. Click to change style.`}
-              title={`Response Style: ${selectedModeDetails.name}`}
+              aria-label={`Current response style: ${t('header.modes.' + selectedMode + '.name')}. Click to change style.`}
+              title={`${t('header.responseStyle')}: ${t('header.modes.' + selectedMode + '.name')}`}
             >
               <span className="text-sm sm:text-base leading-none">{selectedModeDetails.icon}</span>
-              <span className="hidden sm:inline">{selectedModeDetails.name}</span>
+              <span className="hidden sm:inline">{t('header.modes.' + selectedMode + '.name')}</span>
               <span
                 className={`material-symbols-outlined notranslate transition-transform duration-200 ${isModeDropdownOpen ? 'rotate-180' : ''}`}
                 style={{ fontSize: '16px' }}
@@ -241,10 +243,10 @@ export const Header: React.FC<HeaderProps> = ({
                         <span className="text-base sm:text-lg md:text-xl mr-1.5 sm:mr-2 md:mr-3 flex-shrink-0 mt-0.5">{modeDetails.icon}</span>
                         <div className="min-w-0">
                           <p className={`font-medium text-xs sm:text-sm ${isSelected ? 'text-sky-700 dark:text-sky-300' : ''} truncate`}>
-                            {modeDetails.name}
+                            {t('header.modes.' + modeKey + '.name')}
                           </p>
                           <p className={`text-xs ${isSelected ? 'text-sky-600 dark:text-sky-400' : 'text-slate-600 dark:text-slate-300'} line-clamp-2`}>
-                            {modeDetails.description}
+                            {t('header.modes.' + modeKey + '.description')}
                           </p>
                         </div>
                       </button>
@@ -263,8 +265,8 @@ export const Header: React.FC<HeaderProps> = ({
               <button
                 onClick={onOpenNotifications}
                 className="p-1.5 sm:p-2 rounded-full hover:bg-black/10 dark:hover:bg-white/10 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-sky-500 dark:focus:ring-sky-400 transition-colors"
-                aria-label="Release Notes & Notifications"
-                title="What's New in 1.6.6"
+                aria-label={t('header.campaignTitle')}
+                title={t('header.campaignUnread')}
               >
                 <span className="material-symbols-outlined notranslate text-lg sm:text-xl" translate="no">campaign</span>
                 {hasUnreadNotifications && (
@@ -276,8 +278,8 @@ export const Header: React.FC<HeaderProps> = ({
             <button
               className="p-1.5 sm:p-2 rounded-full hover:bg-black/10 dark:hover:bg-white/10 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-sky-500 dark:focus:ring-sky-400 transition-colors"
               onClick={() => signOut(auth)}
-              aria-label="Log out"
-              title="Log out"
+              aria-label={t('header.logout')}
+              title={t('header.logout')}
             >
               <span className="material-symbols-outlined notranslate text-lg sm:text-xl" translate="no">logout</span>
             </button>
@@ -285,7 +287,7 @@ export const Header: React.FC<HeaderProps> = ({
               <button
                 className="p-1.5 sm:p-2 rounded-full hover:bg-black/10 dark:hover:bg-white/10 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-sky-500 dark:focus:ring-sky-400 transition-colors"
                 onClick={() => setShowSettings(!showSettings)}
-                aria-label="Open settings"
+                aria-label={t('header.openSettings')}
                 aria-expanded={showSettings}
               >
                 <span className="material-symbols-outlined notranslate text-lg sm:text-xl" translate="no">settings</span>
@@ -301,26 +303,58 @@ export const Header: React.FC<HeaderProps> = ({
                     className="absolute top-3 right-3 z-50 rounded-full p-2 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 
                                hover:bg-slate-100/50 dark:hover:bg-slate-800/50 transition-all focus:outline-none min-h-[44px] min-w-[44px] flex items-center justify-center"
                     onClick={() => setShowSettings(false)}
-                    aria-label="Close settings"
+                    aria-label={t('header.closeSettings')}
                   >
                     <span className="material-symbols-outlined notranslate text-xl" translate="no">close</span>
                   </button>
 
                   <div className="flex flex-col items-start mb-6 pr-12">
                     <h2 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white tracking-tight mb-1">
-                      Preferences
+                      {t('header.preferences')}
                     </h2>
                     <p className="text-xs sm:text-sm text-sky-600 dark:text-sky-400 font-medium">
-                      Customize your MeteoSran experience
+                      {t('header.tagline')}
                     </p>
                   </div>
 
                   <div className="space-y-6">
+                    {/* Language Preference Selector */}
+                    <div className="group flex flex-col">
+                      <span className="text-xs sm:text-sm text-slate-800 dark:text-slate-200 font-semibold flex items-center gap-2 mb-3">
+                        <span className="material-symbols-outlined notranslate text-[18px] sm:text-[20px] text-sky-500 dark:text-sky-400" translate="no">language</span>
+                        {t('header.langLabel')}
+                      </span>
+                      <div className="flex p-1 space-x-1 bg-slate-100/80 dark:bg-slate-800/80 rounded-xl overflow-x-auto hide-scrollbar">
+                        {[
+                          { id: 'en', label: 'English' },
+                          { id: 'fr', label: 'Français' }
+                        ].map((lang) => (
+                          <button
+                            key={lang.id}
+                            className={`flex-1 py-1.5 sm:py-2 text-xs sm:text-sm rounded-lg font-medium transition-all duration-200 min-h-[44px] min-w-[80px]
+                              ${language === lang.id
+                                ? 'bg-sky-500 text-white shadow-[0_2px_8px_rgba(14,165,233,0.3)]'
+                                : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'}`}
+                            onClick={() => {
+                              setLanguage(lang.id as any);
+                            }}
+                          >
+                            {lang.label}
+                          </button>
+                        ))}
+                      </div>
+                      <span className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400 mt-1.5 ml-1 leading-relaxed">
+                        {t('header.langDesc')}
+                      </span>
+                    </div>
+
+                    <div className="h-px bg-slate-200/50 dark:bg-slate-700/50 w-full" />
+
                     {/* Chat Download Action */}
                     <div className="group flex flex-col">
                       <span className="text-xs sm:text-sm text-slate-800 dark:text-slate-200 font-semibold flex items-center gap-2 mb-3">
                         <span className="material-symbols-outlined notranslate text-[18px] sm:text-[20px] text-sky-500 dark:text-sky-400" translate="no">file_download</span>
-                        Export Chat
+                        {t('header.exportChat')}
                       </span>
                       <button
                         onClick={handleDownloadPdf}
@@ -328,12 +362,12 @@ export const Header: React.FC<HeaderProps> = ({
                         className="w-full py-2.5 sm:py-3 text-xs sm:text-sm rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 
                                    text-slate-800 dark:text-slate-200 font-medium shadow-sm active:scale-95 transition-all 
                                    disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2 min-h-[44px] border border-slate-200/50 dark:border-slate-700/50"
-                        title={messages.length <= 1 ? "Send a message to enable download" : (isDownloadingPdf ? "Generating PDF..." : "Download chat as PDF")}
+                        title={messages.length <= 1 ? t('header.downloadDisabledTooltip') : (isDownloadingPdf ? t('header.generatingPdf') : t('header.downloadTooltip'))}
                       >
                         <span className="material-symbols-outlined notranslate text-lg" translate="no">
                           {isDownloadingPdf ? 'hourglass_top' : 'download'}
                         </span>
-                        {isDownloadingPdf ? 'Generating PDF...' : 'Download as PDF'}
+                        {isDownloadingPdf ? t('header.generatingPdf') : t('header.downloadPdf')}
                       </button>
                     </div>
 
@@ -343,10 +377,10 @@ export const Header: React.FC<HeaderProps> = ({
                       <div className="flex flex-col pr-4">
                         <span className="text-xs sm:text-sm text-slate-800 dark:text-slate-200 font-semibold flex items-center gap-2">
                           <span className="material-symbols-outlined notranslate text-[18px] sm:text-[20px] text-sky-500 dark:text-sky-400" translate="no">notifications</span>
-                          Notifications
+                          {t('header.notifications')}
                         </span>
                         <span className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400 mt-0.5 ml-7 leading-relaxed">
-                          Real-time weather alerts
+                          {t('header.notificationsDesc')}
                         </span>
                       </div>
                       <label className="flex items-center cursor-pointer min-h-[44px] min-w-[44px] justify-center">
@@ -366,15 +400,15 @@ export const Header: React.FC<HeaderProps> = ({
                     <div className="group flex flex-col">
                       <span className="text-xs sm:text-sm text-slate-800 dark:text-slate-200 font-semibold flex items-center gap-2 mb-3">
                         <span className="material-symbols-outlined notranslate text-[18px] sm:text-[20px] text-sky-500 dark:text-sky-400" translate="no">location_on</span>
-                        Location Source
+                        {t('header.locationSource')}
                       </span>
 
                       <div className="flex p-1 space-x-1 bg-slate-100/80 dark:bg-slate-800/80 rounded-xl overflow-x-auto hide-scrollbar">
                         {[
-                          { id: 'auto', label: 'Auto' },
-                          { id: 'manual', label: 'Manual' },
-                          { id: 'ip', label: 'IP' },
-                          { id: 'fixed', label: 'Fixed' }
+                          { id: 'auto', label: t('header.locationModes.auto') },
+                          { id: 'manual', label: t('header.locationModes.manual') },
+                          { id: 'ip', label: t('header.locationModes.ip') },
+                          { id: 'fixed', label: t('header.locationModes.fixed') }
                         ].map((mode) => (
                           <button
                             key={mode.id}
@@ -401,7 +435,7 @@ export const Header: React.FC<HeaderProps> = ({
                     <div className="group flex flex-col">
                       <span className="text-xs sm:text-sm text-slate-800 dark:text-slate-200 font-semibold flex items-center gap-2 mb-3">
                         <span className="material-symbols-outlined notranslate text-[18px] sm:text-[20px] text-sky-500 dark:text-sky-400" translate="no">list_alt</span>
-                        Update Type
+                        {t('header.updateType')}
                       </span>
                       <div className="relative">
                         <select
@@ -411,9 +445,9 @@ export const Header: React.FC<HeaderProps> = ({
                           value={notificationType}
                           onChange={e => setNotificationType(e.target.value)}
                         >
-                          <option value="Daily Summary">Daily Summary</option>
-                          <option value="Severe Alerts">Severe Alerts</option>
-                          <option value="Rain Warnings">Rain Warnings</option>
+                          <option value="Daily Summary">{t('header.updateTypes.summary')}</option>
+                          <option value="Severe Alerts">{t('header.updateTypes.alerts')}</option>
+                          <option value="Rain Warnings">{t('header.updateTypes.warnings')}</option>
                         </select>
                         <div className="absolute inset-y-0 right-3 top-0 flex items-center pointer-events-none text-slate-400">
                           <span className="material-symbols-outlined notranslate text-lg" translate="no">expand_more</span>
@@ -428,7 +462,7 @@ export const Header: React.FC<HeaderProps> = ({
                         disabled={!notificationsEnabled}
                         onClick={handleSendTestNotification}
                       >
-                        Send Test Notification
+                        {t('header.sendTestNotification')}
                       </button>
                     </div>
                   </div>

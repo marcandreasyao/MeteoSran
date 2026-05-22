@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { useLanguage } from '../src/contexts/LanguageContext';
 
 interface LoadingProgressProps {
   progress: number;
@@ -72,6 +73,7 @@ const CSS = `
 `;
 
 export const LoadingProgress: React.FC<LoadingProgressProps> = ({ progress, message }) => {
+  const { t: langT } = useLanguage();
   const injected = useRef(false);
 
   // Detect theme reactively
@@ -284,7 +286,7 @@ export const LoadingProgress: React.FC<LoadingProgressProps> = ({ progress, mess
                     style={{ width: active ? '9px' : done ? '7px' : '5px', height: active ? '9px' : done ? '7px' : '5px', borderRadius:'50%', background: done ? (active ? t.dotActive : t.dotDone) : (isDark ? 'rgba(148,163,184,0.1)' : 'rgba(148,163,184,0.25)'), border:`1px solid ${active ? t.dotBorderAct : done ? t.dotBorderDone : (isDark ? 'rgba(148,163,184,0.08)' : 'rgba(148,163,184,0.2)')}`, transition:'all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)' }}
                   />
                   <div style={{ fontSize:'0.51rem', fontWeight:700, letterSpacing:'0.09em', textTransform:'uppercase', color: active ? t.stepActive : done ? t.stepDone : t.stepInactive, transition:'color 0.3s ease', whiteSpace:'nowrap' }}>
-                    {step.label}
+                    {langT('loadingSteps.' + step.label.toLowerCase())}
                   </div>
                 </div>
               );

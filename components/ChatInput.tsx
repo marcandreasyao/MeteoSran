@@ -2,6 +2,7 @@ import React, { useRef, useState, useEffect, RefObject } from 'react';
 import { CurrentInputState } from '../App';
 import { useSpeechRecognition } from '../src/hooks/useSpeechRecognition';
 import { AudioVisualizer } from './AudioVisualizer';
+import { useLanguage } from '../src/contexts/LanguageContext';
 
 interface ChatInputProps {
   onSendMessage: (text: string, imageFile?: File | null) => void;
@@ -27,6 +28,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
   onStartLiveSession,
   isKeyboardOpen = false
 }) => {
+  const { t } = useLanguage();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
   const [showToolsDropdown, setShowToolsDropdown] = useState(false);
@@ -108,13 +110,13 @@ export const ChatInput: React.FC<ChatInputProps> = ({
     const file = event.target.files?.[0];
     if (file) {
       if (!file.type.startsWith('image/')) {
-        alert('Please select an image file (e.g., PNG, JPG, WEBP).');
+        alert(t('chat.invalidImageType'));
         if (fileInputRef.current) fileInputRef.current.value = "";
         return;
       }
       const maxSize = 4 * 1024 * 1024;
       if (file.size > maxSize) {
-        alert(`File is too large. Maximum size is ${maxSize / (1024 * 1024)}MB.`);
+        alert(t('chat.fileTooLarge'));
         if (fileInputRef.current) fileInputRef.current.value = "";
         return;
       }
@@ -138,7 +140,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
           <button
             onClick={handleClearImage}
             className="absolute top-1 right-1 bg-black/50 hover:bg-black/70 text-white rounded-full p-0.5 focus:outline-none focus:ring-1 focus:ring-white"
-            aria-label="Remove selected image"
+            aria-label={t('chat.clearImage')}
           >
             <CloseIcon />
           </button>
@@ -181,7 +183,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
                     className="flex items-center gap-3 w-full px-3 py-2.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 transition-colors group"
                   >
                     <span className="material-symbols-outlined notranslate text-[22px] group-hover:scale-110 transition-transform" translate="no">add_photo_alternate</span>
-                    <span className="text-sm font-medium">Image Upload</span>
+                    <span className="text-sm font-medium">{t('chat.imageUploadLabel')}</span>
                   </button>
 
                   {onStartLiveSession && (
@@ -192,15 +194,15 @@ export const ChatInput: React.FC<ChatInputProps> = ({
                         setShowToolsDropdown(false);
                       }}
                       className="flex items-center gap-3 w-full px-3 py-2.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 transition-colors group"
-                  >
-                    <div className="relative">
+                    >
+                      <div className="relative">
                         <span className="material-symbols-outlined notranslate text-[22px] group-hover:scale-110 transition-transform" translate="no">graphic_eq</span>
                         <span className="absolute -top-0.5 -right-0.5 flex h-2 w-2">
                           <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
                           <span className="relative inline-flex rounded-full h-2 w-2 bg-indigo-500"></span>
                         </span>
                       </div>
-                      <span className="text-sm font-medium">Live Session</span>
+                      <span className="text-sm font-medium">{t('chat.liveSessionLabel')}</span>
                     </button>
                   )}
 
@@ -215,7 +217,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
                       <span className="text-[11px] font-black w-6 text-center border border-slate-400 rounded px-0.5 group-hover:bg-slate-700 group-hover:text-white transition-all">
                         {language === 'fr-FR' ? 'FR' : 'EN'}
                       </span>
-                      <span className="text-sm font-medium">Language</span>
+                      <span className="text-sm font-medium">{t('chat.languageLabel')}</span>
                     </button>
                   )}
                 </div>
@@ -233,7 +235,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
                 ? 'bg-red-500 text-white animate-pulse shadow-[0_0_15px_rgba(239,68,68,0.5)]'
                 : 'hover:bg-black/10 dark:hover:bg-white/10 text-slate-600 dark:text-slate-300'
                 }`}
-              aria-label={isListening ? "Stop listening" : "Start voice input"}
+              aria-label={isListening ? t('chat.stopListening') : t('chat.recordTooltip')}
             >
               <span className="material-symbols-outlined notranslate text-[22px] sm:text-2xl" translate="no">
                 {isListening ? 'mic_off' : 'mic'}
@@ -245,7 +247,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
             <div className="flex-grow flex flex-col items-center justify-center overflow-hidden animate-[pulse_2s_ease-in-out_infinite] relative px-2 min-h-[40px] my-auto">
               <AudioVisualizer audioData={audioData} isListening={isListening} />
               <div className="absolute bottom-[-4px] text-xs font-medium text-sky-600 dark:text-sky-400 truncate w-full text-center opacity-80 pb-1">
-                {currentText || "Listening..."}
+                {currentText || t('chat.listening')}
               </div>
             </div>
           ) : (
@@ -259,14 +261,14 @@ export const ChatInput: React.FC<ChatInputProps> = ({
                 value={currentText}
                 onChange={handleTextChange}
                 onKeyDown={handleKeyDown}
-                placeholder={imageFile ? "Describe image..." : "Ask me anything about weather..."}
+                placeholder={imageFile ? t('chat.describeImage') : t('chat.placeholder')}
                 style={{ height: '55px' }}
                 className="w-full py-4 px-2 bg-transparent border-none focus:ring-0 resize-none overflow-y-auto hide-scrollbar
                              text-[16px] text-slate-800 dark:text-slate-100 
                              placeholder-slate-500 dark:placeholder-slate-400 leading-tight"
                 rows={1}
                 disabled={isLoading}
-                aria-label="Chat message input"
+                aria-label={t('chat.placeholder')}
               />
             </div>
           )}
@@ -284,7 +286,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
                      focus:outline-none focus:ring-2 focus:ring-blue-400
                      disabled:opacity-60 disabled:cursor-not-allowed disabled:shadow-none
                      ml-2"
-          aria-label="Send message"
+          aria-label={t('chat.sendTooltip')}
         >
           {isLoading ? (
             <span className="material-symbols-outlined notranslate text-[22px]" translate="no">

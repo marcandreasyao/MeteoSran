@@ -19,6 +19,8 @@ import { Sidebar } from './components/Sidebar';
 import { LiveSessionOverlay } from './components/LiveSessionOverlay';
 import { ReleaseNotesModal } from './components/ReleaseNotesModal';
 import { generateUUID } from './src/utils/uuid';
+import { useLanguage } from './src/contexts/LanguageContext';
+
 export type Theme = 'light' | 'dark';
 
 export interface CurrentInputState {
@@ -37,6 +39,7 @@ const readFileAsBase64 = (file: File): Promise<string> => {
 
 const App: React.FC = () => {
   const isTouch = useTouchDevice();
+  const { t } = useLanguage();
 
   const [theme, setTheme] = useState<Theme>(() => {
     const savedTheme = localStorage.getItem('theme');
@@ -53,7 +56,7 @@ const App: React.FC = () => {
 
   const [isInitialized, setIsInitialized] = useState(false);
   const [initProgress, setInitProgress] = useState(0);
-  const [initMessage, setInitMessage] = useState("Initializing MeteoSran...");
+  const [initMessageKey, setInitMessageKey] = useState("errors.initProgress");
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isFetchingActiveChat, setIsFetchingActiveChat] = useState(false);
@@ -201,15 +204,15 @@ const App: React.FC = () => {
     const initializeChat = async () => {
       try {
         // Simulate initialization steps
-        setInitMessage("Loading weather models...");
+        setInitMessageKey("errors.loadingModels");
         setInitProgress(20);
         await new Promise(resolve => setTimeout(resolve, 500));
 
-        setInitMessage("Connecting to weather services...");
+        setInitMessageKey("errors.connectingServices");
         setInitProgress(40);
         await new Promise(resolve => setTimeout(resolve, 500));
 
-        setInitMessage("Initializing AI components...");
+        setInitMessageKey("errors.initializingAI");
         setInitProgress(60);
         const initResult = await initChatService();
 
@@ -217,23 +220,23 @@ const App: React.FC = () => {
           throw new Error(`Failed to initialize chat service: ${initResult}`);
         }
 
-        setInitMessage("Preparing user interface...");
+        setInitMessageKey("errors.preparingUI");
         setInitProgress(80);
         await new Promise(resolve => setTimeout(resolve, 500));
 
-        setInitMessage("MeteoSran is ready!");
+        setInitMessageKey("errors.ready");
         setInitProgress(100);
         await new Promise(resolve => setTimeout(resolve, 500));
 
         setIsInitialized(true);
       } catch (error) {
         console.error("Initialization error:", error);
-        setError("Failed to initialize MeteoSran. Please try refreshing the page.");
+        setError(t("errors.failedInit"));
       }
     };
 
     initializeChat();
-  }, []);
+  }, [t]);
 
   // Advanced Geolocation hook handling Android best practices
   const { location: geoLoc, error: geoErr } = useGeolocation(locationMode === 'auto');
@@ -246,11 +249,23 @@ const App: React.FC = () => {
         setLocationPrompt(false);
       }
       if (geoErr) {
-        setLocationError(geoErr);
+        let mappedError = geoErr;
+        if (geoErr === 'Geolocation is not supported by your browser.') {
+          mappedError = t('errors.geoNotSupported');
+        } else if (geoErr === 'Location access denied. Using IP-based fallback.') {
+          mappedError = t('errors.geoDenied');
+        } else if (geoErr === 'Location unavailable. Using IP-based fallback.') {
+          mappedError = t('errors.geoUnavailable');
+        } else if (geoErr === 'Location request timed out. Using IP-based fallback.') {
+          mappedError = t('errors.geoTimeout');
+        } else if (geoErr === 'An unknown error occurred.') {
+          mappedError = t('errors.unknown');
+        }
+        setLocationError(mappedError);
         setLocationPrompt(true);
       }
     }
-  }, [geoLoc, geoErr, locationMode]);
+  }, [geoLoc, geoErr, locationMode, t]);
 
   // Auto-dismiss location status messages after 8 seconds to prevent permanent UI clutter
   useEffect(() => {
@@ -263,11 +278,11 @@ const App: React.FC = () => {
   }, [locationError]);
 
   const handleManualLocation = async () => {
-    const cityName = prompt('Enter your city name (e.g., Abidjan, Yamoussoukro, Paris):');
+    const cityName = prompt(t('errors.promptCity'));
     if (!cityName || cityName.trim() === '') return;
 
     setIsLoading(true);
-    setLocationError(`Resolving "${cityName}"...`);
+    setLocationError(t('errors.resolvingCity', { city: cityName }));
     try {
       // 1. Check local dictionary first for quick matches (helps with Ivory Coast regions)
       const localDictionary: Record<string, { lat: number; lon: number; name: string }> = {
@@ -294,7 +309,7 @@ const App: React.FC = () => {
       if (localDictionary[normalized]) {
         const entry = localDictionary[normalized];
         setUserLocation({ lat: entry.lat, lon: entry.lon });
-        setLocationError(`Location set manually to: ${entry.name}`);
+        setLocationError(t('errors.locationSetManual', { location: entry.name }));
         setLocationPrompt(true);
         return;
       }
@@ -311,7 +326,7 @@ const App: React.FC = () => {
           });
           const adminStr = firstResult.admin1 ? `, ${firstResult.admin1}` : '';
           const countryStr = firstResult.country ? `, ${firstResult.country}` : '';
-          setLocationError(`Location set manually to: ${firstResult.name}${adminStr}${countryStr}`);
+          setLocationError(t('errors.locationSetManual', { location: `${firstResult.name}${adminStr}${countryStr}` }));
           setLocationPrompt(true);
           return;
         }
@@ -324,17 +339,17 @@ const App: React.FC = () => {
         const lon = parseFloat(parts[1]);
         if (!isNaN(lat) && !isNaN(lon)) {
           setUserLocation({ lat, lon });
-          setLocationError(`Location set manually to: ${lat.toFixed(2)}, ${lon.toFixed(2)}`);
+          setLocationError(t('errors.locationSetManual', { location: `${lat.toFixed(2)}, ${lon.toFixed(2)}` }));
           setLocationPrompt(true);
           return;
         }
       }
 
-      setLocationError(`Could not find location for "${cityName}". Please try again.`);
+      setLocationError(t('errors.locationNotFound', { city: cityName }));
       setLocationPrompt(true);
     } catch (error) {
       console.error('Geocoding error:', error);
-      setLocationError(`Failed to resolve "${cityName}" due to network error.`);
+      setLocationError(t('errors.locationNetworkError', { city: cityName }));
       setLocationPrompt(true);
     } finally {
       setIsLoading(false);
@@ -607,7 +622,7 @@ const App: React.FC = () => {
 
     // Safety check: Ensure the last message in the resend history is actually from the user.
     if (historyToResend.length === 0 || historyToResend[historyToResend.length - 1].role !== MessageRole.USER) {
-      setError("Cannot regenerate: Previous message is not a valid user query.");
+      setError(t("errors.cannotRegenerate"));
       return;
     }
 
@@ -707,7 +722,7 @@ const App: React.FC = () => {
   };
 
   if (authLoading || !isInitialized) {
-    return <LoadingProgress progress={initProgress} message={authLoading ? "Authenticating session..." : initMessage} />;
+    return <LoadingProgress progress={initProgress} message={authLoading ? t("errors.authenticating") : t(initMessageKey)} />;
   }
 
   if (!user) {
@@ -743,10 +758,22 @@ const App: React.FC = () => {
 
       <div className={`flex-1 flex flex-col h-full w-full relative overflow-hidden transition-all duration-300 pt-safe ${isKeyboardOpen ? '' : 'pb-safe'}`}>
         {locationError && (
-          <div className={`${locationError.startsWith('Location set') || locationError.includes('Using IP-based') ? 'bg-emerald-50 dark:bg-emerald-950/20 text-emerald-800 dark:text-emerald-300 border-b border-emerald-200/50 dark:border-emerald-900/20' : 'bg-amber-50 dark:bg-amber-950/20 text-amber-800 dark:text-amber-300 border-b border-amber-200/50 dark:border-amber-900/20'} p-2.5 text-center text-xs sm:text-sm z-30 flex items-center justify-between px-4 sm:px-6 transition-all duration-300`}>
+          <div className={`${
+            locationError.startsWith('Location set') || 
+            locationError.startsWith('Position définie') || 
+            locationError.includes('Using IP-based') || 
+            locationError.includes('Utilisation de la localisation par IP')
+              ? 'bg-emerald-50 dark:bg-emerald-950/20 text-emerald-800 dark:text-emerald-300 border-b border-emerald-200/50 dark:border-emerald-900/20'
+              : 'bg-amber-50 dark:bg-amber-950/20 text-amber-800 dark:text-amber-300 border-b border-amber-200/50 dark:border-amber-900/20'
+          } p-2.5 text-center text-xs sm:text-sm z-30 flex items-center justify-between px-4 sm:px-6 transition-all duration-300`}>
             <div className="flex-grow flex items-center justify-center gap-2">
               <span className="material-symbols-outlined notranslate text-base sm:text-lg leading-none" translate="no">
-                {locationError.startsWith('Location set') || locationError.includes('Using IP-based') ? 'check_circle' : 'warning'}
+                {locationError.startsWith('Location set') || 
+                locationError.startsWith('Position définie') || 
+                locationError.includes('Using IP-based') || 
+                locationError.includes('Utilisation de la localisation par IP')
+                  ? 'check_circle'
+                  : 'warning'}
               </span>
               <span className="font-medium">{locationError}</span>
               {locationPrompt && (
@@ -754,14 +781,14 @@ const App: React.FC = () => {
                   className="underline font-bold ml-1.5 hover:opacity-80 transition-opacity" 
                   onClick={handleManualLocation}
                 >
-                  Enter manually
+                  {t('errors.enterManually')}
                 </button>
               )}
             </div>
             <button 
               onClick={() => setLocationError(null)} 
               className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1 rounded-full hover:bg-black/5 dark:hover:bg-white/5 transition-colors focus:outline-none flex items-center justify-center flex-shrink-0"
-              aria-label="Dismiss message"
+              aria-label={t('common.close')}
             >
               <span className="material-symbols-outlined notranslate text-base sm:text-lg" style={{ fontSize: '18px' }} translate="no">close</span>
             </button>

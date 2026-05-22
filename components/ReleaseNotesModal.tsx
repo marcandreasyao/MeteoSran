@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
+import { useLanguage } from '../src/contexts/LanguageContext';
 
 interface ReleaseNotesModalProps {
   onClose: () => void;
 }
 
 export const ReleaseNotesModal: React.FC<ReleaseNotesModalProps> = ({ onClose }) => {
+  const { t } = useLanguage();
   const [isClosing, setIsClosing] = useState(false);
 
   const handleClose = () => {
@@ -39,14 +41,14 @@ export const ReleaseNotesModal: React.FC<ReleaseNotesModalProps> = ({ onClose })
           <div className="flex items-center gap-3">
             <img src="/Meteosran-logo.png" alt="MeteoSran Logo" className="h-8 w-8 rounded-full bg-slate-100 dark:bg-slate-800 p-1 shadow-sm" />
             <div>
-              <h2 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white tracking-tight">What's New in 1.6.6</h2>
-              <p className="text-xs sm:text-sm text-sky-600 dark:text-sky-400 font-medium">Premium Aesthetic & Stability Upgrade</p>
+              <h2 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white tracking-tight">{t('releaseNotes.title')}</h2>
+              <p className="text-xs sm:text-sm text-sky-600 dark:text-sky-400 font-medium">{t('releaseNotes.subtitle')}</p>
             </div>
           </div>
           <button 
             onClick={handleClose}
             className="p-2 rounded-full text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors focus:outline-none"
-            aria-label="Close"
+            aria-label={t('releaseNotes.close')}
           >
             <span className="material-symbols-outlined notranslate text-xl" translate="no">close</span>
           </button>
@@ -61,8 +63,8 @@ export const ReleaseNotesModal: React.FC<ReleaseNotesModalProps> = ({ onClose })
                 <span className="material-symbols-outlined notranslate text-[18px] text-fuchsia-600 dark:text-fuchsia-400" translate="no">memory</span>
               </div>
               <div>
-                <h4 className="text-sm font-semibold text-slate-800 dark:text-slate-200">Contextual Memory Intelligence</h4>
-                <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5 leading-relaxed">MeteoSran now remembers your preferences, topics, and past conversations seamlessly across sessions for true long-term AI recall.</p>
+                <h4 className="text-sm font-semibold text-slate-800 dark:text-slate-200">{t('releaseNotes.features.memoryTitle')}</h4>
+                <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5 leading-relaxed">{t('releaseNotes.features.memoryDesc')}</p>
               </div>
             </div>
 
@@ -71,8 +73,8 @@ export const ReleaseNotesModal: React.FC<ReleaseNotesModalProps> = ({ onClose })
                 <span className="material-symbols-outlined notranslate text-[18px] text-violet-600 dark:text-violet-400" translate="no">dark_mode</span>
               </div>
               <div>
-                <h4 className="text-sm font-semibold text-slate-800 dark:text-slate-200">Deep Theme Switch Transition</h4>
-                <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5 leading-relaxed">Experience a smooth circular wipe transition (utilizing the View Transitions API) combined with MagicUI-inspired animated toggling icons, replacing noisy instant switches.</p>
+                <h4 className="text-sm font-semibold text-slate-800 dark:text-slate-200">{t('releaseNotes.features.themeTitle')}</h4>
+                <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5 leading-relaxed">{t('releaseNotes.features.themeDesc')}</p>
               </div>
             </div>
 
@@ -81,8 +83,8 @@ export const ReleaseNotesModal: React.FC<ReleaseNotesModalProps> = ({ onClose })
                 <span className="material-symbols-outlined notranslate text-[18px] text-cyan-600 dark:text-cyan-400" translate="no">smartphone</span>
               </div>
               <div>
-                <h4 className="text-sm font-semibold text-slate-800 dark:text-slate-200">Mobile & Translation Optimizations</h4>
-                <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5 leading-relaxed">Perfected mobile display with Visual Viewport adaptation to prevent virtual keyboard layout deformation, and blocked browser translators from translating interface icons.</p>
+                <h4 className="text-sm font-semibold text-slate-800 dark:text-slate-200">{t('releaseNotes.features.mobileTitle')}</h4>
+                <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5 leading-relaxed">{t('releaseNotes.features.mobileDesc')}</p>
               </div>
             </div>
 
@@ -91,8 +93,8 @@ export const ReleaseNotesModal: React.FC<ReleaseNotesModalProps> = ({ onClose })
                 <span className="material-symbols-outlined notranslate text-[18px] text-amber-600 dark:text-amber-400" translate="no">explore</span>
               </div>
               <div>
-                <h4 className="text-sm font-semibold text-slate-800 dark:text-slate-200">Manual Location Intelligence</h4>
-                <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5 leading-relaxed">Enhanced location awareness allows the AI to smartly default to manually specified or previously discussed regions automatically.</p>
+                <h4 className="text-sm font-semibold text-slate-800 dark:text-slate-200">{t('releaseNotes.features.locationTitle')}</h4>
+                <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5 leading-relaxed">{t('releaseNotes.features.locationDesc')}</p>
               </div>
             </div>
 
@@ -101,8 +103,8 @@ export const ReleaseNotesModal: React.FC<ReleaseNotesModalProps> = ({ onClose })
                 <span className="material-symbols-outlined notranslate text-[18px] text-rose-600 dark:text-rose-400" translate="no">bug_report</span>
               </div>
               <div>
-                <h4 className="text-sm font-semibold text-slate-800 dark:text-slate-200">System Datetime Crash Resolved</h4>
-                <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5 leading-relaxed">Fixed a critical issue causing instability related to system datetime context injection. Everything is rock-solid now.</p>
+                <h4 className="text-sm font-semibold text-slate-800 dark:text-slate-200">{t('releaseNotes.features.datetimeTitle')}</h4>
+                <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5 leading-relaxed">{t('releaseNotes.features.datetimeDesc')}</p>
               </div>
             </div>
 
@@ -111,8 +113,8 @@ export const ReleaseNotesModal: React.FC<ReleaseNotesModalProps> = ({ onClose })
                 <span className="material-symbols-outlined notranslate text-[18px] text-slate-600 dark:text-slate-300" translate="no">database</span>
               </div>
               <div>
-                <h4 className="text-sm font-semibold text-slate-800 dark:text-slate-200">Robust Core Architecture</h4>
-                <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5 leading-relaxed">Completely fixed chat history persistence & syncing. Resolved "Down Spin" server issues for lightning-fast, reliable AI responses.</p>
+                <h4 className="text-sm font-semibold text-slate-800 dark:text-slate-200">{t('releaseNotes.features.archTitle')}</h4>
+                <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5 leading-relaxed">{t('releaseNotes.features.archDesc')}</p>
               </div>
             </div>
 
@@ -121,8 +123,8 @@ export const ReleaseNotesModal: React.FC<ReleaseNotesModalProps> = ({ onClose })
                 <span className="material-symbols-outlined notranslate text-[18px] text-sky-600 dark:text-sky-400" translate="no">water_drop</span>
               </div>
               <div>
-                <h4 className="text-sm font-semibold text-slate-800 dark:text-slate-200">Liquid Aura Streaming</h4>
-                <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5 leading-relaxed">A completely new fluid text generation effect. Watch the AI write with a stable, glowing trailing cursor instead of jumpy text blocks.</p>
+                <h4 className="text-sm font-semibold text-slate-800 dark:text-slate-200">{t('releaseNotes.features.liquidTitle')}</h4>
+                <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5 leading-relaxed">{t('releaseNotes.features.liquidDesc')}</p>
               </div>
             </div>
 
@@ -131,8 +133,8 @@ export const ReleaseNotesModal: React.FC<ReleaseNotesModalProps> = ({ onClose })
                 <span className="material-symbols-outlined notranslate text-[18px] text-indigo-600 dark:text-indigo-400" translate="no">code_blocks</span>
               </div>
               <div>
-                <h4 className="text-sm font-semibold text-slate-800 dark:text-slate-200">Aurora Glass Code Blocks</h4>
-                <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5 leading-relaxed">Mac-style traffic light headers and glassmorphic copy controls transform technical answers into premium developer tools.</p>
+                <h4 className="text-sm font-semibold text-slate-800 dark:text-slate-200">{t('releaseNotes.features.codeTitle')}</h4>
+                <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5 leading-relaxed">{t('releaseNotes.features.codeDesc')}</p>
               </div>
             </div>
 
@@ -141,8 +143,18 @@ export const ReleaseNotesModal: React.FC<ReleaseNotesModalProps> = ({ onClose })
                 <span className="material-symbols-outlined notranslate text-[18px] text-emerald-600 dark:text-emerald-400" translate="no">side_navigation</span>
               </div>
               <div>
-                <h4 className="text-sm font-semibold text-slate-800 dark:text-slate-200">Minimalist Slate Sidebar</h4>
-                <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5 leading-relaxed">Experience a typography-driven history, animated hover glides, glowing active blue dot indicators, and a sleek bottom-line search.</p>
+                <h4 className="text-sm font-semibold text-slate-800 dark:text-slate-200">{t('releaseNotes.features.sidebarTitle')}</h4>
+                <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5 leading-relaxed">{t('releaseNotes.features.sidebarDesc')}</p>
+              </div>
+            </div>
+
+            <div className="flex gap-3">
+              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-teal-100 dark:bg-teal-500/20 flex items-center justify-center">
+                <span className="material-symbols-outlined notranslate text-[18px] text-teal-600 dark:text-teal-400" translate="no">translate</span>
+              </div>
+              <div>
+                <h4 className="text-sm font-semibold text-slate-800 dark:text-slate-200">{t('releaseNotes.features.bilingualTitle')}</h4>
+                <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5 leading-relaxed">{t('releaseNotes.features.bilingualDesc')}</p>
               </div>
             </div>
           </div>
@@ -155,7 +167,7 @@ export const ReleaseNotesModal: React.FC<ReleaseNotesModalProps> = ({ onClose })
             onClick={handleClose}
             className="w-full sm:w-auto px-6 py-2.5 rounded-full bg-sky-500 hover:bg-sky-600 text-white font-medium shadow-md hover:shadow-lg transition-all focus:outline-none focus:ring-2 focus:ring-sky-500/50 active:scale-95"
           >
-            Got it, thanks!
+            {t('releaseNotes.gotIt')}
           </button>
         </div>
       </div>

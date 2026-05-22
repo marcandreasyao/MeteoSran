@@ -1,5 +1,6 @@
 
 import React from 'react';
+import { useLanguage } from '../src/contexts/LanguageContext';
 
 interface ErrorMessageProps {
   message: string;
@@ -11,6 +12,8 @@ const ErrorIcon: React.FC<{ className?: string }> = ({ className = "" }) => (
 );
 
 export const ErrorMessage: React.FC<ErrorMessageProps> = ({ message, isCritical = false }) => {
+  const { t } = useLanguage();
+
   if (!message) return null;
 
   if (isCritical) {
@@ -24,10 +27,10 @@ export const ErrorMessage: React.FC<ErrorMessageProps> = ({ message, isCritical 
       >
         <div className="flex items-center justify-center mb-2">
           <ErrorIcon className="text-red-700 dark:text-red-300" />
-          <strong className="font-bold text-lg">Initialization Error</strong>
+          <strong className="font-bold text-lg">{t('errors.initError')}</strong>
         </div>
         <p>{message}</p>
-        <p className="mt-2 text-sm opacity-90">Please check your setup or try refreshing the page.</p>
+        <p className="mt-2 text-sm opacity-90">{t('errors.checkSetup')}</p>
       </div>
     );
   }
