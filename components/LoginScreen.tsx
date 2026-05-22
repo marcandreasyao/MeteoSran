@@ -109,7 +109,7 @@ export const LoginScreen: React.FC = () => {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-4 relative overflow-hidden">
       {/* Main Container */}
-      <div className="w-full max-w-md bg-white/80 dark:bg-slate-800/60 backdrop-blur-xl border border-slate-200/60 dark:border-slate-700/50 rounded-3xl shadow-2xl p-8 relative z-10 animate-fade-up-soft">
+      <div className="w-full max-w-lg bg-white/20 dark:bg-slate-900/30 backdrop-blur-3xl backdrop-saturate-150 border border-white/50 border-b-white/20 border-r-white/20 dark:border-white/20 dark:border-b-white/5 dark:border-r-white/5 rounded-3xl shadow-[0_8px_32px_0_rgba(31,38,135,0.15)] dark:shadow-[0_8px_32px_0_rgba(0,0,0,0.5)] p-10 relative z-10 animate-fade-up-soft">
 
         {/* Header */}
         <div className="text-center mb-8">
@@ -126,16 +126,16 @@ export const LoginScreen: React.FC = () => {
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {!isLogin && (
-            <div className="flex gap-3">
+        <form onSubmit={handleSubmit} className="relative w-full">
+          <div className={`grid transition-all duration-500 ease-in-out ${!isLogin ? 'grid-rows-[1fr] opacity-100 mb-4' : 'grid-rows-[0fr] opacity-0 mb-0 pointer-events-none'}`}>
+            <div className="overflow-hidden flex gap-3">
               <input
                 type="text"
                 placeholder="First Name"
                 value={firstName}
                 onChange={(e) => setFirstName(e.target.value)}
                 required={!isLogin}
-                className="w-1/2 bg-slate-50/50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-full px-4 py-3 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all"
+                className="w-1/2 bg-white/30 dark:bg-black/20 backdrop-blur-md border border-white/50 border-b-white/20 border-r-white/20 dark:border-white/10 dark:border-b-transparent dark:border-r-transparent shadow-inner rounded-full px-4 py-3 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all"
               />
               <input
                 type="text"
@@ -143,30 +143,30 @@ export const LoginScreen: React.FC = () => {
                 value={lastName}
                 onChange={(e) => setLastName(e.target.value)}
                 required={!isLogin}
-                className="w-1/2 bg-slate-50/50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-full px-4 py-3 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all"
+                className="w-1/2 bg-white/30 dark:bg-black/20 backdrop-blur-md border border-white/50 border-b-white/20 border-r-white/20 dark:border-white/10 dark:border-b-transparent dark:border-r-transparent shadow-inner rounded-full px-4 py-3 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all"
               />
             </div>
-          )}
+          </div>
 
-          <div>
+          <div className="mb-4">
             <input
               type="email"
               placeholder="Email address"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="w-full bg-slate-50/50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-full px-4 py-3 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all"
+              className="w-full bg-white/30 dark:bg-black/20 backdrop-blur-md border border-white/50 border-b-white/20 border-r-white/20 dark:border-white/10 dark:border-b-transparent dark:border-r-transparent shadow-inner rounded-full px-4 py-3 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all"
             />
           </div>
 
-          <div className="relative">
+          <div className="relative mb-4">
             <input
               type={showPassword ? "text" : "password"}
               placeholder="Password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              className="w-full bg-slate-50/50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-full px-4 py-3 pr-12 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all"
+              className="w-full bg-white/30 dark:bg-black/20 backdrop-blur-md border border-white/50 border-b-white/20 border-r-white/20 dark:border-white/10 dark:border-b-transparent dark:border-r-transparent shadow-inner rounded-full px-4 py-3 pr-12 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all"
             />
             <button
               type="button"
@@ -180,8 +180,9 @@ export const LoginScreen: React.FC = () => {
             </button>
           </div>
  
-          {!isLogin && (
-            <div className="space-y-2 py-2 text-xs font-medium animate-fade-up-soft">
+          <div className={`grid transition-all duration-500 ease-in-out ${!isLogin ? 'grid-rows-[1fr] opacity-100 mb-4' : 'grid-rows-[0fr] opacity-0 mb-0 pointer-events-none'}`}>
+            <div className="overflow-hidden space-y-2 text-xs font-medium">
+              <div className="pt-2"></div>
               <div className={`flex items-center gap-2 transition-colors ${hasMinLength ? 'text-green-500 dark:text-green-400' : 'text-slate-400 dark:text-slate-500'}`}>
                 <span className="material-symbols-outlined notranslate text-sm" translate="no">{hasMinLength ? 'check_circle' : 'radio_button_unchecked'}</span>
                 <span>At least 8 characters</span>
@@ -194,13 +195,14 @@ export const LoginScreen: React.FC = () => {
                 <span className="material-symbols-outlined notranslate text-sm" translate="no">{hasSymbol ? 'check_circle' : 'radio_button_unchecked'}</span>
                 <span>At least 1 special character (e.g., !@#$%)</span>
               </div>
+              <div className="pb-2"></div>
             </div>
-          )}
+          </div>
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white font-semibold rounded-full px-4 py-3 transition-all transform active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-blue-500/25"
+            className="w-full bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white font-semibold rounded-full px-4 py-3 transition-all transform active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-blue-500/25 mt-2"
           >
             {loading ? 'Authenticating...' : (isLogin ? 'Sign In' : 'Create Account')}
           </button>
@@ -216,7 +218,7 @@ export const LoginScreen: React.FC = () => {
           <button
             onClick={handleGoogleSignIn}
             disabled={loading}
-            className="w-full bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-white font-medium rounded-full px-4 py-3 flex items-center justify-center gap-3 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+            className="w-full bg-white/40 dark:bg-white/5 hover:bg-white/50 dark:hover:bg-white/10 backdrop-blur-lg border border-white/60 border-b-white/20 border-r-white/20 dark:border-white/10 dark:border-b-transparent dark:border-r-transparent text-slate-800 dark:text-white font-medium rounded-full px-4 py-3 flex items-center justify-center gap-3 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_4px_12px_rgba(0,0,0,0.05)] dark:shadow-[0_4px_12px_rgba(0,0,0,0.2)]"
           >
             <svg className="w-5 h-5" viewBox="0 0 24 24">
               <path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
@@ -231,7 +233,7 @@ export const LoginScreen: React.FC = () => {
             type="button"
             onClick={handleAppleSignIn}
             disabled={loading}
-            className="w-full bg-black hover:bg-zinc-900 border border-zinc-900 text-white font-medium rounded-full px-4 py-3 flex items-center justify-center gap-3 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full bg-black/80 hover:bg-black/90 dark:bg-black/40 dark:hover:bg-black/60 backdrop-blur-lg border border-white/20 dark:border-white/10 text-white font-medium rounded-full px-4 py-3 flex items-center justify-center gap-3 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_4px_12px_rgba(0,0,0,0.1)] dark:shadow-[0_4px_12px_rgba(0,0,0,0.3)]"
           >
             <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
               <path d="M12.152 6.896c-.948 0-2.415-1.078-3.96-1.04-2.04.027-3.91 1.183-4.961 3.014-2.117 3.675-.546 9.103 1.519 12.09 1.013 1.454 2.208 3.09 3.792 3.039 1.52-.065 2.09-.987 3.935-.987 1.831 0 2.35.987 3.96.948 1.637-.026 2.62-1.48 3.605-2.935 1.156-1.69 1.632-3.326 1.662-3.415-.039-.013-3.182-1.221-3.22-4.857-.026-3.04 2.484-4.524 2.597-4.594-1.425-2.078-3.623-2.364-4.42-2.43-1.896-.2-3.55 1.066-4.51 1.066zm2.42-2.906c.829-1.004 1.385-2.408 1.233-3.806-1.2.052-2.656.805-3.52 1.815-.76.853-1.42 2.296-1.233 3.665 1.35.105 2.684-.663 3.52-1.674z" />
