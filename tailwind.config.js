@@ -21,6 +21,7 @@ export default {
         shimmer: 'shimmer 2s linear infinite',
         'fade-in': 'fade-in 0.5s ease-out forwards',
         'fade-up-soft': 'fade-up-soft 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+        'shake': 'shake 0.5s cubic-bezier(.36,.07,.19,.97) both',
       },
       keyframes: {
         shimmer: {
@@ -34,6 +35,11 @@ export default {
         'fade-up-soft': {
           '0%': { opacity: '0', transform: 'translateY(12px)' },
           '100%': { opacity: '1', transform: 'translateY(0)' },
+        },
+        shake: {
+          '0%, 100%': { transform: 'translateX(0)' },
+          '10%, 30%, 50%, 70%, 90%': { transform: 'translateX(-4px)' },
+          '20%, 40%, 60%, 80%': { transform: 'translateX(4px)' },
         },
       },
       backdropFilter: {

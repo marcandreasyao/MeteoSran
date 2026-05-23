@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { auth } from '../src/firebase';
 import {
   createUserWithEmailAndPassword,
@@ -20,6 +20,13 @@ export const LoginScreen: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [shake, setShake] = useState(false);
+  const [hasAnimatedIn, setHasAnimatedIn] = useState(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setHasAnimatedIn(true), 600);
+    return () => clearTimeout(timer);
+  }, []);
 
   // Password validation checks
   const hasMinLength = password.length >= 8;
@@ -75,6 +82,8 @@ export const LoginScreen: React.FC = () => {
       }
     } catch (err: any) {
       setError(getFriendlyErrorMessage(err));
+      setShake(true);
+      setTimeout(() => setShake(false), 500);
     } finally {
       setLoading(false);
     }
@@ -88,6 +97,8 @@ export const LoginScreen: React.FC = () => {
       await signInWithPopup(auth, provider);
     } catch (err: any) {
       setError(getFriendlyErrorMessage(err));
+      setShake(true);
+      setTimeout(() => setShake(false), 500);
     } finally {
       setLoading(false);
     }
@@ -103,6 +114,8 @@ export const LoginScreen: React.FC = () => {
       await signInWithPopup(auth, provider);
     } catch (err: any) {
       setError(getFriendlyErrorMessage(err));
+      setShake(true);
+      setTimeout(() => setShake(false), 500);
     } finally {
       setLoading(false);
     }
@@ -111,7 +124,7 @@ export const LoginScreen: React.FC = () => {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-4 relative overflow-hidden">
       {/* Main Container */}
-      <div className="w-full max-w-lg bg-white/20 dark:bg-slate-900/30 backdrop-blur-3xl backdrop-saturate-150 border border-white/50 border-b-white/20 border-r-white/20 dark:border-white/20 dark:border-b-white/5 dark:border-r-white/5 rounded-3xl shadow-[0_8px_32px_0_rgba(31,38,135,0.15)] dark:shadow-[0_8px_32px_0_rgba(0,0,0,0.5)] p-10 relative z-10 animate-fade-up-soft">
+      <div className={`w-full max-w-lg bg-white/20 dark:bg-slate-900/30 backdrop-blur-3xl backdrop-saturate-150 border border-white/50 border-b-white/20 border-r-white/20 dark:border-white/20 dark:border-b-white/5 dark:border-r-white/5 rounded-3xl shadow-[0_8px_32px_0_rgba(31,38,135,0.15)] dark:shadow-[0_8px_32px_0_rgba(0,0,0,0.5)] p-10 relative z-10 ${shake ? 'animate-shake' : (hasAnimatedIn ? '' : 'animate-fade-up-soft')}`}>
 
         {/* Header */}
         <div className="text-center mb-8">

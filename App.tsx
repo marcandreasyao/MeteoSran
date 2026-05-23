@@ -312,7 +312,7 @@ const App: React.FC = () => {
         const entry = localDictionary[normalized];
         setUserLocation({ lat: entry.lat, lon: entry.lon });
         setLocationError(t('errors.locationSetManual', { location: entry.name }));
-        setLocationPrompt(true);
+        setLocationPrompt(false);
         return;
       }
 
@@ -329,7 +329,7 @@ const App: React.FC = () => {
           const adminStr = firstResult.admin1 ? `, ${firstResult.admin1}` : '';
           const countryStr = firstResult.country ? `, ${firstResult.country}` : '';
           setLocationError(t('errors.locationSetManual', { location: `${firstResult.name}${adminStr}${countryStr}` }));
-          setLocationPrompt(true);
+          setLocationPrompt(false);
           return;
         }
       }
@@ -342,7 +342,7 @@ const App: React.FC = () => {
         if (!isNaN(lat) && !isNaN(lon)) {
           setUserLocation({ lat, lon });
           setLocationError(t('errors.locationSetManual', { location: `${lat.toFixed(2)}, ${lon.toFixed(2)}` }));
-          setLocationPrompt(true);
+          setLocationPrompt(false);
           return;
         }
       }
