@@ -11,7 +11,7 @@ export interface ChatSession {
   isPinned?: boolean;
 }
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5005/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
 
 export const createChatSession = async (userId: string, title: string = "New Chat"): Promise<string | null> => {
   if (!userId) return null;

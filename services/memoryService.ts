@@ -4,7 +4,7 @@ import { updateChatMemorySummary } from '../src/services/dbService';
 // ─── Config ──────────────────────────────────────────────────────────────────
 const SUMMARIZE_EVERY_N_TURNS = 4;   // 1 turn = 1 user msg + 1 AI msg
 const FORCE_SUMMARIZE_AFTER   = 16;  // message count threshold
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5005/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
 
 // Debounce: prevent parallel summarization for same chat
 const inProgress = new Set<string>();
