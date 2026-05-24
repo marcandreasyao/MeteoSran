@@ -101,10 +101,21 @@ const App: React.FC = () => {
       // Detect if keyboard is open (height is substantially less than window.innerHeight)
       const isOpen = height < window.innerHeight * 0.85;
       setIsKeyboardOpen(isOpen);
+
+      if (window.scrollY !== 0) {
+        window.scrollTo(0, 0);
+      }
+    };
+
+    const handleScroll = () => {
+      if (window.scrollY !== 0) {
+        window.scrollTo(0, 0);
+      }
     };
 
     window.visualViewport.addEventListener('resize', handleResize);
     window.visualViewport.addEventListener('scroll', handleResize);
+    window.addEventListener('scroll', handleScroll);
 
     // Initial run
     handleResize();
@@ -112,6 +123,7 @@ const App: React.FC = () => {
     return () => {
       window.visualViewport?.removeEventListener('resize', handleResize);
       window.visualViewport?.removeEventListener('scroll', handleResize);
+      window.removeEventListener('scroll', handleScroll);
     };
   }, []);
 
@@ -758,7 +770,7 @@ const App: React.FC = () => {
         />
       )}
 
-      <div className={`flex-1 flex flex-col h-full w-full relative overflow-hidden transition-all duration-300 pt-safe ${isKeyboardOpen ? '' : 'pb-safe'}`}>
+      <div className={`flex-1 flex flex-col h-full w-full relative overflow-hidden pt-safe ${isKeyboardOpen ? '' : 'pb-safe'}`}>
         {locationError && (
           <div className={`${
             locationError.startsWith('Location set') || 
