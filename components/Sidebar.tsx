@@ -317,22 +317,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         transition-all duration-300 ease-in-out flex flex-col overflow-hidden
         ${isOpen ? 'w-64 translate-x-0' : 'w-0 -translate-x-full md:w-0 md:-translate-x-full'}
       `}>
-        {/* Sidebar Header */}
-        <div className="px-4 pt-[calc(0.75rem+max(2rem,env(safe-area-inset-top,0px)))] md:pt-4 pb-3 flex items-center justify-between border-b border-slate-800/60 w-64 flex-shrink-0">
-          <span className="text-base font-bold tracking-tight text-slate-200">
-            MeteoSran
-          </span>
-          <button
-            onClick={onClose}
-            className="md:hidden p-1 rounded-full hover:bg-slate-800 text-slate-400 hover:text-slate-200 transition-colors focus:outline-none flex items-center justify-center"
-            aria-label="Close sidebar"
-          >
-            <span className="material-symbols-outlined notranslate text-lg" translate="no">close</span>
-          </button>
-        </div>
-
-        {/* Sidebar Content */}
-        <div className="p-4 pt-4 pb-[calc(1rem+env(safe-area-inset-bottom,0px))] md:pb-4 flex flex-col flex-grow overflow-hidden w-64">
+        <div className="p-4 pt-[calc(0.5rem+max(2.25rem,env(safe-area-inset-top,0px)))] md:pt-4 pb-[calc(1rem+env(safe-area-inset-bottom,0px))] md:pb-4 flex flex-col h-full w-64">
           <button
             ref={(el) => { if (el) injectShimmer(); }}
             onClick={onNewChat}
