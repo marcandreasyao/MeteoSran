@@ -133,7 +133,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
   };
 
   return (
-    <div className={`p-2 sm:p-3 md:p-4 w-full relative z-10 ${isKeyboardOpen ? 'pb-1.5' : 'pb-[calc(1rem+env(safe-area-inset-bottom,0px))]'}`}>
+    <div className={`p-2 sm:p-3 md:p-4 w-full relative z-10 ${isKeyboardOpen ? 'pb-1.5' : 'pb-4'}`}>
       {imagePreviewUrl && (
         <div className="mb-2 p-2 bg-white/20 dark:bg-slate-700/30 rounded-lg relative w-fit max-w-[120px] sm:max-w-[200px]">
           <img src={imagePreviewUrl} alt="Selected preview" className="max-h-20 sm:max-h-32 rounded object-contain" />

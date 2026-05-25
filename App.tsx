@@ -770,7 +770,7 @@ const App: React.FC = () => {
         />
       )}
 
-      <div className={`flex-1 flex flex-col h-full w-full relative overflow-hidden pt-safe ${isKeyboardOpen ? '' : 'pb-safe'}`}>
+      <div className={`flex-1 flex flex-col h-full w-full relative overflow-hidden pt-safe`}>
         {locationError && (
           <div className={`${
             locationError.startsWith('Location set') || 
