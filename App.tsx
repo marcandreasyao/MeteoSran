@@ -96,11 +96,15 @@ const App: React.FC = () => {
 
     const handleResize = () => {
       const height = window.visualViewport ? window.visualViewport.height : window.innerHeight;
-      document.documentElement.style.setProperty('--visual-viewport-height', `${height}px`);
-
       // Detect if keyboard is open (height is substantially less than window.innerHeight)
       const isOpen = height < window.innerHeight * 0.85;
       setIsKeyboardOpen(isOpen);
+
+      if (isOpen) {
+        document.documentElement.style.setProperty('--visual-viewport-height', `${height}px`);
+      } else {
+        document.documentElement.style.setProperty('--visual-viewport-height', '100dvh');
+      }
 
       if (window.scrollY !== 0) {
         window.scrollTo(0, 0);
