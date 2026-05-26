@@ -317,7 +317,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
         transition-all duration-300 ease-in-out flex flex-col overflow-hidden
         ${isOpen ? 'w-64 translate-x-0' : 'w-0 -translate-x-full md:w-0 md:-translate-x-full'}
       `}>
-        <div className="p-4 pt-[calc(0.5rem+max(2.25rem,env(safe-area-inset-top,0px)))] md:pt-4 pb-[calc(1rem+env(safe-area-inset-bottom,0px))] md:pb-4 flex flex-col h-full w-64">
+        <div 
+          className="p-4 pb-[calc(1rem+env(safe-area-inset-bottom,0px))] md:pb-4 flex flex-col h-full w-64"
+          style={{ paddingTop: 'var(--sidebar-pt)' }}
+        >
           <button
             ref={(el) => { if (el) injectShimmer(); }}
             onClick={onNewChat}
