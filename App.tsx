@@ -102,8 +102,10 @@ const App: React.FC = () => {
 
       if (isOpen) {
         document.documentElement.style.setProperty('--visual-viewport-height', `${height}px`);
+        document.getElementById('root')?.style.setProperty('overflow-y', 'auto');
       } else {
         document.documentElement.style.setProperty('--visual-viewport-height', '100dvh');
+        document.getElementById('root')?.style.setProperty('overflow-y', 'hidden');
       }
 
       if (window.scrollY !== 0) {
