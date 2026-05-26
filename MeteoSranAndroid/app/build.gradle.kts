@@ -81,4 +81,21 @@ dependencies {
   implementation(libs.androidx.navigation3.ui)
   implementation(libs.androidx.navigation3.runtime)
   implementation(libs.androidx.lifecycle.viewmodel.navigation3)
+
+  // Google Fonts
+  implementation(libs.androidx.compose.ui.text.google.fonts)
+
+  // Gemini API SDK
+  // We use this natively rather than routing through the Node proxy
+  implementation(libs.google.generativeai)
+
+  // Retrofit HTTP & JSON Converter
+  implementation(libs.retrofit.core)
+  implementation(libs.retrofit.converter.gson)
+
+  // Coil Image Loader
+  implementation(libs.coil.compose)
+
+  // Material Icons Extended
+  implementation(libs.androidx.compose.material.icons.extended)
 }
