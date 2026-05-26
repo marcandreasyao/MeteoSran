@@ -317,9 +317,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
         transition-all duration-300 ease-in-out flex flex-col overflow-hidden
         ${isOpen ? 'w-64 translate-x-0' : 'w-0 -translate-x-full md:w-0 md:-translate-x-full'}
       `}>
+        <style>{`
+          .sidebar-content-container {
+            padding-top: calc(1rem + max(3.5rem, env(safe-area-inset-top, 0px))) !important;
+          }
+          @media (min-width: 768px) {
+            .sidebar-content-container {
+              padding-top: 1rem !important;
+            }
+          }
+        `}</style>
         <div 
-          className="p-4 pb-[calc(1rem+env(safe-area-inset-bottom,0px))] md:pb-4 flex flex-col h-full w-64"
-          style={{ paddingTop: 'var(--sidebar-pt)' }}
+          className="sidebar-content-container p-4 pb-[calc(1rem+env(safe-area-inset-bottom,0px))] md:pb-4 flex flex-col h-full w-64"
         >
           <button
             ref={(el) => { if (el) injectShimmer(); }}
