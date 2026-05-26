@@ -3,6 +3,7 @@ package com.example.meteosran.ui.main
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -687,17 +688,24 @@ fun SettingsDialog(
     onDismiss: () -> Unit
 ) {
     var keyInput by remember { mutableStateOf(currentApiKey) }
+    val isDark = MeteoSranTheme.customColors.isDark
+    val cardBg = if (isDark) Color(0xFF1E293B) else Color.White
+    val cardBorder = if (isDark) Color(0x33FFFFFF) else Color(0x1F000000)
+    val shape = RoundedCornerShape(24.dp)
 
     Dialog(onDismissRequest = onDismiss) {
-        GlassCard(
+        Surface(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp)
+                .padding(16.dp),
+            shape = shape,
+            color = cardBg,
+            border = BorderStroke(1.dp, cardBorder)
         ) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(8.dp),
+                    .padding(24.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
@@ -705,7 +713,7 @@ fun SettingsDialog(
                     fontFamily = MeteoSranTheme.typography.titleMedium.fontFamily,
                     fontWeight = FontWeight.Bold,
                     fontSize = 18.sp,
-                    color = if (MeteoSranTheme.customColors.isDark) Color.White else Color(0xFF0F172A)
+                    color = if (isDark) Color.White else Color(0xFF0F172A)
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))
@@ -715,10 +723,10 @@ fun SettingsDialog(
                     fontSize = 12.sp,
                     fontFamily = MeteoSranTheme.typography.bodySmall.fontFamily,
                     textAlign = TextAlign.Center,
-                    color = if (MeteoSranTheme.customColors.isDark) Color(0xFF94A3B8) else Color(0xFF64748B)
+                    color = if (isDark) Color(0xFF94A3B8) else Color(0xFF475569)
                 )
 
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(16.dp))
 
                 OutlinedTextField(
                     value = keyInput,
@@ -727,10 +735,18 @@ fun SettingsDialog(
                     visualTransformation = PasswordVisualTransformation(),
                     singleLine = true,
                     shape = RoundedCornerShape(12.dp),
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = MeteoSranBlue,
+                        unfocusedBorderColor = if (isDark) Color(0x33FFFFFF) else Color(0x33000000),
+                        focusedLabelColor = MeteoSranBlue,
+                        unfocusedLabelColor = if (isDark) Color(0xFF94A3B8) else Color(0xFF64748B),
+                        focusedTextColor = if (isDark) Color.White else Color(0xFF0F172A),
+                        unfocusedTextColor = if (isDark) Color.White else Color(0xFF0F172A)
+                    )
                 )
 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(20.dp))
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -741,7 +757,7 @@ fun SettingsDialog(
                         Text(
                             "Annuler",
                             fontFamily = MeteoSranTheme.typography.bodyMedium.fontFamily,
-                            color = Color.Gray
+                            color = if (isDark) Color(0xFF94A3B8) else Color(0xFF64748B)
                         )
                     }
                     Spacer(modifier = Modifier.width(8.dp))

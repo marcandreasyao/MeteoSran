@@ -1,6 +1,8 @@
 package com.example.meteosran.ui.main
 
-import androidx.lifecycle.ViewModel
+import android.app.Application
+import android.content.Context
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.meteosran.data.GenerativeAIService
 import com.example.meteosran.data.ResponseMode
@@ -29,14 +31,32 @@ data class MainScreenState(
     val geminiApiKey: String = ""
 )
 
-class MainScreenViewModel : ViewModel() {
+class MainScreenViewModel(application: Application) : AndroidViewModel(application) {
+
+    constructor() : this(Application())
 
     private val _state = MutableStateFlow(MainScreenState())
     val state: StateFlow<MainScreenState> = _state.asStateFlow()
 
     private var aiService: GenerativeAIService? = null
 
+    private val sharedPrefs = try {
+        application.getSharedPreferences("meteosran_prefs", Context.MODE_PRIVATE)
+    } catch (e: Exception) {
+        null
+    }
+
     init {
+        // Load persisted API key on startup
+        try {
+            val savedKey = sharedPrefs?.getString("gemini_api_key", "") ?: ""
+            if (savedKey.isNotBlank()) {
+                _state.update { it.copy(geminiApiKey = savedKey) }
+                aiService = GenerativeAIService(savedKey)
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
         // Trigger fixed Abidjan weather loading on startup
         fetchWeather()
     }
@@ -44,6 +64,11 @@ class MainScreenViewModel : ViewModel() {
     fun setApiKey(key: String) {
         _state.update { it.copy(geminiApiKey = key) }
         aiService = GenerativeAIService(key)
+        try {
+            sharedPrefs?.edit()?.putString("gemini_api_key", key)?.apply()
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
     }
 
     fun setMode(mode: ResponseMode) {
