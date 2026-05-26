@@ -1,27 +1,32 @@
 package com.example.meteosran.ui.main
 
-import com.example.meteosran.data.DataRepository
+import com.example.meteosran.data.ResponseMode
 import junit.framework.TestCase.assertEquals
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.test.runTest
 import org.junit.Test
 
 class MainScreenViewModelTest {
-  @Test
-  fun uiState_initiallyLoading() = runTest {
-    val viewModel = MainScreenViewModel(FakeMyModelRepository())
-    assertEquals(viewModel.uiState.first(), MainScreenUiState.Loading)
-  }
 
-  @Test
-  fun uiState_onItemSaved_isDisplayed() = runTest {
-    val viewModel = MainScreenViewModel(FakeMyModelRepository())
-    assertEquals(viewModel.uiState.first(), MainScreenUiState.Loading)
-  }
-}
+    @Test
+    fun uiState_initiallyDefault() = runTest {
+        val viewModel = MainScreenViewModel()
+        val state = viewModel.state.value
+        assertEquals(state.weather, null)
+        assertEquals(state.selectedMode, ResponseMode.DEFAULT)
+        assertEquals(state.chatMessages.isEmpty(), true)
+    }
 
-private class FakeMyModelRepository : DataRepository {
-  override val data: Flow<List<String>> = flow { emit(listOf("Sample")) }
+    @Test
+    fun uiState_changeMode_updatesState() = runTest {
+        val viewModel = MainScreenViewModel()
+        viewModel.setMode(ResponseMode.EINSTEIN)
+        assertEquals(viewModel.state.value.selectedMode, ResponseMode.EINSTEIN)
+    }
+
+    @Test
+    fun uiState_setApiKey_updatesState() = runTest {
+        val viewModel = MainScreenViewModel()
+        viewModel.setApiKey("test-key")
+        assertEquals(viewModel.state.value.geminiApiKey, "test-key")
+    }
 }
