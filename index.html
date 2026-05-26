@@ -116,7 +116,7 @@
 
     :root {
       --visual-viewport-height: 100dvh;
-      --sidebar-pt: calc(0.5rem + max(2.25rem, env(safe-area-inset-top, 0px)));
+      --sidebar-pt: calc(1rem + max(3.5rem, env(safe-area-inset-top, 0px)));
       --color-bg1-light: hsl(200, 100%, 95%);
       /* Very light blue */
       --color-bg2-light: hsl(0, 0%, 100%);
@@ -1102,7 +1102,8 @@
       z-index: 1;
       width: 100%;
       height: 100%;
-      overflow: hidden;
+      overflow-y: auto;
+      /* Allow scrolling for app content */
       overflow-x: hidden;
       /* Hide scrollbars */
       scrollbar-width: none;
