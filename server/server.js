@@ -44,7 +44,7 @@ const OPENWEATHER_API_KEY = process.env.OPENWEATHER_API_KEY || '1bd935b392a1cecd
 const ABIDJAN_LOCATION_KEY = '223019';
 
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '10mb' }));
 
 // Keep-alive ping route
 app.get('/ping', (req, res) => {
@@ -542,6 +542,23 @@ app.post('/api/ai/chat', async (req, res) => {
             return res.status(400).json({ error: "Invalid contents format received from frontend." });
         }
 
+        // SERVER-SIDE SAFETY NET: Strip inlineData from all but the last user message
+        // to prevent accidental token waste if client-side optimization is bypassed.
+        const lastUserIdx = contents.reduce((last, c, i) => c.role === 'user' ? i : last, -1);
+        const sanitizedContents = contents.map((msg, idx) => {
+            if (idx === lastUserIdx) return msg; // Keep the current turn's image intact
+            if (!msg.parts || !Array.isArray(msg.parts)) return msg;
+
+            const hasInlineData = msg.parts.some(p => p.inlineData);
+            if (!hasInlineData) return msg;
+
+            // Strip inlineData from historical messages, keep text parts
+            return {
+                ...msg,
+                parts: msg.parts.filter(p => !p.inlineData)
+            };
+        });
+
         // The Ultimate Dynamic Fallback Array
         const SUPPORTED_MODELS = [
             'gemini-flash-latest',       // 1. Try to auto-route to the newest stable model
@@ -569,7 +586,7 @@ app.post('/api/ai/chat', async (req, res) => {
 
                     const response = await genAIInstance.models.generateContent({
                         model: modelName,
-                        contents: contents,
+                        contents: sanitizedContents,
                         config: {
                             systemInstruction: systemInstruction || "You are MeteoSran.",
                             temperature: generationTemperature,

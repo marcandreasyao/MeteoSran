@@ -291,15 +291,37 @@ ${memorySummary}
     // (Future Scale Architecture: if messages.length > 20, we would fetch a 'Conversation Summary' 
     // from our database and append it to invisibleContext here to maintain perfect long-term memory)
 
-    const contents = recentMessages.map(m => ({
-      role: m.role === MessageRole.USER ? 'user' : 'model',
-      parts: m.image
-        ? [
-          { text: m.text },
-          { inlineData: { mimeType: m.image.mimeType, data: m.image.data } }
-        ]
-        : [{ text: m.text }]
-    }));
+    // BIG TOKEN OPTIMIZATION: Only include inlineData for the LAST user message.
+    // Historical images are replaced with lightweight text placeholders to prevent
+    // the token snowball effect (each old image was ~258 tokens replayed every turn).
+    const lastUserIndex = recentMessages.length - 1; // Last message is always the current user message
+
+    const contents = recentMessages.map((m, idx) => {
+      const isLastUserMessage = idx === lastUserIndex && m.role === MessageRole.USER;
+
+      if (m.image && isLastUserMessage) {
+        // Current turn: include the actual image data for Gemini to analyze
+        return {
+          role: 'user' as const,
+          parts: [
+            { text: m.text },
+            { inlineData: { mimeType: m.image.mimeType, data: m.image.data } }
+          ]
+        };
+      } else if (m.image) {
+        // Historical turn: replace image with a lightweight text placeholder
+        const imageName = m.image.name || 'an image';
+        return {
+          role: m.role === MessageRole.USER ? 'user' as const : 'model' as const,
+          parts: [{ text: `${m.text}\n[Image: ${imageName} was shared]` }]
+        };
+      } else {
+        return {
+          role: m.role === MessageRole.USER ? 'user' as const : 'model' as const,
+          parts: [{ text: m.text }]
+        };
+      }
+    });
 
     // 3. Append the invisible context block ONLY to the last message part
     const finalUserMessageIndex = contents.length - 1;

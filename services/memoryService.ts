@@ -41,7 +41,12 @@ export const maybeUpdateMemory = async (
     // Build a lean transcript (text only, no images, capped at last 30 messages)
     const transcript = messages
       .slice(-30)
-      .map(m => `${m.role === MessageRole.USER ? 'User' : 'MeteoSran'}: ${m.text.slice(0, 400)}`)
+      .map(m => {
+        const role = m.role === MessageRole.USER ? 'User' : 'MeteoSran';
+        const imageNote = m.image ? '[shared an image] ' : '';
+        const textContent = m.text ? m.text.slice(0, 400) : '';
+        return `${role}: ${imageNote}${textContent}`.trim();
+      })
       .join('\n');
 
     const response = await fetch(`${API_BASE_URL}/ai/memory`, {

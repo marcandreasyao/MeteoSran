@@ -28,6 +28,50 @@ export interface CurrentInputState {
   imageFile: File | null;
 }
 
+/**
+ * Compress an image using an off-screen canvas before base64 encoding.
+ * Resizes to a max dimension of 1024px (preserving aspect ratio) and
+ * re-encodes as JPEG at 0.8 quality. This typically reduces a 3-4 MB
+ * phone photo to ~50-100 KB, cutting Gemini multimodal token usage by ~95%.
+ */
+const compressAndEncodeImage = (file: File, maxDim = 1024, quality = 0.8): Promise<{ base64: string; mimeType: string }> => {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      try {
+        let { width, height } = img;
+
+        // Only downscale, never upscale
+        if (width > maxDim || height > maxDim) {
+          const ratio = Math.min(maxDim / width, maxDim / height);
+          width = Math.round(width * ratio);
+          height = Math.round(height * ratio);
+        }
+
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          reject(new Error('Failed to get canvas 2D context'));
+          return;
+        }
+        ctx.drawImage(img, 0, 0, width, height);
+
+        // Re-encode as JPEG (even if input was PNG) for consistent compression
+        const dataUrl = canvas.toDataURL('image/jpeg', quality);
+        const base64 = dataUrl.split(',')[1];
+        resolve({ base64, mimeType: 'image/jpeg' });
+      } catch (err) {
+        reject(err);
+      }
+    };
+    img.onerror = () => reject(new Error('Failed to load image for compression'));
+    img.src = URL.createObjectURL(file);
+  });
+};
+
+/** Fallback: read a file as raw base64 without compression. */
 const readFileAsBase64 = (file: File): Promise<string> => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -542,9 +586,19 @@ const App: React.FC = () => {
 
       setShowWeatherWidget(isWeatherQueryForCI);
 
-      let imageData = null;
+      let imageData: string | null = null;
+      let imageMimeType: string = '';
       if (imageFile) {
-        imageData = await readFileAsBase64(imageFile);
+        try {
+          const compressed = await compressAndEncodeImage(imageFile);
+          imageData = compressed.base64;
+          imageMimeType = compressed.mimeType;
+          console.log(`[MeteoSran] Image compressed: ${imageFile.name} (${(imageFile.size / 1024).toFixed(0)}KB → ~${(imageData.length * 0.75 / 1024).toFixed(0)}KB)`);
+        } catch (compressErr) {
+          console.warn('[MeteoSran] Image compression failed, using raw base64:', compressErr);
+          imageData = await readFileAsBase64(imageFile);
+          imageMimeType = imageFile.type;
+        }
       }
 
       const userMessage: Message = {
@@ -555,7 +609,7 @@ const App: React.FC = () => {
         ...(imageData && imageFile && {
           image: {
             data: imageData,
-            mimeType: imageFile.type,
+            mimeType: imageMimeType,
             name: imageFile.name
           }
         })
