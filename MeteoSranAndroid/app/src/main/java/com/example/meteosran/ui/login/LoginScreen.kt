@@ -217,7 +217,10 @@ fun LoginScreen(
     fun getFriendlyErrorMessage(exception: Exception?): String {
         val message = exception?.message ?: ""
         return when {
-            message.contains("INVALID_LOGIN_CREDENTIALS", true) || message.contains("invalid-credential", true) -> {
+            message.contains("INVALID_LOGIN_CREDENTIALS", true) || 
+            message.contains("invalid-credential", true) || 
+            message.contains("supplied auth credential is incorrect", true) || 
+            message.contains("malformed or has expired", true) -> {
                 t.errorsInvalidCredential
             }
             message.contains("WEAK_PASSWORD", true) || message.contains("weak-password", true) -> {
