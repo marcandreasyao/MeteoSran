@@ -1186,57 +1186,118 @@ fun ChatSection(
 
             // Input Row
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 8.dp, vertical = 4.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                IconButton(
-                    onClick = { imagePickerLauncher.launch("image/*") }
+                // Unified pill capsule container
+                val isDark = MeteoSranTheme.customColors.isDark
+                val containerColor = if (isDark) Color(0xFF262626) else Color(0xFFF1F5F9)
+                val contentColor = if (isDark) Color(0xFF94A3B8) else Color(0xFF64748B)
+                val textColor = if (isDark) Color.White else Color(0xFF0F172A)
+
+                Row(
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(54.dp)
+                        .clip(RoundedCornerShape(27.dp))
+                        .background(containerColor)
+                        .padding(horizontal = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.AddAPhoto,
-                        contentDescription = "Ajouter une photo",
-                        tint = if (MeteoSranTheme.customColors.isDark) Color(0xFF94A3B8) else Color(0xFF64748B)
+                    // Camera (Photo) Icon Button
+                    IconButton(
+                        onClick = { imagePickerLauncher.launch("image/*") },
+                        modifier = Modifier.size(36.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.AddAPhoto,
+                            contentDescription = "Ajouter une photo",
+                            tint = contentColor,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+
+                    // Voice/Mic Icon Button
+                    IconButton(
+                        onClick = { /* Speech recognition or voice feature */ },
+                        modifier = Modifier.size(36.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Mic,
+                            contentDescription = "Dictée vocale",
+                            tint = contentColor,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.width(4.dp))
+
+                    // Borderless Text Field
+                    val currentLanguage = remember { java.util.Locale.getDefault().language }
+                    val placeholderText = if (selectedImageUri != null) {
+                        if (currentLanguage == "fr") "Décrire la photo..." else "Describe photo..."
+                    } else {
+                        if (currentLanguage == "fr") "Demande à MeteoSran" else "Ask MeteoSran"
+                    }
+
+                    TextField(
+                        value = textInput,
+                        onValueChange = { textInput = it },
+                        placeholder = {
+                            Text(
+                                placeholderText,
+                                fontFamily = MeteoSranTheme.typography.bodyMedium.fontFamily,
+                                fontSize = 13.sp,
+                                color = if (isDark) Color(0xFF64748B) else Color(0xFF94A3B8)
+                            )
+                        },
+                        modifier = Modifier.weight(1f),
+                        maxLines = 3,
+                        textStyle = LocalTextStyle.current.copy(
+                            color = textColor,
+                            fontSize = 14.sp,
+                            fontFamily = MeteoSranTheme.typography.bodyMedium.fontFamily
+                        ),
+                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
+                        keyboardActions = KeyboardActions(
+                            onSend = {
+                                if (textInput.isNotBlank() || selectedImageDto != null) {
+                                    onSendMessage(textInput, selectedImageDto)
+                                    textInput = ""
+                                    selectedImageUri = null
+                                    selectedImageDto = null
+                                    keyboardController?.hide()
+                                    focusManager.clearFocus()
+                                }
+                            }
+                        ),
+                        colors = TextFieldDefaults.colors(
+                            focusedContainerColor = Color.Transparent,
+                            unfocusedContainerColor = Color.Transparent,
+                            disabledContainerColor = Color.Transparent,
+                            focusedIndicatorColor = Color.Transparent,
+                            unfocusedIndicatorColor = Color.Transparent,
+                            disabledIndicatorColor = Color.Transparent,
+                            cursorColor = if (isDark) Color.White else Color(0xFF0F172A)
+                        )
                     )
                 }
 
-                OutlinedTextField(
-                    value = textInput,
-                    onValueChange = { textInput = it },
-                    placeholder = {
-                        Text(
-                            if (selectedImageUri != null) "Décrire la photo..." else "Poser une question...",
-                            fontFamily = MeteoSranTheme.typography.bodyMedium.fontFamily,
-                            fontSize = 13.sp
-                        )
-                    },
-                    modifier = Modifier.weight(1f),
-                    shape = RoundedCornerShape(16.dp),
-                    maxLines = 3,
-                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
-                    keyboardActions = KeyboardActions(
-                        onSend = {
-                            if (textInput.isNotBlank() || selectedImageDto != null) {
-                                onSendMessage(textInput, selectedImageDto)
-                                textInput = ""
-                                selectedImageUri = null
-                                selectedImageDto = null
-                                keyboardController?.hide()
-                                focusManager.clearFocus()
-                            }
-                        }
-                    ),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = MeteoSranBlue,
-                        unfocusedBorderColor = if (MeteoSranTheme.customColors.isDark) Color(0x33FFFFFF) else Color(0x33000000),
-                        focusedContainerColor = Color(0x0A000000),
-                        unfocusedContainerColor = Color(0x05000000)
-                    )
-                )
+                // Send Button (Separate Circular Button)
+                val isActive = textInput.isNotBlank() || selectedImageDto != null
+                val sendButtonColor = if (isDark) Color(0xFF262626) else Color(0xFFF1F5F9)
+                val iconTint = if (isActive) {
+                    if (isDark) Color.White else Color(0xFF0F172A)
+                } else {
+                    if (isDark) Color(0xFF475569) else Color(0xFFCBD5E1)
+                }
 
                 IconButton(
                     onClick = {
-                        if (textInput.isNotBlank() || selectedImageDto != null) {
+                        if (isActive) {
                             onSendMessage(textInput, selectedImageDto)
                             textInput = ""
                             selectedImageUri = null
@@ -1245,15 +1306,17 @@ fun ChatSection(
                             focusManager.clearFocus()
                         }
                     },
-                    enabled = textInput.isNotBlank() || selectedImageDto != null,
+                    enabled = isActive,
                     modifier = Modifier
+                        .size(54.dp)
                         .clip(CircleShape)
-                        .background(if (textInput.isNotBlank() || selectedImageDto != null) MeteoSranBlue else Color.Transparent)
+                        .background(sendButtonColor)
                 ) {
                     Icon(
-                        imageVector = Icons.AutoMirrored.Filled.Send,
+                        imageVector = Icons.Default.ArrowUpward,
                         contentDescription = "Envoyer",
-                        tint = if (textInput.isNotBlank() || selectedImageDto != null) Color.White else Color.Gray
+                        tint = iconTint,
+                        modifier = Modifier.size(24.dp)
                     )
                 }
             }
