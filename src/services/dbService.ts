@@ -109,22 +109,80 @@ export const pinChatSession = async (userId: string, chatId: string, isPinned: b
   }
 };
 
+/**
+ * Creates a tiny thumbnail from a base64 image for DB storage.
+ * Max 200px, JPEG 0.6 quality → typically ~5-10 KB instead of ~100+ KB.
+ */
+const createThumbnail = (
+  base64Data: string,
+  mimeType: string,
+  maxDim = 200,
+  quality = 0.6
+): Promise<{ data: string; mimeType: string }> => {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      try {
+        let { width, height } = img;
+        if (width > maxDim || height > maxDim) {
+          const ratio = Math.min(maxDim / width, maxDim / height);
+          width = Math.round(width * ratio);
+          height = Math.round(height * ratio);
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) { reject(new Error('No 2D context')); return; }
+        ctx.drawImage(img, 0, 0, width, height);
+        const dataUrl = canvas.toDataURL('image/jpeg', quality);
+        resolve({ data: dataUrl.split(',')[1], mimeType: 'image/jpeg' });
+      } catch (err) {
+        reject(err);
+      }
+    };
+    img.onerror = () => reject(new Error('Failed to load image for thumbnail'));
+    img.src = `data:${mimeType};base64,${base64Data}`;
+  });
+};
+
 export const saveMessageToDB = async (userId: string, chatId: string, message: Message) => {
   if (!userId || !chatId) return;
 
   try {
+    // If the message contains an image, create a small thumbnail for DB storage
+    // instead of persisting the full-resolution base64 data.
+    let messageToSave = message;
+    if (message.image?.data) {
+      try {
+        const thumb = await createThumbnail(message.image.data, message.image.mimeType);
+        messageToSave = {
+          ...message,
+          image: {
+            data: thumb.data,
+            mimeType: thumb.mimeType,
+            name: message.image.name
+          }
+        };
+      } catch (thumbErr) {
+        console.warn('[MeteoSran] Thumbnail generation failed, saving without image:', thumbErr);
+        messageToSave = { ...message };
+        delete (messageToSave as any).image;
+      }
+    }
+
     const response = await fetch(`${API_BASE_URL}/messages`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ chatId, message })
+      body: JSON.stringify({ chatId, message: messageToSave })
     });
     
     if (!response.ok) {
       // Handle payload too large (413) or other errors gracefully
       if (response.status === 413) {
-         console.warn("Image too large to save in PostgreSQL. Dropping image payload.");
-         const messageWithoutImage = { ...message };
-         delete messageWithoutImage.image;
+         console.warn("Image thumbnail still too large for PostgreSQL. Dropping image payload.");
+         const messageWithoutImage = { ...messageToSave };
+         delete (messageWithoutImage as any).image;
          await fetch(`${API_BASE_URL}/messages`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
