@@ -586,7 +586,7 @@ fun HeaderBar(
                     color = if (MeteoSranTheme.customColors.isDark) Color.White else Color(0xFF0F172A)
                 )
                 Text(
-                    text = "Intelligence Météorologique",
+                    text = "Intelligence Météo",
                     fontFamily = MeteoSranTheme.typography.bodySmall.fontFamily,
                     color = if (MeteoSranTheme.customColors.isDark) Color(0xFF94A3B8) else Color(0xFF64748B),
                     fontSize = 12.sp
@@ -1433,10 +1433,12 @@ fun SettingsDialog(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
-                    text = "Paramètres de MeteoSran",
+                    text = "Préférences MeteoSran",
                     fontFamily = MeteoSranTheme.typography.titleMedium.fontFamily,
                     fontWeight = FontWeight.Bold,
                     fontSize = 18.sp,
+                    letterSpacing = 0.5.sp,
+                    textAlign = TextAlign.Center,
                     color = if (isDark) Color.White else Color(0xFF0F172A)
                 )
 

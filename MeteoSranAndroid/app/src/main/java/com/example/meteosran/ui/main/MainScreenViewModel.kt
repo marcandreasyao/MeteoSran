@@ -588,7 +588,7 @@ class MainScreenViewModel(application: Application) : AndroidViewModel(applicati
                     history = history,
                     currentImage = image,
                     weatherContext = weatherContext
-                ) ?: "Erreur d'initialisation de l'IA."
+                ) ?: "Erreur d'initialisation de MeteoSran."
 
                 val aiMsgId = UUID.randomUUID().toString()
                 val aiMsg = ChatMessage(id = aiMsgId, text = aiResponseText, isUser = false)
