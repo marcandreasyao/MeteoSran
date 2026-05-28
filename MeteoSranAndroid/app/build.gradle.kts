@@ -2,6 +2,7 @@ plugins {
   alias(libs.plugins.android.application)
   alias(libs.plugins.compose.compiler)
   alias(libs.plugins.kotlin.serialization)
+  alias(libs.plugins.google.services)
 }
 
 android {
@@ -47,6 +48,10 @@ dependencies {
   val composeBom = platform(libs.androidx.compose.bom)
   implementation(composeBom)
   androidTestImplementation(composeBom)
+
+  // Firebase
+  implementation(platform(libs.firebase.bom))
+  implementation(libs.firebase.auth)
 
   // Core Android dependencies
   implementation(libs.androidx.core.ktx)
