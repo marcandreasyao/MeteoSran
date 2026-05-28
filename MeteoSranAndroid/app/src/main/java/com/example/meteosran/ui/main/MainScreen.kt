@@ -1,5 +1,7 @@
 package com.example.meteosran.ui.main
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -30,6 +32,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
@@ -49,6 +52,7 @@ import com.example.meteosran.data.ForecastDay
 import com.example.meteosran.data.ResponseMode
 import com.example.meteosran.data.WeatherResponse
 import com.example.meteosran.data.ChatSessionDto
+import com.example.meteosran.data.ImageDto
 import com.example.meteosran.theme.MeteoSranBlue
 import com.example.meteosran.theme.MeteoSranTheme
 import com.example.meteosran.ui.components.AnimatedOrbBackground
@@ -67,6 +71,19 @@ fun MainScreen(
 
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val coroutineScope = rememberCoroutineScope()
+    val context = LocalContext.current
+
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestMultiplePermissions()
+    ) { permissions ->
+        val fineGranted = permissions[android.Manifest.permission.ACCESS_FINE_LOCATION] ?: false
+        val coarseGranted = permissions[android.Manifest.permission.ACCESS_COARSE_LOCATION] ?: false
+        if (fineGranted || coarseGranted) {
+            viewModel.fetchWeather()
+        } else {
+            viewModel.setLocationMode("fixed")
+        }
+    }
 
     ModalNavigationDrawer(
         drawerState = drawerState,
@@ -139,7 +156,7 @@ fun MainScreen(
                                     messages = state.chatMessages,
                                     chatLoading = state.chatLoading,
                                     databaseError = state.databaseError,
-                                    onSendMessage = { viewModel.sendMessage(it) },
+                                    onSendMessage = { text, image -> viewModel.sendMessage(text, image) },
                                     onClearChat = { viewModel.clearChat() },
                                     modifier = Modifier
                                         .weight(0.55f)
@@ -165,7 +182,7 @@ fun MainScreen(
                                     messages = state.chatMessages,
                                     chatLoading = state.chatLoading,
                                     databaseError = state.databaseError,
-                                    onSendMessage = { viewModel.sendMessage(it) },
+                                    onSendMessage = { text, image -> viewModel.sendMessage(text, image) },
                                     onClearChat = { viewModel.clearChat() },
                                     modifier = Modifier
                                         .weight(0.52f)
@@ -180,8 +197,22 @@ fun MainScreen(
                 if (showSettingsDialog) {
                     SettingsDialog(
                         currentApiKey = state.geminiApiKey,
-                        onSave = {
-                            viewModel.setApiKey(it)
+                        currentLocationMode = state.locationMode,
+                        currentManualCity = state.manualCityName,
+                        onSave = { apiKey, locMode, manCity ->
+                            viewModel.setApiKey(apiKey)
+                            viewModel.setManualCity(manCity)
+                            viewModel.setLocationMode(locMode)
+                            if (locMode == "auto") {
+                                if (!com.example.meteosran.utils.LocationHelper.hasLocationPermission(context)) {
+                                    permissionLauncher.launch(
+                                        arrayOf(
+                                            android.Manifest.permission.ACCESS_FINE_LOCATION,
+                                            android.Manifest.permission.ACCESS_COARSE_LOCATION
+                                        )
+                                    )
+                                }
+                            }
                             showSettingsDialog = false
                         },
                         onDismiss = { showSettingsDialog = false }
@@ -932,13 +963,12 @@ fun ForecastItem(day: ForecastDay) {
         )
     }
 }
-
 @Composable
 fun ChatSection(
     messages: List<ChatMessage>,
     chatLoading: Boolean,
     databaseError: String?,
-    onSendMessage: (String) -> Unit,
+    onSendMessage: (String, ImageDto?) -> Unit,
     onClearChat: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -948,6 +978,41 @@ fun ChatSection(
 
     val focusManager = LocalFocusManager.current
     val keyboardController = LocalSoftwareKeyboardController.current
+    val context = LocalContext.current
+
+    // State for tracking selected image
+    var selectedImageUri by remember { mutableStateOf<android.net.Uri?>(null) }
+    var selectedImageDto by remember { mutableStateOf<ImageDto?>(null) }
+
+    // System Image Picker launcher (permissionless)
+    val imagePickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: android.net.Uri? ->
+        if (uri != null) {
+            // Convert to Base64 (max 1024px @ 80% JPEG quality)
+            val result = com.example.meteosran.utils.ImageCompressionHelper.compressAndResizeImage(
+                context = context,
+                uri = uri,
+                maxDimension = 1024,
+                quality = 80
+            )
+            if (result != null) {
+                // Extract filename
+                var name = "photo.jpg"
+                val cursor = context.contentResolver.query(uri, null, null, null, null)
+                cursor?.use {
+                    if (it.moveToFirst()) {
+                        val index = it.getColumnIndex(android.provider.OpenableColumns.DISPLAY_NAME)
+                        if (index != -1) {
+                            name = it.getString(index)
+                        }
+                    }
+                }
+                selectedImageUri = uri
+                selectedImageDto = ImageDto(data = result.base64, mimeType = result.mimeType, name = name)
+            }
+        }
+    }
 
     // Keep chat scrolled to bottom when new messages arrive
     LaunchedEffect(messages.size, chatLoading) {
@@ -1060,6 +1125,63 @@ fun ChatSection(
                 }
             }
 
+            // Selected Image Preview Card
+            if (selectedImageUri != null) {
+                Box(
+                    modifier = Modifier
+                        .padding(horizontal = 4.dp, vertical = 4.dp)
+                        .background(
+                            if (MeteoSranTheme.customColors.isDark) Color(0x33FFFFFF) else Color(0x1A000000),
+                            RoundedCornerShape(12.dp)
+                        )
+                        .padding(8.dp)
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        AsyncImage(
+                            model = selectedImageUri,
+                            contentDescription = "Selected image preview",
+                            modifier = Modifier
+                                .size(56.dp)
+                                .clip(RoundedCornerShape(8.dp)),
+                            contentScale = ContentScale.Crop
+                        )
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = selectedImageDto?.name ?: "Photo",
+                                maxLines = 1,
+                                fontFamily = MeteoSranTheme.typography.bodySmall.fontFamily,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = if (MeteoSranTheme.customColors.isDark) Color.White else Color(0xFF0F172A)
+                            )
+                            Text(
+                                text = "Compressé à 80% (~50-100 KB)",
+                                fontFamily = MeteoSranTheme.typography.labelSmall.fontFamily,
+                                fontSize = 10.sp,
+                                color = if (MeteoSranTheme.customColors.isDark) Color(0xFF94A3B8) else Color(0xFF64748B)
+                            )
+                        }
+                        IconButton(
+                            onClick = {
+                                selectedImageUri = null
+                                selectedImageDto = null
+                            },
+                            modifier = Modifier.size(24.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Close,
+                                contentDescription = "Retirer la photo",
+                                tint = Color.Red,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
+                    }
+                }
+            }
+
             Spacer(modifier = Modifier.height(8.dp))
 
             // Input Row
@@ -1068,12 +1190,22 @@ fun ChatSection(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
+                IconButton(
+                    onClick = { imagePickerLauncher.launch("image/*") }
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.AddAPhoto,
+                        contentDescription = "Ajouter une photo",
+                        tint = if (MeteoSranTheme.customColors.isDark) Color(0xFF94A3B8) else Color(0xFF64748B)
+                    )
+                }
+
                 OutlinedTextField(
                     value = textInput,
                     onValueChange = { textInput = it },
                     placeholder = {
                         Text(
-                            "Poser une question...",
+                            if (selectedImageUri != null) "Décrire la photo..." else "Poser une question...",
                             fontFamily = MeteoSranTheme.typography.bodyMedium.fontFamily,
                             fontSize = 13.sp
                         )
@@ -1084,9 +1216,11 @@ fun ChatSection(
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
                     keyboardActions = KeyboardActions(
                         onSend = {
-                            if (textInput.isNotBlank()) {
-                                onSendMessage(textInput)
+                            if (textInput.isNotBlank() || selectedImageDto != null) {
+                                onSendMessage(textInput, selectedImageDto)
                                 textInput = ""
+                                selectedImageUri = null
+                                selectedImageDto = null
                                 keyboardController?.hide()
                                 focusManager.clearFocus()
                             }
@@ -1102,22 +1236,24 @@ fun ChatSection(
 
                 IconButton(
                     onClick = {
-                        if (textInput.isNotBlank()) {
-                            onSendMessage(textInput)
+                        if (textInput.isNotBlank() || selectedImageDto != null) {
+                            onSendMessage(textInput, selectedImageDto)
                             textInput = ""
+                            selectedImageUri = null
+                            selectedImageDto = null
                             keyboardController?.hide()
                             focusManager.clearFocus()
                         }
                     },
-                    enabled = textInput.isNotBlank(),
+                    enabled = textInput.isNotBlank() || selectedImageDto != null,
                     modifier = Modifier
                         .clip(CircleShape)
-                        .background(if (textInput.isNotBlank()) MeteoSranBlue else Color.Transparent)
+                        .background(if (textInput.isNotBlank() || selectedImageDto != null) MeteoSranBlue else Color.Transparent)
                 ) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.Send,
                         contentDescription = "Envoyer",
-                        tint = if (textInput.isNotBlank()) Color.White else Color.Gray
+                        tint = if (textInput.isNotBlank() || selectedImageDto != null) Color.White else Color.Gray
                     )
                 }
             }
@@ -1143,7 +1279,7 @@ fun ChatBubble(message: ChatMessage) {
         modifier = Modifier.fillMaxWidth(),
         horizontalAlignment = alignment
     ) {
-        Box(
+        Column(
             modifier = Modifier
                 .widthIn(max = 280.dp)
                 .clip(
@@ -1155,8 +1291,32 @@ fun ChatBubble(message: ChatMessage) {
                     )
                 )
                 .background(bubbleColor)
-                .padding(horizontal = 12.dp, vertical = 8.dp)
+                .padding(horizontal = 12.dp, vertical = 8.dp),
+            horizontalAlignment = Alignment.Start
         ) {
+            // Render user-attached image if present
+            message.image?.let { img ->
+                val imageBytes = remember(img.data) {
+                    try {
+                        android.util.Base64.decode(img.data, android.util.Base64.DEFAULT)
+                    } catch (e: Exception) {
+                        null
+                    }
+                }
+                if (imageBytes != null) {
+                    AsyncImage(
+                        model = imageBytes,
+                        contentDescription = img.name,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(max = 180.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                            .padding(bottom = 6.dp),
+                        contentScale = ContentScale.Fit
+                    )
+                }
+            }
+
             Text(
                 text = message.text,
                 color = textColor,
@@ -1171,14 +1331,28 @@ fun ChatBubble(message: ChatMessage) {
 @Composable
 fun SettingsDialog(
     currentApiKey: String,
-    onSave: (String) -> Unit,
+    currentLocationMode: String,
+    currentManualCity: String,
+    onSave: (String, String, String) -> Unit,
     onDismiss: () -> Unit
 ) {
     var keyInput by remember { mutableStateOf(currentApiKey) }
+    var locModeInput by remember { mutableStateOf(currentLocationMode) }
+    var manualCityInput by remember { mutableStateOf(currentManualCity) }
+
     val isDark = MeteoSranTheme.customColors.isDark
     val cardBg = if (isDark) Color(0xFF1E293B) else Color.White
     val cardBorder = if (isDark) Color(0x33FFFFFF) else Color(0x1F000000)
     val shape = RoundedCornerShape(24.dp)
+
+    var menuExpanded by remember { mutableStateOf(false) }
+    val modeLabels = mapOf(
+        "auto" to Pair("Auto (GPS)", "🛰️"),
+        "manual" to Pair("Manuel", "📍"),
+        "fixed" to Pair("Fixe (Abidjan)", "🏢"),
+        "ip" to Pair("IP (Réseau)", "🌐")
+    )
+    val activeModeLabel = modeLabels[locModeInput] ?: Pair("Fixe (Abidjan)", "🏢")
 
     Dialog(onDismissRequest = onDismiss) {
         Surface(
@@ -1213,7 +1387,7 @@ fun SettingsDialog(
                     color = if (isDark) Color(0xFF94A3B8) else Color(0xFF475569)
                 )
 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(12.dp))
 
                 OutlinedTextField(
                     value = keyInput,
@@ -1233,6 +1407,103 @@ fun SettingsDialog(
                     )
                 )
 
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Text(
+                    text = "Mode de localisation",
+                    fontSize = 12.sp,
+                    fontFamily = MeteoSranTheme.typography.bodySmall.fontFamily,
+                    color = if (isDark) Color(0xFF94A3B8) else Color(0xFF475569),
+                    modifier = Modifier.align(Alignment.Start).padding(bottom = 6.dp)
+                )
+
+                Box(modifier = Modifier.fillMaxWidth()) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(48.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(if (isDark) Color(0x1A000000) else Color(0x05000000))
+                            .border(1.dp, if (isDark) Color(0x33FFFFFF) else Color(0x1F000000), RoundedCornerShape(12.dp))
+                            .clickable { menuExpanded = true }
+                            .padding(horizontal = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Text(activeModeLabel.second, fontSize = 14.sp)
+                            Text(
+                                text = activeModeLabel.first,
+                                fontSize = 13.sp,
+                                color = if (isDark) Color.White else Color(0xFF0F172A),
+                                fontFamily = MeteoSranTheme.typography.bodyMedium.fontFamily
+                            )
+                        }
+                        Icon(
+                            imageVector = Icons.Default.ArrowDropDown,
+                            contentDescription = "Ouvrir le sélecteur",
+                            tint = if (isDark) Color(0xFF94A3B8) else Color(0xFF64748B)
+                        )
+                    }
+
+                    DropdownMenu(
+                        expanded = menuExpanded,
+                        onDismissRequest = { menuExpanded = false },
+                        modifier = Modifier
+                            .fillMaxWidth(0.7f)
+                            .background(cardBg)
+                            .border(BorderStroke(1.dp, cardBorder), RoundedCornerShape(12.dp))
+                    ) {
+                        modeLabels.forEach { (modeKey, details) ->
+                            DropdownMenuItem(
+                                text = {
+                                    Row(
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text(details.second, fontSize = 14.sp)
+                                        Text(
+                                            text = details.first,
+                                            fontFamily = MeteoSranTheme.typography.bodyMedium.fontFamily,
+                                            fontSize = 13.sp,
+                                            color = if (isDark) Color.White else Color(0xFF0F172A)
+                                        )
+                                    }
+                                },
+                                onClick = {
+                                    locModeInput = modeKey
+                                    menuExpanded = false
+                                }
+                            )
+                        }
+                    }
+                }
+
+                AnimatedVisibility(visible = locModeInput == "manual") {
+                    Column(modifier = Modifier.fillMaxWidth().padding(top = 12.dp)) {
+                        OutlinedTextField(
+                            value = manualCityInput,
+                            onValueChange = { manualCityInput = it },
+                            placeholder = { Text("Ex: Bouaké, Yamoussoukro...", fontSize = 13.sp) },
+                            label = { Text("Ville manuelle", fontFamily = MeteoSranTheme.typography.bodyMedium.fontFamily) },
+                            singleLine = true,
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = MeteoSranBlue,
+                                unfocusedBorderColor = if (isDark) Color(0x33FFFFFF) else Color(0x33000000),
+                                focusedLabelColor = MeteoSranBlue,
+                                unfocusedLabelColor = if (isDark) Color(0xFF94A3B8) else Color(0xFF64748B),
+                                focusedTextColor = if (isDark) Color.White else Color(0xFF0F172A),
+                                unfocusedTextColor = if (isDark) Color.White else Color(0xFF0F172A)
+                            )
+                        )
+                    }
+                }
+
                 Spacer(modifier = Modifier.height(20.dp))
 
                 Row(
@@ -1249,7 +1520,7 @@ fun SettingsDialog(
                     }
                     Spacer(modifier = Modifier.width(8.dp))
                     Button(
-                        onClick = { onSave(keyInput) },
+                        onClick = { onSave(keyInput, locModeInput, manualCityInput) },
                         colors = ButtonDefaults.buttonColors(containerColor = MeteoSranBlue),
                         shape = RoundedCornerShape(12.dp)
                     ) {

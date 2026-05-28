@@ -7,6 +7,12 @@ import retrofit2.http.POST
 import retrofit2.http.PUT
 import retrofit2.http.Path
 
+data class ImageDto(
+    val data: String, // Base64 string
+    val mimeType: String,
+    val name: String
+)
+
 data class ChatSessionDto(
     val id: String,
     val userId: String,
@@ -34,7 +40,7 @@ data class DbMessageDto(
     val role: String, // "user" or "model"
     val text: String,
     val timestamp: String,
-    val image: Any? = null,
+    val image: ImageDto? = null,
     val alternatives: Any? = null,
     val currentAlternativeIndex: Int? = null
 )
@@ -43,7 +49,8 @@ data class SaveDbMessageDto(
     val id: String,
     val role: String,
     val text: String,
-    val timestamp: Long
+    val timestamp: Long,
+    val image: ImageDto? = null
 )
 
 data class SaveMessageRequest(

@@ -8,10 +8,18 @@ import com.google.ai.client.generativeai.type.content
 import com.google.ai.client.generativeai.type.generationConfig
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import java.time.ZonedDateTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+
+data class HistoryMessage(
+    val text: String,
+    val isUser: Boolean,
+    val image: ImageDto? = null
+)
 
 enum class ResponseMode {
     DEFAULT, CONCISE, SHORT, STRAIGHT, FUNNY, EINSTEIN
@@ -79,7 +87,8 @@ class GenerativeAIService(private val apiKey: String) {
     suspend fun generateResponse(
         prompt: String,
         mode: ResponseMode,
-        history: List<Pair<String, Boolean>> = emptyList(),
+        history: List<HistoryMessage> = emptyList(),
+        currentImage: ImageDto? = null,
         weatherContext: String? = null
     ): String = withContext(Dispatchers.IO) {
         try {
@@ -111,14 +120,40 @@ class GenerativeAIService(private val apiKey: String) {
                 appendLine(prompt)
             }
 
-            val chatHistory = history.map { (text, isUser) ->
-                content(role = if (isUser) { "user" } else { "model" }) {
-                    text(text)
+            val chatHistory = history.map { msg ->
+                content(role = if (msg.isUser) "user" else "model") {
+                    msg.image?.let { img ->
+                        try {
+                            val decoded = android.util.Base64.decode(img.data, android.util.Base64.DEFAULT)
+                            val bitmap = BitmapFactory.decodeByteArray(decoded, 0, decoded.size)
+                            if (bitmap != null) {
+                                image(bitmap)
+                            }
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                        }
+                    }
+                    text(msg.text)
                 }
             }
 
             val chat = model.startChat(history = chatHistory)
-            val response = chat.sendMessage(fullPrompt)
+            
+            val response = chat.sendMessage(content {
+                currentImage?.let { img ->
+                    try {
+                        val decoded = android.util.Base64.decode(img.data, android.util.Base64.DEFAULT)
+                        val bitmap = BitmapFactory.decodeByteArray(decoded, 0, decoded.size)
+                        if (bitmap != null) {
+                            image(bitmap)
+                        }
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
+                }
+                text(fullPrompt)
+            })
+            
             response.text ?: "I am having difficulty formulating a response right now."
         } catch (e: Exception) {
             e.printStackTrace()

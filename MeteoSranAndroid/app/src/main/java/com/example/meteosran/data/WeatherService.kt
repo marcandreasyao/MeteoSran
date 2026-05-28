@@ -183,9 +183,10 @@ object RetrofitClient {
         id: String,
         role: String,
         text: String,
-        timestamp: Long
+        timestamp: Long,
+        image: ImageDto? = null
     ): DbMessageDto {
-        val req = SaveMessageRequest(chatId, SaveDbMessageDto(id, role, text, timestamp))
+        val req = SaveMessageRequest(chatId, SaveDbMessageDto(id, role, text, timestamp, image))
         return try {
             devChatApi.saveMessage(req)
         } catch (devError: Exception) {

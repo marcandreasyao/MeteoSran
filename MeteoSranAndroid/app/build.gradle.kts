@@ -103,4 +103,9 @@ dependencies {
 
   // Material Icons Extended
   implementation(libs.androidx.compose.material.icons.extended)
+
+  // Room Local Database
+  implementation(libs.androidx.room.runtime)
+  implementation(libs.androidx.room.ktx)
+  annotationProcessor(libs.androidx.room.compiler)
 }
