@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import { track } from '@vercel/analytics';
 import { Header } from './components/Header';
 import { ChatInterface } from './components/ChatInterface';
@@ -13,16 +13,25 @@ import WeatherWidget from './src/components/WeatherWidget';
 import { useGeolocation } from './src/hooks/useGeolocation';
 import { useTouchDevice } from './src/hooks/useTouchDevice';
 import { useAuth } from './src/contexts/AuthContext';
-import { LoginScreen } from './components/LoginScreen';
 import { saveMessageToDB, fetchUserMessages, fetchChatSessions, createChatSession, ChatSession, renameChatSession, deleteChatSession, pinChatSession, searchChatSessions, SearchResultSession } from './src/services/dbService';
 import { Sidebar } from './components/Sidebar';
 import { LiveSessionOverlay } from './components/LiveSessionOverlay';
-import { ReleaseNotesModal } from './components/ReleaseNotesModal';
-import { SettingsModal } from './components/SettingsModal';
 import { generateUUID } from './src/utils/uuid';
 import { useLanguage } from './src/contexts/LanguageContext';
-import { PrivacyPolicy } from './components/PrivacyPolicy';
-import { TermsOfService } from './components/TermsOfService';
+
+// Lazy-loaded components for optimal bundle footprint and faster initial loading
+const LoginScreen = lazy(() => import('./components/LoginScreen').then(m => ({ default: m.LoginScreen })));
+const ReleaseNotesModal = lazy(() => import('./components/ReleaseNotesModal').then(m => ({ default: m.ReleaseNotesModal })));
+const SettingsModal = lazy(() => import('./components/SettingsModal').then(m => ({ default: m.SettingsModal })));
+const PrivacyPolicy = lazy(() => import('./components/PrivacyPolicy').then(m => ({ default: m.PrivacyPolicy })));
+const TermsOfService = lazy(() => import('./components/TermsOfService').then(m => ({ default: m.TermsOfService })));
+
+// Lightweight, premium glassmorphic loader fallback for Suspense hydration transitions
+const SuspenseLoader: React.FC = () => (
+  <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-950/20 dark:bg-black/40 backdrop-blur-sm">
+    <div className="w-10 h-10 border-4 border-slate-300 dark:border-slate-800 border-t-sky-500 rounded-full animate-spin animate-duration-1000" />
+  </div>
+);
 
 export type Theme = 'light' | 'dark';
 
@@ -873,11 +882,19 @@ const App: React.FC = () => {
   };
 
   if (currentPath === '/privacy' || currentPath === '/privacy-policy') {
-    return <PrivacyPolicy theme={theme} toggleTheme={toggleTheme} />;
+    return (
+      <Suspense fallback={<SuspenseLoader />}>
+        <PrivacyPolicy theme={theme} toggleTheme={toggleTheme} />
+      </Suspense>
+    );
   }
 
   if (currentPath === '/terms' || currentPath === '/terms-of-service') {
-    return <TermsOfService theme={theme} toggleTheme={toggleTheme} />;
+    return (
+      <Suspense fallback={<SuspenseLoader />}>
+        <TermsOfService theme={theme} toggleTheme={toggleTheme} />
+      </Suspense>
+    );
   }
 
   if (authLoading || !isInitialized) {
@@ -885,7 +902,11 @@ const App: React.FC = () => {
   }
 
   if (!user) {
-    return <LoginScreen />;
+    return (
+      <Suspense fallback={<SuspenseLoader />}>
+        <LoginScreen />
+      </Suspense>
+    );
   }
 
   return (
@@ -1005,17 +1026,21 @@ const App: React.FC = () => {
       <PWAInstallPrompt theme={theme} />
 
       {showReleaseNotes && (
-        <ReleaseNotesModal onClose={handleCloseReleaseNotes} />
+        <Suspense fallback={<SuspenseLoader />}>
+          <ReleaseNotesModal onClose={handleCloseReleaseNotes} />
+        </Suspense>
       )}
 
       {showSettings && (
-        <SettingsModal
-          onClose={() => setShowSettings(false)}
-          messages={messages}
-          locationMode={locationMode}
-          setLocationMode={setLocationMode}
-          onManualLocationRequested={handleManualLocation}
-        />
+        <Suspense fallback={<SuspenseLoader />}>
+          <SettingsModal
+            onClose={() => setShowSettings(false)}
+            messages={messages}
+            locationMode={locationMode}
+            setLocationMode={setLocationMode}
+            onManualLocationRequested={handleManualLocation}
+          />
+        </Suspense>
       )}
     </div>
   );

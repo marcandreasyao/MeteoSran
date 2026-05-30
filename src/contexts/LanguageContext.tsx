@@ -259,7 +259,9 @@ export const translations = {
             privacyTitle: "🛡️ Privacy & Terms of Service",
             privacyDesc: "Added fully-compliant legal documents and public routing to clear Google developer validation, featuring circular wipe transitions and custom footer layouts.",
             bundleTitle: "🏎️ High Performance & Bundle Splitting",
-            bundleDesc: "Optimized application bundle sizes for faster loading speeds, reducing main package footprint by up to 60%."
+            bundleDesc: "Optimized application bundle sizes for faster loading speeds, reducing main package footprint by up to 60%.",
+            speechTitle: "🎙️ Advanced Voice Dictation & Silence Detection",
+            speechDesc: "Experience seamless dictation inspired by Apple Notes. It automatically calibrates to your room's ambient noise floor and stops recording after 1.5 seconds of silence."
           }
         },
         v1_6_6: {
@@ -547,16 +549,18 @@ export const translations = {
           date: "Mai 2026",
           badge: "Actuelle",
           features: {
-            memoryTitle: "🧠 Mémoire Globale Utilisateur",
+            memoryTitle: "Mémoire Globale Utilisateur",
             memoryDesc: "MeteoSran te comprend désormais. Retiens tes préférences et tes villes favorites sur toutes tes sessions pour un rappel IA à long terme.",
-            weatherTitle: "📊 Cartes Météo Visuelles",
+            weatherTitle: "Cartes Météo Visuelles",
             weatherDesc: "Des panneaux d'affichage météo et atmosphériques magnifiques injectés directement au cœur de tes conversations.",
-            searchTitle: "🔍 Recherche Sémantique Globale",
+            searchTitle: "Recherche Sémantique Globale",
             searchDesc: "Fais des recherches instantanées sur tout le contenu de tes messages, pas seulement sur les titres.",
-            privacyTitle: "🛡️ Confidentialité & Conditions d'Utilisation",
+            privacyTitle: "Confidentialité & Conditions d'Utilisation",
             privacyDesc: "Intégration de documents légaux de conformité et de routage public pour la validation Google, avec des transitions fluides et des bas de page personnalisés.",
-            bundleTitle: "🏎️ Performance & Bundle Splitting",
-            bundleDesc: "Optimisation de la taille du build pour des vitesses de chargement ultra-rapides, réduisant le paquet principal de près de 60%."
+            bundleTitle: "Performance & Bundle Splitting",
+            bundleDesc: "Optimisation de la taille du build pour des vitesses de chargement ultra-rapides, réduisant le paquet principal de près de 60%.",
+            speechTitle: "🎙️ Dictée Vocale & Détection de Silence",
+            speechDesc: "Découvre une dictée fluide inspirée d'Apple Notes. Elle s'étalonne automatiquement sur le bruit ambiant de ta pièce et arrête l'enregistrement après 1,5 seconde de silence."
           }
         },
         v1_6_6: {

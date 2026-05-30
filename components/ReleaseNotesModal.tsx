@@ -34,6 +34,7 @@ const VERSIONS = [
       { key: 'search', icon: 'manage_search', color: 'sky' },
       { key: 'privacy', icon: 'shield', color: 'teal' },
       { key: 'bundle', icon: 'speed', color: 'indigo' },
+      { key: 'speech', icon: 'mic', color: 'rose' },
     ]
   },
   {
