@@ -8,6 +8,7 @@ interface MessageBubbleProps {
   message: Message;
   onRegenerate?: (messageId: string) => void;
   onSwitchAlternative?: (messageId: string, direction: 'prev' | 'next') => void;
+  isHighlighted?: boolean;
 }
 
 
@@ -93,7 +94,7 @@ const CodeBlock: React.FC<{ language: string; children: React.ReactNode }> = ({ 
   );
 };
 
-export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, onRegenerate, onSwitchAlternative }) => {
+export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, onRegenerate, onSwitchAlternative, isHighlighted = false }) => {
   const { t } = useLanguage();
   const [copied, setCopied] = useState(false);
   const isUser = message.role === MessageRole.USER;
@@ -167,7 +168,10 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, onRegener
     return (
       <div className="flex justify-end w-full animate-fade-up-soft">
         <div className="flex flex-col items-end max-w-[85%] md:max-w-2xl">
-          <div className="bg-slate-800 text-slate-100 dark:bg-slate-700/80 px-4 py-2.5 rounded-2xl rounded-tr-sm shadow-sm">
+          <div className={`px-4 py-2.5 rounded-2xl rounded-tr-sm shadow-sm transition-all duration-500
+            ${isHighlighted 
+              ? 'bg-sky-500 text-white ring-4 ring-sky-500/50 dark:ring-sky-400/50 shadow-[0_0_20px_rgba(14,165,233,0.6)] scale-[1.01]' 
+              : 'bg-slate-800 text-slate-100 dark:bg-slate-700/80'}`}>
             {hasImage && (
               <div className="mb-2 rounded-lg overflow-hidden">
                 <img 
@@ -205,7 +209,10 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, onRegener
   // 3) MODEL (AI) MESSAGE rendering: Left aligned, unboxed, elegant typography
   return (
     <div className="flex justify-start w-full animate-fade-up-soft group">
-      <div className="flex gap-3 max-w-[95%] md:max-w-3xl w-full">
+      <div className={`flex gap-3 max-w-[95%] md:max-w-3xl w-full transition-all duration-500 rounded-2xl
+        ${isHighlighted 
+          ? 'bg-sky-500/10 dark:bg-sky-500/5 p-4 border border-sky-500/30 shadow-[0_0_20px_rgba(14,165,233,0.15)] scale-[1.01]' 
+          : ''}`}>
         <div className="flex-shrink-0 mt-1">
           <ModelIcon isThinking={isTyping || (displayedText === '' && !isUser && !isSystem)} />
         </div>

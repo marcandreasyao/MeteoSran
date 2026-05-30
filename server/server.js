@@ -533,47 +533,245 @@ app.get('/api/weather/current', async (req, res) => {
 // ==========================================
 // 2. SECURE GEMINI AI PROXY (Refactored)
 // ==========================================
+
+const executeUpdateUserMemory = async (userId, args) => {
+    if (!userId) {
+        console.log(`[MeteoSran Server] Skipping memory update: No userId provided.`);
+        return true;
+    }
+    try {
+        console.log(`[MeteoSran Server] Updating memory for user ${userId}:`, args);
+        let userMemory = await withRetry(() => prisma.userGlobalMemory.findUnique({
+            where: { userId }
+        }));
+
+        let memoryObj = {
+            preferences: {},
+            sensitivities: [],
+            locations: [],
+            routines: [],
+            general_facts: []
+        };
+
+        if (userMemory && userMemory.memory) {
+            try {
+                memoryObj = typeof userMemory.memory === 'string'
+                    ? JSON.parse(userMemory.memory)
+                    : userMemory.memory;
+            } catch (parseErr) {
+                console.warn("[MeteoSran Server] Error parsing memory JSON, resetting:", parseErr);
+            }
+        }
+
+        // Initialize missing arrays/objects
+        if (!memoryObj.preferences) memoryObj.preferences = {};
+        if (!Array.isArray(memoryObj.sensitivities)) memoryObj.sensitivities = [];
+        if (!Array.isArray(memoryObj.locations)) memoryObj.locations = [];
+        if (!Array.isArray(memoryObj.routines)) memoryObj.routines = [];
+        if (!Array.isArray(memoryObj.general_facts)) memoryObj.general_facts = [];
+
+        // Apply updates
+        if (args.preference) {
+            const pref = args.preference.toLowerCase();
+            if (pref.includes('celsius')) memoryObj.preferences.units = 'celsius';
+            else if (pref.includes('fahrenheit')) memoryObj.preferences.units = 'fahrenheit';
+            
+            if (pref.includes('concise') || pref.includes('court')) memoryObj.preferences.tone = 'concise';
+            else if (pref.includes('enthusiastic') || pref.includes('enthousiaste')) memoryObj.preferences.tone = 'enthusiastic';
+            else if (pref.includes('scientific') || pref.includes('science') || pref.includes('detail')) memoryObj.preferences.tone = 'scientific';
+
+            if (pref.includes('high') || pref.includes('technical') || pref.includes('einstein') || pref.includes('détail')) memoryObj.preferences.technicalDepth = 'high';
+            else if (pref.includes('low') || pref.includes('simple') || pref.includes('vulgar')) memoryObj.preferences.technicalDepth = 'low';
+        }
+
+        if (args.sensitivity) {
+            const sens = args.sensitivity.trim();
+            if (sens && !memoryObj.sensitivities.some(s => s.toLowerCase() === sens.toLowerCase())) {
+                memoryObj.sensitivities.push(sens);
+            }
+        }
+
+        if (args.new_location) {
+            const loc = args.new_location.trim();
+            if (loc) {
+                const exists = memoryObj.locations.some(l => l.name.toLowerCase() === loc.toLowerCase());
+                if (!exists) {
+                    memoryObj.locations.push({ name: loc, type: 'secondary' });
+                }
+            }
+        }
+
+        if (args.routine) {
+            const rout = args.routine.trim();
+            if (rout && !memoryObj.routines.some(r => r.toLowerCase() === rout.toLowerCase())) {
+                memoryObj.routines.push(rout);
+            }
+        }
+
+        if (args.general_fact) {
+            const fact = args.general_fact.trim();
+            if (fact && !memoryObj.general_facts.some(f => f.toLowerCase() === fact.toLowerCase())) {
+                memoryObj.general_facts.push(fact);
+            }
+        }
+
+        await withRetry(() => prisma.userGlobalMemory.upsert({
+            where: { userId },
+            update: { memory: memoryObj },
+            create: { userId, memory: memoryObj }
+        }));
+
+        console.log(`[MeteoSran Server] Global memory updated successfully for ${userId}`);
+        return true;
+    } catch (dbErr) {
+        console.error(`[MeteoSran Server] Error executing memory update:`, dbErr);
+        return false;
+    }
+};
+
+const hydratePromptWithMemory = (lastUserPrompt, memory) => {
+    if (!memory) return '';
+
+    const query = lastUserPrompt ? lastUserPrompt.toLowerCase() : '';
+    const hydratedParts = [];
+
+    // Always Inject Units, Tone, and Sensitivities
+    if (memory.preferences?.units) {
+        hydratedParts.push(`- Temperature Unit Preference: ${memory.preferences.units}`);
+    }
+    if (memory.preferences?.tone) {
+        hydratedParts.push(`- Preferred Tone/Style: ${memory.preferences.tone}`);
+    }
+    if (Array.isArray(memory.sensitivities) && memory.sensitivities.length > 0) {
+        hydratedParts.push(`- Physical Sensitivities & Weather Aversions: ${memory.sensitivities.join(', ')}`);
+    }
+
+    // Conditionally Inject Locations
+    const hasLocationTrigger = query.includes('travel') || query.includes('trip') || query.includes('visit') || 
+                               query.includes('fly') || query.includes('go to') || query.includes('aller a') || 
+                               query.includes('voyage') || query.includes('visite') || query.includes('temps a') || 
+                               query.includes('meteo a') || query.includes('weather in') || query.includes('weather at') ||
+                               (Array.isArray(memory.locations) && memory.locations.some(l => query.includes(l.name.toLowerCase())));
+                               
+    if (hasLocationTrigger && Array.isArray(memory.locations) && memory.locations.length > 0) {
+        const locList = memory.locations.map(l => `${l.name} (${l.type})`).join(', ');
+        hydratedParts.push(`- Secondary Locations of Interest: ${locList}`);
+    }
+
+    // Conditionally Inject Routines
+    const hasRoutineTrigger = query.includes('routine') || query.includes('commute') || query.includes('schedule') || 
+                              query.includes('time') || query.includes('morning') || query.includes('evening') || 
+                              query.includes('afternoon') || query.includes('run') || query.includes('jog') || 
+                              query.includes('workout') || query.includes('job') || query.includes('habit') || 
+                              query.includes('travail') || query.includes('sport') || query.includes('planning') || 
+                              query.includes('heure');
+
+    if (hasRoutineTrigger && Array.isArray(memory.routines) && memory.routines.length > 0) {
+        hydratedParts.push(`- Daily/Weekly Routines & Activities: ${memory.routines.join(', ')}`);
+    }
+
+    // Conditionally Inject Technical Depth
+    const hasTechTrigger = query.includes('solar') || query.includes('sunspot') || query.includes('geomagnetic') || 
+                           query.includes('aurora') || query.includes('moon') || query.includes('lunar') || 
+                           query.includes('phase') || query.includes('eclipse') || query.includes('uv') || 
+                           query.includes('ultraviolet') || query.includes('science') || query.includes('how does') || 
+                           query.includes('why') || query.includes('dew point') || query.includes('humidity') || 
+                           query.includes('pressure') || query.includes('baro') || query.includes('tempete solaire') || 
+                           query.includes('comment fonctionne') || query.includes('pourquoi');
+
+    if (hasTechTrigger && memory.preferences?.technicalDepth) {
+        hydratedParts.push(`- Preferred Technical/Scientific Depth: ${memory.preferences.technicalDepth === 'high' ? 'High/Einstein style detail' : 'Low/Simple explanations'}`);
+    }
+    if (hasTechTrigger && Array.isArray(memory.general_facts) && memory.general_facts.length > 0) {
+        hydratedParts.push(`- User General Facts (useful for framing technical concepts): ${memory.general_facts.join(', ')}`);
+    }
+
+    if (hydratedParts.length === 0) return '';
+
+    return `\n\n[USER GLOBAL LONG-TERM MEMORY (RELEVANT FRAGMENTS)]
+${hydratedParts.join('\n')}
+
+[MEMORY USAGE RULES]:
+- Silently honor these facts. Do not ask the user for details already known.
+- Never state "According to my memory" or make references to this memory block's existence. Seamlessly apply it.`;
+};
+
 app.post('/api/ai/chat', async (req, res) => {
     try {
-        // We pull the perfectly formatted contents and the systemInstruction directly from the frontend
-        const { contents, mode, systemInstruction } = req.body;
+        const { contents, mode, systemInstruction, userId } = req.body;
 
         if (!contents || !Array.isArray(contents)) {
             return res.status(400).json({ error: "Invalid contents format received from frontend." });
         }
 
         // SERVER-SIDE SAFETY NET: Strip inlineData from all but the last user message
-        // to prevent accidental token waste if client-side optimization is bypassed.
         const lastUserIdx = contents.reduce((last, c, i) => c.role === 'user' ? i : last, -1);
         const sanitizedContents = contents.map((msg, idx) => {
-            if (idx === lastUserIdx) return msg; // Keep the current turn's image intact
+            if (idx === lastUserIdx) return msg; 
             if (!msg.parts || !Array.isArray(msg.parts)) return msg;
 
             const hasInlineData = msg.parts.some(p => p.inlineData);
             if (!hasInlineData) return msg;
 
-            // Strip inlineData from historical messages, keep text parts
             return {
                 ...msg,
                 parts: msg.parts.filter(p => !p.inlineData)
             };
         });
 
-        // The Ultimate Dynamic Fallback Array
         const SUPPORTED_MODELS = [
-            'gemini-flash-latest',       // 1. Try to auto-route to the newest stable model
-            'gemini-3.1-flash',          // 2. Explicit cutting-edge stable
-            'gemini-3.1-flash-lite',     // 3. Explicit cutting-edge lite
-            'gemini-3.0-flash',          // 4. Reliable recent fallback
-            'gemini-2.5-flash',          // 5. Rock-solid older generation
-            'gemini-2.0-flash'           // 6. Bedrock baseline
+            'gemini-flash-latest',       
+            'gemini-3.1-flash',          
+            'gemini-3.1-flash-lite',     
+            'gemini-3.0-flash',          
+            'gemini-2.5-flash',          
+            'gemini-2.0-flash'           
         ];
 
         let lastError = null;
         const modeKey = mode ? mode.toLowerCase() : 'default';
-
-        // Determine temperature based on the mode requested by the frontend
         const generationTemperature = modeKey === 'funny' ? 0.9 : (modeKey === 'einstein' ? 0.6 : 0.7);
+
+        // Load and hydrate User Global Memory
+        let hydratedMemoryBlock = '';
+        if (userId) {
+            try {
+                const userMemory = await withRetry(() => prisma.userGlobalMemory.findUnique({
+                    where: { userId }
+                }));
+                if (userMemory && userMemory.memory) {
+                    const lastUserMessage = contents[contents.length - 1];
+                    const lastUserText = lastUserMessage?.parts?.[0]?.text || '';
+                    const parsedMemory = typeof userMemory.memory === 'string'
+                        ? JSON.parse(userMemory.memory)
+                        : userMemory.memory;
+                    hydratedMemoryBlock = hydratePromptWithMemory(lastUserText, parsedMemory);
+                }
+            } catch (err) {
+                console.error("[MeteoSran Server] Error loading user memory:", err);
+            }
+        }
+
+        const finalSystemInstruction = (systemInstruction || "You are MeteoSran.") + hydratedMemoryBlock;
+
+        const memoryTools = [{
+            functionDeclarations: [
+                {
+                    name: "update_user_memory",
+                    description: "Updates or adds new facts, preferences, sensitivities, locations, or routines about the user to their long-term global memory. Call this silently whenever the user mentions such details. Do NOT explain that you are calling this tool.",
+                    parameters: {
+                        type: "OBJECT",
+                        properties: {
+                            new_location: { type: "STRING", description: "A city, country, or location the user mentioned interest in, travel plans to, or resides in." },
+                            sensitivity: { type: "STRING", description: "Any weather-related physical sensitivity, allergy, or aversion (e.g. 'cold', 'pollen allergies', 'extreme heat')." },
+                            preference: { type: "STRING", description: "A preferred setting, metric, or style (e.g. 'celsius', 'fahrenheit', 'concise replies', 'high technical depth')." },
+                            routine: { type: "STRING", description: "A daily, weekly, or monthly schedule or routine (e.g. 'runs at 6 AM', 'commutes at 8 AM')." },
+                            general_fact: { type: "STRING", description: "Any other general biographical fact the user shared (e.g. 'is a software engineer', 'is planning a wedding')." }
+                        }
+                    }
+                }
+            ]
+        }];
 
         // Internal loop for model fallback and key rotation
         for (const modelName of SUPPORTED_MODELS) {
@@ -584,40 +782,90 @@ app.post('/api/ai/chat', async (req, res) => {
                 try {
                     console.log(`[MeteoSran Server] Attempting generation with model: ${modelName} (Key ${k + 1}/${GEMINI_KEYS.length})`);
 
-                    const response = await genAIInstance.models.generateContent({
-                        model: modelName,
-                        contents: sanitizedContents,
-                        config: {
-                            systemInstruction: systemInstruction || "You are MeteoSran.",
-                            temperature: generationTemperature,
-                            topP: 0.95,
-                            topK: 40,
+                    let loopCount = 0;
+                    const MAX_LOOPS = 3;
+                    let currentContents = [...sanitizedContents];
+                    let responseText = null;
+
+                    while (loopCount < MAX_LOOPS) {
+                        const response = await genAIInstance.models.generateContent({
+                            model: modelName,
+                            contents: currentContents,
+                            config: {
+                                systemInstruction: finalSystemInstruction,
+                                temperature: generationTemperature,
+                                topP: 0.95,
+                                topK: 40,
+                                tools: memoryTools
+                            }
+                        });
+
+                        const functionCalls = response.functionCalls || [];
+                        if (functionCalls.length === 0) {
+                            responseText = response.text;
+                            break;
                         }
-                    });
 
-                    const text = response.text;
-                    if (!text) throw new Error("Received empty response from AI model.");
+                        console.log(`[MeteoSran Server] Model requested function calls:`, functionCalls);
 
-                    return res.json({ text });
+                        // Add model's tool calls to currentContents
+                        currentContents.push({
+                            role: 'model',
+                            parts: functionCalls.map(fc => ({
+                                functionCall: {
+                                    name: fc.name,
+                                    args: fc.args
+                                }
+                            }))
+                        });
+
+                        // Execute the functions
+                        const responseParts = [];
+                        for (const fc of functionCalls) {
+                            if (fc.name === 'update_user_memory') {
+                                const success = await executeUpdateUserMemory(userId, fc.args);
+                                responseParts.push({
+                                    functionResponse: {
+                                        name: fc.name,
+                                        response: { status: success ? "success" : "failed" }
+                                    }
+                                });
+                            } else {
+                                responseParts.push({
+                                    functionResponse: {
+                                        name: fc.name,
+                                        response: { error: "Unknown function" }
+                                    }
+                                });
+                            }
+                        }
+
+                        // Add tool responses to currentContents
+                        currentContents.push({
+                            role: 'user',
+                            parts: responseParts
+                        });
+
+                        loopCount++;
+                    }
+
+                    if (!responseText) throw new Error("Received empty response or exceeded max loops during tool calling.");
+
+                    return res.json({ text: responseText });
 
                 } catch (err) {
                     console.warn(`[MeteoSran Server] Model ${modelName} with Key ${k + 1} failed: ${err.message}`);
                     lastError = err;
 
-                    // If it's a quota (429) or auth (403) error, try the next key for the same model
                     if (err.status === 429 || err.status === 403) {
-                        console.log(`[MeteoSran Server] Key ${k + 1} hit a limit/auth issue. Rotating to next key...`);
+                        console.log(`[MeteoSran Server] Key ${k + 1} hit a limit/auth. Rotating...`);
                         continue;
                     }
-
-                    // If it's a 400 Bad Request (e.g., malformed payload or model not found), 
-                    // trying other keys for this model won't help, try next model.
                     break;
                 }
             }
         }
 
-        // If the loop finishes without returning, all models failed
         throw lastError || new Error("All AI models failed to respond.");
 
     } catch (error) {
@@ -766,6 +1014,54 @@ Rules:
     }
 });
 
+// Fetch user global memory
+app.get('/api/users/:userId/memory', async (req, res) => {
+    try {
+        const { userId } = req.params;
+        const memoryRecord = await withRetry(() => prisma.userGlobalMemory.findUnique({
+            where: { userId }
+        }));
+        if (!memoryRecord) {
+            return res.json({ memory: null });
+        }
+        res.json({ memory: memoryRecord.memory });
+    } catch (error) {
+        console.error("Error fetching user memory:", error);
+        res.status(500).json({ error: "Failed to fetch user memory" });
+    }
+});
+
+// Update/overwrite user global memory manually
+app.put('/api/users/:userId/memory', async (req, res) => {
+    try {
+        const { userId } = req.params;
+        const { memory } = req.body;
+        const memoryRecord = await withRetry(() => prisma.userGlobalMemory.upsert({
+            where: { userId },
+            update: { memory },
+            create: { userId, memory }
+        }));
+        res.json({ success: true, memory: memoryRecord.memory });
+    } catch (error) {
+        console.error("Error updating user memory:", error);
+        res.status(500).json({ error: "Failed to update user memory" });
+    }
+});
+
+// Clear user global memory
+app.delete('/api/users/:userId/memory', async (req, res) => {
+    try {
+        const { userId } = req.params;
+        await withRetry(() => prisma.userGlobalMemory.delete({
+            where: { userId }
+        }));
+        res.json({ success: true });
+    } catch (error) {
+        // If it doesn't exist, ignore and return success
+        res.json({ success: true });
+    }
+});
+
 // ==========================================
 // 3. POSTGRESQL (PRISMA) DATABASE ROUTES
 // ==========================================
@@ -786,6 +1082,62 @@ app.post('/api/chats', async (req, res) => {
     } catch (error) {
         console.error("Error creating chat:", error);
         res.status(500).json({ error: "Failed to create chat" });
+    }
+});
+
+// Search chat sessions and message contents for a user
+app.get('/api/chats/:userId/search', async (req, res) => {
+    try {
+        const { userId } = req.params;
+        const { q } = req.query;
+
+        if (!q || !q.trim()) {
+            return res.json([]);
+        }
+
+        const searchTerm = q.trim();
+
+        const chats = await withRetry(() => prisma.chatSession.findMany({
+            where: {
+                userId,
+                OR: [
+                    { title: { contains: searchTerm, mode: 'insensitive' } },
+                    {
+                        messages: {
+                            some: {
+                                text: { contains: searchTerm, mode: 'insensitive' }
+                            }
+                        }
+                    }
+                ]
+            },
+            include: {
+                messages: {
+                    where: {
+                        text: { contains: searchTerm, mode: 'insensitive' }
+                    },
+                    select: {
+                        id: true,
+                        text: true,
+                        role: true,
+                        timestamp: true
+                    },
+                    orderBy: {
+                        timestamp: 'asc'
+                    },
+                    take: 3
+                }
+            },
+            orderBy: [
+                { isPinned: 'desc' },
+                { updatedAt: 'desc' }
+            ]
+        }));
+
+        res.json(chats);
+    } catch (error) {
+        console.error("Error searching chats:", error);
+        res.status(500).json({ error: "Failed to search chats" });
     }
 });
 

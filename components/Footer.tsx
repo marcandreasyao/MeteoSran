@@ -2,7 +2,7 @@ import React from 'react';
 
 export const Footer: React.FC = () => {
   const year = 2026;
-  const version = "1.6.6";
+  const version = "1.7";
 
   return (
     <footer
@@ -13,8 +13,13 @@ export const Footer: React.FC = () => {
       role="contentinfo"
     >
       <div className="container mx-auto">
-        <p>&copy; {year} MeteoSran {version} by Marc Andréas Yao. </p>
-        {/* <p>Powered by Gemini.</p> */}
+        <p>
+          &copy; {year} MeteoSran {version} by Marc Andréas Yao.
+          {' | '}
+          <a href="/privacy" className="hover:underline hover:text-sky-500 transition-colors">Privacy Policy</a>
+          {' | '}
+          <a href="/terms" className="hover:underline hover:text-sky-500 transition-colors">Terms of Service</a>
+        </p>
       </div>
     </footer>
   );

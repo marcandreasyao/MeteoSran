@@ -1,12 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Theme } from '../App';
 import { Message, ResponseMode } from '../types';
-import { generateChatPdf } from '../services/pdfService';
 import { auth } from '../src/firebase';
 import { signOut } from 'firebase/auth';
 import { AnimatedThemeToggler } from './magicui/AnimatedThemeToggler';
 import { useLanguage } from '../src/contexts/LanguageContext';
-
 interface HeaderProps {
   theme: Theme;
   toggleTheme: (event?: React.MouseEvent<HTMLButtonElement>) => void;
@@ -16,9 +14,8 @@ interface HeaderProps {
   onToggleSidebar?: () => void;
   onOpenNotifications?: () => void;
   hasUnreadNotifications?: boolean;
-  locationMode: 'auto' | 'manual' | 'ip' | 'fixed';
-  setLocationMode: (mode: 'auto' | 'manual' | 'ip' | 'fixed') => void;
-  onManualLocationRequested: () => void;
+  showSettings: boolean;
+  onOpenSettings: () => void;
 }
 
 const ResponseModeDetails = {
@@ -56,49 +53,17 @@ const ResponseModeDetails = {
 
 export const Header: React.FC<HeaderProps> = ({ 
   theme, toggleTheme, messages, selectedMode, onModeChange, onToggleSidebar, onOpenNotifications, hasUnreadNotifications,
-  locationMode, setLocationMode, onManualLocationRequested
+  showSettings, onOpenSettings
 }) => {
   const { language, setLanguage, t } = useLanguage();
-  const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
   const [isModeDropdownOpen, setIsModeDropdownOpen] = useState(false);
-  const [showSettings, setShowSettings] = useState(false);
-  // Notification preferences
-  const [notificationsEnabled, setNotificationsEnabled] = useState(() => {
-    const stored = localStorage.getItem('notificationsEnabled');
-    return stored ? stored === 'true' : false;
-  });
-  const [notificationType, setNotificationType] = useState(() => {
-    return localStorage.getItem('notificationType') || 'Daily Summary';
-  });
-  // Request notification permission if enabled
-  useEffect(() => {
-    if (notificationsEnabled && 'Notification' in window) {
-      Notification.requestPermission().then((permission) => {
-        if (permission !== 'granted') {
-          setNotificationsEnabled(false);
-          localStorage.setItem('notificationsEnabled', 'false');
-        }
-      });
-    }
-  }, [notificationsEnabled]);
-  // Persist preferences
-  useEffect(() => {
-    localStorage.setItem('notificationsEnabled', notificationsEnabled.toString());
-  }, [notificationsEnabled]);
-  useEffect(() => {
-    localStorage.setItem('notificationType', notificationType);
-  }, [notificationType]);
 
   const modeDropdownRef = useRef<HTMLDivElement>(null);
-  const settingsDropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (modeDropdownRef.current && !modeDropdownRef.current.contains(event.target as Node)) {
         setIsModeDropdownOpen(false);
-      }
-      if (settingsDropdownRef.current && !settingsDropdownRef.current.contains(event.target as Node)) {
-        setShowSettings(false);
       }
     };
 
@@ -106,45 +71,7 @@ export const Header: React.FC<HeaderProps> = ({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const handleDownloadPdf = async () => {
-    // Prevent download if only the initial welcome message exists or if already downloading
-    if (messages.length <= 1 || isDownloadingPdf) return;
-
-    setIsDownloadingPdf(true);
-    try {
-      await generateChatPdf(messages);
-    } catch (error) {
-      console.error("PDF Download failed:", error);
-      alert("Could not download PDF. Please try again.");
-    } finally {
-      setIsDownloadingPdf(false);
-    }
-  };
-
-  const canDownload = messages.length > 1 && !isDownloadingPdf;
   const selectedModeDetails = ResponseModeDetails[selectedMode];
-
-  // Handler for sending a test notification
-  const handleSendTestNotification = () => {
-    if (!notificationsEnabled) return;
-    if ('Notification' in window) {
-      if (Notification.permission === 'granted') {
-        new Notification('MeteoSran Test Notification', {
-          body: `This is a test notification (${notificationType})!`,
-          icon: '/Meteosran-logo.png',
-        });
-      } else if (Notification.permission !== 'denied') {
-        Notification.requestPermission().then(permission => {
-          if (permission === 'granted') {
-            new Notification('MeteoSran Test Notification', {
-              body: `This is a test notification (${notificationType})!`,
-              icon: '/Meteosran-logo.png',
-            });
-          }
-        });
-      }
-    }
-  };
 
   return (
     <header
@@ -283,191 +210,15 @@ export const Header: React.FC<HeaderProps> = ({
             >
               <span className="material-symbols-outlined notranslate text-lg sm:text-xl" translate="no">logout</span>
             </button>
-            <div className="relative" ref={settingsDropdownRef}>
+            <div>
               <button
-                className="p-1.5 sm:p-2 rounded-full hover:bg-black/10 dark:hover:bg-white/10 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-sky-500 dark:focus:ring-sky-400 transition-colors"
-                onClick={() => setShowSettings(!showSettings)}
+                className="p-1.5 sm:p-2 rounded-full hover:bg-black/10 dark:hover:bg-white/10 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-sky-500 dark:focus:ring-sky-400 transition-colors flex items-center justify-center"
+                onClick={onOpenSettings}
                 aria-label={t('header.openSettings')}
                 aria-expanded={showSettings}
               >
                 <span className="material-symbols-outlined notranslate text-lg sm:text-xl" translate="no">settings</span>
               </button>
-
-              {showSettings && (
-                <div className="absolute right-0 mt-4 w-[280px] sm:w-[340px] md:w-[380px] origin-top-right 
-                                rounded-3xl bg-white/95 dark:bg-[#1a1b1e]/95 backdrop-blur-3xl
-                                shadow-2xl border border-white/50 dark:border-white/10 focus:outline-none z-30 
-                                overflow-hidden p-5 sm:p-6 animate-settings-drop-down max-h-[85vh] overflow-y-auto custom-scrollbar">
-
-                  <button
-                    className="absolute top-3 right-3 z-50 rounded-full p-2 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 
-                               hover:bg-slate-100/50 dark:hover:bg-slate-800/50 transition-all focus:outline-none min-h-[44px] min-w-[44px] flex items-center justify-center"
-                    onClick={() => setShowSettings(false)}
-                    aria-label={t('header.closeSettings')}
-                  >
-                    <span className="material-symbols-outlined notranslate text-xl" translate="no">close</span>
-                  </button>
-
-                  <div className="flex flex-col items-start mb-6 pr-12">
-                    <h2 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white tracking-tight mb-1">
-                      {t('header.preferences')}
-                    </h2>
-                    <p className="text-xs sm:text-sm text-sky-600 dark:text-sky-400 font-medium">
-                      {t('header.tagline')}
-                    </p>
-                  </div>
-
-                  <div className="space-y-6">
-                    {/* Language Preference Selector */}
-                    <div className="group flex flex-col">
-                      <span className="text-xs sm:text-sm text-slate-800 dark:text-slate-200 font-semibold flex items-center gap-2 mb-3">
-                        <span className="material-symbols-outlined notranslate text-[18px] sm:text-[20px] text-sky-500 dark:text-sky-400" translate="no">language</span>
-                        {t('header.langLabel')}
-                      </span>
-                      <div className="flex p-1 space-x-1 bg-slate-100/80 dark:bg-slate-800/80 rounded-xl overflow-x-auto hide-scrollbar">
-                        {[
-                          { id: 'en', label: 'English' },
-                          { id: 'fr', label: 'Français' }
-                        ].map((lang) => (
-                          <button
-                            key={lang.id}
-                            className={`flex-1 py-1.5 sm:py-2 text-xs sm:text-sm rounded-lg font-medium transition-all duration-200 min-h-[44px] min-w-[80px]
-                              ${language === lang.id
-                                ? 'bg-sky-500 text-white shadow-[0_2px_8px_rgba(14,165,233,0.3)]'
-                                : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'}`}
-                            onClick={() => {
-                              setLanguage(lang.id as any);
-                            }}
-                          >
-                            {lang.label}
-                          </button>
-                        ))}
-                      </div>
-                      <span className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400 mt-1.5 ml-1 leading-relaxed">
-                        {t('header.langDesc')}
-                      </span>
-                    </div>
-
-                    <div className="h-px bg-slate-200/50 dark:bg-slate-700/50 w-full" />
-
-                    {/* Chat Download Action */}
-                    <div className="group flex flex-col">
-                      <span className="text-xs sm:text-sm text-slate-800 dark:text-slate-200 font-semibold flex items-center gap-2 mb-3">
-                        <span className="material-symbols-outlined notranslate text-[18px] sm:text-[20px] text-sky-500 dark:text-sky-400" translate="no">file_download</span>
-                        {t('header.exportChat')}
-                      </span>
-                      <button
-                        onClick={handleDownloadPdf}
-                        disabled={!canDownload}
-                        className="w-full py-2.5 sm:py-3 text-xs sm:text-sm rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 
-                                   text-slate-800 dark:text-slate-200 font-medium shadow-sm active:scale-95 transition-all 
-                                   disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2 min-h-[44px] border border-slate-200/50 dark:border-slate-700/50"
-                        title={messages.length <= 1 ? t('header.downloadDisabledTooltip') : (isDownloadingPdf ? t('header.generatingPdf') : t('header.downloadTooltip'))}
-                      >
-                        <span className="material-symbols-outlined notranslate text-lg" translate="no">
-                          {isDownloadingPdf ? 'hourglass_top' : 'download'}
-                        </span>
-                        {isDownloadingPdf ? t('header.generatingPdf') : t('header.downloadPdf')}
-                      </button>
-                    </div>
-
-                    <div className="h-px bg-slate-200/50 dark:bg-slate-700/50 w-full" />
-                    {/* Notification toggle */}
-                    <div className="group flex items-center justify-between">
-                      <div className="flex flex-col pr-4">
-                        <span className="text-xs sm:text-sm text-slate-800 dark:text-slate-200 font-semibold flex items-center gap-2">
-                          <span className="material-symbols-outlined notranslate text-[18px] sm:text-[20px] text-sky-500 dark:text-sky-400" translate="no">notifications</span>
-                          {t('header.notifications')}
-                        </span>
-                        <span className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400 mt-0.5 ml-7 leading-relaxed">
-                          {t('header.notificationsDesc')}
-                        </span>
-                      </div>
-                      <label className="flex items-center cursor-pointer min-h-[44px] min-w-[44px] justify-center">
-                        <input
-                          type="checkbox"
-                          checked={notificationsEnabled}
-                          onChange={e => setNotificationsEnabled(e.target.checked)}
-                          className="sr-only peer"
-                        />
-                        <div className="relative w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-sky-500"></div>
-                      </label>
-                    </div>
-
-                    <div className="h-px bg-slate-200/50 dark:bg-slate-700/50 w-full" />
-
-                    {/* Location preference */}
-                    <div className="group flex flex-col">
-                      <span className="text-xs sm:text-sm text-slate-800 dark:text-slate-200 font-semibold flex items-center gap-2 mb-3">
-                        <span className="material-symbols-outlined notranslate text-[18px] sm:text-[20px] text-sky-500 dark:text-sky-400" translate="no">location_on</span>
-                        {t('header.locationSource')}
-                      </span>
-
-                      <div className="flex p-1 space-x-1 bg-slate-100/80 dark:bg-slate-800/80 rounded-xl overflow-x-auto hide-scrollbar">
-                        {[
-                          { id: 'auto', label: t('header.locationModes.auto') },
-                          { id: 'manual', label: t('header.locationModes.manual') },
-                          { id: 'ip', label: t('header.locationModes.ip') },
-                          { id: 'fixed', label: t('header.locationModes.fixed') }
-                        ].map((mode) => (
-                          <button
-                            key={mode.id}
-                            className={`flex-1 py-1.5 sm:py-2 text-xs sm:text-sm rounded-lg font-medium transition-all duration-200 min-h-[44px] min-w-[60px]
-                              ${locationMode === mode.id
-                                ? 'bg-sky-500 text-white shadow-[0_2px_8px_rgba(14,165,233,0.3)]'
-                                : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'}`}
-                            onClick={() => {
-                              setLocationMode(mode.id as any);
-                              if (mode.id === 'manual') {
-                                onManualLocationRequested();
-                              }
-                            }}
-                          >
-                            {mode.label}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div className="h-px bg-slate-200/50 dark:bg-slate-700/50 w-full" />
-
-                    {/* Notification type */}
-                    <div className="group flex flex-col">
-                      <span className="text-xs sm:text-sm text-slate-800 dark:text-slate-200 font-semibold flex items-center gap-2 mb-3">
-                        <span className="material-symbols-outlined notranslate text-[18px] sm:text-[20px] text-sky-500 dark:text-sky-400" translate="no">list_alt</span>
-                        {t('header.updateType')}
-                      </span>
-                      <div className="relative">
-                        <select
-                          className="w-full px-3 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm rounded-xl border border-slate-200/50 dark:border-slate-700/50 
-                                     bg-slate-50/50 dark:bg-slate-800/50 text-slate-800 dark:text-slate-200
-                                     focus:outline-none focus:ring-2 focus:ring-sky-500/50 appearance-none cursor-pointer font-medium transition-all min-h-[44px]"
-                          value={notificationType}
-                          onChange={e => setNotificationType(e.target.value)}
-                        >
-                          <option value="Daily Summary">{t('header.updateTypes.summary')}</option>
-                          <option value="Severe Alerts">{t('header.updateTypes.alerts')}</option>
-                          <option value="Rain Warnings">{t('header.updateTypes.warnings')}</option>
-                        </select>
-                        <div className="absolute inset-y-0 right-3 top-0 flex items-center pointer-events-none text-slate-400">
-                          <span className="material-symbols-outlined notranslate text-lg" translate="no">expand_more</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="pt-2 sm:pt-4">
-                      <button
-                        className="w-full py-2.5 sm:py-3 text-xs sm:text-sm rounded-full bg-sky-500 hover:bg-sky-600 text-white
-                                   font-medium shadow-md hover:shadow-lg active:scale-95 transition-all disabled:opacity-40 disabled:cursor-not-allowed min-h-[44px]"
-                        disabled={!notificationsEnabled}
-                        onClick={handleSendTestNotification}
-                      >
-                        {t('header.sendTestNotification')}
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )}
             </div>
           </div>
         </div>

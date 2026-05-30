@@ -14,12 +14,15 @@ import { useGeolocation } from './src/hooks/useGeolocation';
 import { useTouchDevice } from './src/hooks/useTouchDevice';
 import { useAuth } from './src/contexts/AuthContext';
 import { LoginScreen } from './components/LoginScreen';
-import { saveMessageToDB, fetchUserMessages, fetchChatSessions, createChatSession, ChatSession, renameChatSession, deleteChatSession, pinChatSession } from './src/services/dbService';
+import { saveMessageToDB, fetchUserMessages, fetchChatSessions, createChatSession, ChatSession, renameChatSession, deleteChatSession, pinChatSession, searchChatSessions, SearchResultSession } from './src/services/dbService';
 import { Sidebar } from './components/Sidebar';
 import { LiveSessionOverlay } from './components/LiveSessionOverlay';
 import { ReleaseNotesModal } from './components/ReleaseNotesModal';
+import { SettingsModal } from './components/SettingsModal';
 import { generateUUID } from './src/utils/uuid';
 import { useLanguage } from './src/contexts/LanguageContext';
+import { PrivacyPolicy } from './components/PrivacyPolicy';
+import { TermsOfService } from './components/TermsOfService';
 
 export type Theme = 'light' | 'dark';
 
@@ -127,15 +130,29 @@ const App: React.FC = () => {
   const [chatSessions, setChatSessions] = useState<ChatSession[]>([]);
   const [activeChatId, setActiveChatId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<SearchResultSession[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [highlightedMessageId, setHighlightedMessageId] = useState<string | null>(null);
 
   // Release Notes State
-  const CURRENT_VERSION = '1.6.6';
+  const CURRENT_VERSION = '1.7';
   const [showReleaseNotes, setShowReleaseNotes] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
   const [hasUnreadNotifications, setHasUnreadNotifications] = useState(false);
 
   const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
+  const currentPath = window.location.pathname;
 
   useEffect(() => {
+    const isLegalPage = currentPath === '/privacy' || currentPath === '/privacy-policy' || currentPath === '/terms' || currentPath === '/terms-of-service';
+    if (isLegalPage) {
+      const rootEl = document.getElementById('root');
+      if (rootEl) {
+        rootEl.style.removeProperty('overflow-y');
+      }
+      return;
+    }
+
     if (!window.visualViewport) return;
 
     const handleResize = () => {
@@ -175,7 +192,7 @@ const App: React.FC = () => {
       window.visualViewport?.removeEventListener('scroll', handleResize);
       window.removeEventListener('scroll', handleScroll);
     };
-  }, []);
+  }, [currentPath]);
 
   useEffect(() => {
     const seenVersion = localStorage.getItem('meteosran_version_seen');
@@ -188,6 +205,34 @@ const App: React.FC = () => {
       return () => clearTimeout(timer);
     }
   }, []);
+
+  // Full-Text Semantic Chat Search effect
+  useEffect(() => {
+    if (!user) {
+      setSearchResults([]);
+      return;
+    }
+
+    if (!searchQuery.trim()) {
+      setSearchResults([]);
+      setIsSearching(false);
+      return;
+    }
+
+    setIsSearching(true);
+    const delayDebounceFn = setTimeout(async () => {
+      try {
+        const results = await searchChatSessions(user.uid, searchQuery);
+        setSearchResults(results);
+      } catch (err) {
+        console.error("Search failed:", err);
+      } finally {
+        setIsSearching(false);
+      }
+    }, 450); // 450ms debounce
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [searchQuery, user]);
 
   const handleCloseReleaseNotes = () => {
     setShowReleaseNotes(false);
@@ -430,8 +475,26 @@ const App: React.FC = () => {
     }
   }, [locationMode]);
 
-  const handleSelectChat = async (chatId: string) => {
-    if (chatId === activeChatId) return;
+  const handleSelectChat = async (chatId: string, targetMessageId?: string) => {
+    if (targetMessageId) {
+      setHighlightedMessageId(targetMessageId);
+      setTimeout(() => {
+        setHighlightedMessageId(null);
+      }, 3000); // Clear highlight after 3 seconds
+    }
+
+    if (chatId === activeChatId) {
+      if (targetMessageId) {
+        setTimeout(() => {
+          const el = document.getElementById(`msg-${targetMessageId}`);
+          if (el) {
+            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
+        }, 100);
+      }
+      return;
+    }
+
     setActiveChatId(chatId);
     if (user) {
       setMessages([]);
@@ -439,6 +502,15 @@ const App: React.FC = () => {
       try {
         const history = await fetchUserMessages(user.uid, chatId);
         setMessages(history.length > 0 ? history : []);
+
+        if (targetMessageId) {
+          setTimeout(() => {
+            const el = document.getElementById(`msg-${targetMessageId}`);
+            if (el) {
+              el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+          }, 300);
+        }
       } catch (err) {
         console.error("Failed to load chat history", err);
       } finally {
@@ -461,6 +533,7 @@ const App: React.FC = () => {
       const success = await renameChatSession(user.uid, chatId, newTitle);
       if (success) {
         setChatSessions(prev => prev.map(c => c.id === chatId ? { ...c, title: newTitle } : c));
+        setSearchResults(prev => prev.map(c => c.id === chatId ? { ...c, title: newTitle } : c));
       }
     } catch (err) {
       console.error("Failed to rename chat session:", err);
@@ -473,6 +546,7 @@ const App: React.FC = () => {
       const success = await deleteChatSession(user.uid, chatId);
       if (success) {
         setChatSessions(prev => prev.filter(c => c.id !== chatId));
+        setSearchResults(prev => prev.filter(c => c.id !== chatId));
         if (activeChatId === chatId) {
           const remainingChats = chatSessions.filter(c => c.id !== chatId);
           if (remainingChats.length > 0) {
@@ -493,6 +567,7 @@ const App: React.FC = () => {
       const success = await pinChatSession(user.uid, chatId, isPinned);
       if (success) {
         setChatSessions(prev => prev.map(c => c.id === chatId ? { ...c, isPinned } : c));
+        setSearchResults(prev => prev.map(c => c.id === chatId ? { ...c, isPinned } : c));
       }
     } catch (err) {
       console.error("Failed to pin chat session:", err);
@@ -632,7 +707,8 @@ const App: React.FC = () => {
         user?.displayName || null,
         memorySummary,
         userLocation?.lat || null,
-        userLocation?.lon || null
+        userLocation?.lon || null,
+        user?.uid || null
       );
       setMessages(prev => [...prev, response]);
 
@@ -712,7 +788,8 @@ const App: React.FC = () => {
         user?.displayName || null,
         memorySummary,
         userLocation?.lat || null,
-        userLocation?.lon || null
+        userLocation?.lon || null,
+        user?.uid || null
       );
 
       setMessages(prev => {
@@ -795,6 +872,14 @@ const App: React.FC = () => {
     setSelectedMode(mode);
   };
 
+  if (currentPath === '/privacy' || currentPath === '/privacy-policy') {
+    return <PrivacyPolicy theme={theme} toggleTheme={toggleTheme} />;
+  }
+
+  if (currentPath === '/terms' || currentPath === '/terms-of-service') {
+    return <TermsOfService theme={theme} toggleTheme={toggleTheme} />;
+  }
+
   if (authLoading || !isInitialized) {
     return <LoadingProgress progress={initProgress} message={authLoading ? t("errors.authenticating") : t(initMessageKey)} />;
   }
@@ -827,6 +912,8 @@ const App: React.FC = () => {
           onRenameChat={handleRenameChat}
           onDeleteChat={handleDeleteChat}
           onPinChat={handlePinChat}
+          searchResults={searchResults}
+          isSearching={isSearching}
         />
       )}
 
@@ -878,9 +965,8 @@ const App: React.FC = () => {
           onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
           onOpenNotifications={() => setShowReleaseNotes(true)}
           hasUnreadNotifications={hasUnreadNotifications}
-          locationMode={locationMode}
-          setLocationMode={setLocationMode}
-          onManualLocationRequested={handleManualLocation}
+          showSettings={showSettings}
+          onOpenSettings={() => setShowSettings(true)}
         />
 
         <main className="flex-grow flex flex-col overflow-hidden px-1.5 sm:px-2 md:p-4 relative">
@@ -904,6 +990,7 @@ const App: React.FC = () => {
             onStartLiveSession={() => setIsLiveSessionActive(true)}
             userFirstName={user?.displayName ? user.displayName.split(' ')[0] : ''}
             isKeyboardOpen={isKeyboardOpen}
+            highlightedMessageId={highlightedMessageId}
           />
         </main>
         {!isKeyboardOpen && <Footer />}
@@ -919,6 +1006,16 @@ const App: React.FC = () => {
 
       {showReleaseNotes && (
         <ReleaseNotesModal onClose={handleCloseReleaseNotes} />
+      )}
+
+      {showSettings && (
+        <SettingsModal
+          onClose={() => setShowSettings(false)}
+          messages={messages}
+          locationMode={locationMode}
+          setLocationMode={setLocationMode}
+          onManualLocationRequested={handleManualLocation}
+        />
       )}
     </div>
   );

@@ -10,6 +10,7 @@ interface MessageListProps {
   onRegenerate: (messageId: string) => void;
   onSwitchAlternative: (messageId: string, direction: 'prev' | 'next') => void;
   isKeyboardOpen?: boolean;
+  highlightedMessageId?: string | null;
 }
 
 export const MessageList: React.FC<MessageListProps> = ({ 
@@ -18,15 +19,19 @@ export const MessageList: React.FC<MessageListProps> = ({
   error, 
   onRegenerate, 
   onSwitchAlternative,
-  isKeyboardOpen = false
+  isKeyboardOpen = false,
+  highlightedMessageId = null
 }) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    // Only auto-scroll to bottom if there's no active message highlight scroll target
+    if (!highlightedMessageId) {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
   };
 
-  useEffect(scrollToBottom, [messages, isLoading, error, isKeyboardOpen]);
+  useEffect(scrollToBottom, [messages, isLoading, error, isKeyboardOpen, highlightedMessageId]);
 
   return (
     <div className="flex-grow p-4 md:p-6 space-y-4 overflow-y-auto"
@@ -35,12 +40,14 @@ export const MessageList: React.FC<MessageListProps> = ({
            maskImage: 'linear-gradient(to bottom, black 0%, black calc(100% - 40px), transparent 100%)'
          }}>
       {messages.map((msg) => (
-        <MessageBubble 
-          key={msg.id} 
-          message={msg} 
-          onRegenerate={onRegenerate}
-          onSwitchAlternative={onSwitchAlternative}
-        />
+        <div key={msg.id} id={`msg-${msg.id}`} className="w-full">
+          <MessageBubble 
+            message={msg} 
+            onRegenerate={onRegenerate}
+            onSwitchAlternative={onSwitchAlternative}
+            isHighlighted={msg.id === highlightedMessageId}
+          />
+        </div>
       ))}
       {isLoading && (
         <div className="flex justify-start">

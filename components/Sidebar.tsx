@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useRef } from 'react';
-import { ChatSession } from '../src/services/dbService';
+import { ChatSession, SearchResultSession } from '../src/services/dbService';
 import { useLanguage } from '../src/contexts/LanguageContext';
 
 // ─── Magic UI: Shimmer Button ─────────────────────────────────────────────────
@@ -67,13 +67,15 @@ interface SidebarProps {
   onClose: () => void;
   chatSessions: ChatSession[];
   activeChatId: string | null;
-  onSelectChat: (chatId: string) => void;
+  onSelectChat: (chatId: string, messageId?: string) => void;
   onNewChat: () => void;
   searchQuery: string;
   onSearchChange: (query: string) => void;
   onRenameChat: (chatId: string, newTitle: string) => void;
   onDeleteChat: (chatId: string) => void;
   onPinChat: (chatId: string, isPinned: boolean) => void;
+  searchResults: SearchResultSession[];
+  isSearching: boolean;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -87,7 +89,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onSearchChange,
   onRenameChat,
   onDeleteChat,
-  onPinChat
+  onPinChat,
+  searchResults,
+  isSearching
 }) => {
   const { t } = useLanguage();
   const [editingChatId, setEditingChatId] = useState<string | null>(null);
@@ -131,170 +135,224 @@ export const Sidebar: React.FC<SidebarProps> = ({
     setDeletingChatId(null);
   };
 
-  const filteredSessions = useMemo(() => {
-    if (!searchQuery.trim()) return chatSessions;
-    return chatSessions.filter(chat =>
-      chat.title.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-  }, [chatSessions, searchQuery]);
+  const activeSessionsList = useMemo(() => {
+    if (searchQuery.trim()) {
+      return searchResults;
+    }
+    return chatSessions;
+  }, [chatSessions, searchQuery, searchResults]);
 
   const pinnedSessions = useMemo(() => {
-    return filteredSessions.filter(chat => chat.isPinned);
-  }, [filteredSessions]);
+    return activeSessionsList.filter(chat => chat.isPinned);
+  }, [activeSessionsList]);
 
   const recentSessions = useMemo(() => {
-    return filteredSessions.filter(chat => !chat.isPinned);
-  }, [filteredSessions]);
+    return activeSessionsList.filter(chat => !chat.isPinned);
+  }, [activeSessionsList]);
 
-  const renderChatRow = (chat: ChatSession) => {
+  const getHighlightedSnippet = (text: string, query: string) => {
+    if (!query || !query.trim()) return text;
+    const q = query.trim();
+
+    const index = text.toLowerCase().indexOf(q.toLowerCase());
+    if (index === -1) return text.length > 60 ? text.slice(0, 60) + '...' : text;
+
+    const start = Math.max(0, index - 25);
+    const end = Math.min(text.length, index + q.length + 25);
+    const snippet = text.slice(start, end);
+
+    const queryRegex = new RegExp(`(${q.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&')})`, 'gi');
+    const parts = snippet.split(queryRegex);
+
+    return (
+      <>
+        {start > 0 && '...'}
+        {parts.map((part, i) => 
+          queryRegex.test(part) ? (
+            <mark key={i} className="bg-sky-500/35 text-sky-200 font-semibold px-0.5 rounded-sm">
+              {part}
+            </mark>
+          ) : (
+            part
+          )
+        )}
+        {end < text.length && '...'}
+      </>
+    );
+  };
+
+  const renderChatRow = (chat: SearchResultSession) => {
     const isActive = activeChatId === chat.id;
     const isEditing = editingChatId === chat.id;
     const isConfirmingDelete = deletingChatId === chat.id;
 
     return (
-      <div
-        key={chat.id}
-        className={`
-          group relative flex items-center w-full rounded-xl transition-all overflow-hidden border
-          ${isActive
-            ? 'bg-slate-800 text-white border-slate-700 shadow-sm'
-            : 'text-slate-400 sm:hover:bg-slate-800/40 active:bg-slate-800/60 sm:hover:text-slate-200 border-transparent'}
-        `}
-      >
-        {isEditing ? (
-          <div className="flex items-center gap-2 w-full px-3 py-1.5 bg-slate-800/50">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5 text-blue-400 select-none shrink-0">
-              <path d="M12 20h9"></path>
-              <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"></path>
-            </svg>
-            <input
-              ref={editInputRef}
-              type="text"
-              value={editTitle}
-              onChange={(e) => setEditTitle(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') saveRename(chat.id);
-                if (e.key === 'Escape') cancelRename();
-              }}
-              onBlur={() => {
-                setTimeout(() => {
-                  saveRename(chat.id);
-                }, 200);
-              }}
-              className="flex-grow bg-slate-800/80 border border-slate-700 rounded-lg px-2 py-0.5 text-xs text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/50 transition-all font-sans min-h-[26px]"
-              autoFocus
-            />
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                saveRename(chat.id);
-              }}
-              className="p-1 hover:text-emerald-400 transition-colors shrink-0"
-              title={t('common.save')}
-            >
-              <span className="material-symbols-outlined notranslate text-sm" translate="no">check</span>
-            </button>
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                cancelRename();
-              }}
-              className="p-1 hover:text-rose-400 transition-colors shrink-0"
-              title={t('common.cancel')}
-            >
-              <span className="material-symbols-outlined notranslate text-sm" translate="no">close</span>
-            </button>
-          </div>
-        ) : isConfirmingDelete ? (
-          <div className="flex items-center justify-between w-full px-3 py-1.5 bg-red-950/20 text-red-200 min-h-[38px] animate-fade-in">
-            <span className="text-fluid-xs truncate flex-1 font-medium text-red-300">{t('sidebar.deletePrompt')}</span>
-            <div className="flex items-center gap-2 shrink-0">
+      <div key={chat.id} className="flex flex-col w-full">
+        <div
+          className={`
+            group relative flex items-center w-full rounded-xl transition-all overflow-hidden border
+            ${isActive
+              ? 'bg-slate-800 text-white border-slate-700 shadow-sm'
+              : 'text-slate-400 sm:hover:bg-slate-800/40 active:bg-slate-800/60 sm:hover:text-slate-200 border-transparent'}
+          `}
+        >
+          {isEditing ? (
+            <div className="flex items-center gap-2 w-full px-3 py-1.5 bg-slate-800/50">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5 text-blue-400 select-none shrink-0">
+                <path d="M12 20h9"></path>
+                <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"></path>
+              </svg>
+              <input
+                ref={editInputRef}
+                type="text"
+                value={editTitle}
+                onChange={(e) => setEditTitle(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') saveRename(chat.id);
+                  if (e.key === 'Escape') cancelRename();
+                }}
+                onBlur={() => {
+                  setTimeout(() => {
+                    saveRename(chat.id);
+                  }, 200);
+                }}
+                className="flex-grow bg-slate-800/80 border border-slate-700 rounded-lg px-2 py-0.5 text-xs text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/50 transition-all font-sans min-h-[26px]"
+                autoFocus
+              />
               <button
                 onClick={(e) => {
                   e.stopPropagation();
-                  confirmDelete(chat.id);
+                  saveRename(chat.id);
                 }}
-                className="p-1 hover:text-emerald-400 transition-colors flex items-center justify-center hover:bg-emerald-500/10 rounded"
-                title={t('sidebar.deleteBtn')}
+                className="p-1 hover:text-emerald-400 transition-colors shrink-0"
+                title={t('common.save')}
               >
-                <span className="material-symbols-outlined notranslate text-sm font-bold" translate="no">check</span>
+                <span className="material-symbols-outlined notranslate text-sm" translate="no">check</span>
               </button>
               <button
                 onClick={(e) => {
                   e.stopPropagation();
-                  cancelDelete();
+                  cancelRename();
                 }}
-                className="p-1 hover:text-rose-400 transition-colors flex items-center justify-center hover:bg-rose-500/10 rounded"
+                className="p-1 hover:text-rose-400 transition-colors shrink-0"
                 title={t('common.cancel')}
               >
                 <span className="material-symbols-outlined notranslate text-sm" translate="no">close</span>
               </button>
             </div>
-          </div>
-        ) : (
-          <>
-            <button
-              onClick={() => {
-                onSelectChat(chat.id);
-                if (window.innerWidth < 768) onClose();
-              }}
-              className="flex-grow text-left py-1.5 px-3.5 text-fluid-sm whitespace-nowrap overflow-hidden min-h-[38px] pr-20"
-            >
-              <span className="truncate block flex-1">{chat.title}</span>
-            </button>
-
-            {/* Action buttons shown on hover or if active */}
-            <div className={`
-              absolute right-1.5 top-1/2 -translate-y-1/2 flex items-center gap-1.5 px-1.5 py-0.5 rounded-lg
-              opacity-0 group-hover:opacity-100 transition-all duration-200
-              ${isActive ? 'opacity-100' : ''}
-              ${isActive ? 'bg-slate-800' : 'bg-slate-900/90 backdrop-blur-sm sm:group-hover:bg-slate-800/90'}
-            `}>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onPinChat(chat.id, !chat.isPinned);
-                }}
-                className="p-1 hover:bg-slate-700/50 rounded-md flex items-center justify-center transition-all duration-150 active:scale-95 shrink-0"
-                title={chat.isPinned ? t('sidebar.unpinChat') : t('sidebar.pinChat')}
-              >
-                {chat.isPinned ? (
-                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-3.5 h-3.5 text-amber-400 hover:text-amber-300 transition-colors">
-                    <path d="M16 12V4h1v-2H7v2h1v8l-2 2v2h5.2v6h1.6v-6H18v-2l-2-2z"></path>
-                  </svg>
-                ) : (
-                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5 text-slate-400 hover:text-amber-400 transition-colors">
-                    <line x1="12" y1="17" x2="12" y2="22"></line>
-                    <path d="M5 17h14v-1.76a2 2 0 0 0-.44-1.24l-2.33-2.92A2 2 0 0 1 15.8 9.84V5a1 1 0 0 0-1-1H9.2a1 1 0 0 0-1 1v4.84a2 2 0 0 1-.43 1.24l-2.33 2.92a2 2 0 0 0-.44 1.24z"></path>
-                  </svg>
-                )}
-              </button>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  startRename(chat.id, chat.title);
-                }}
-                className="p-1 hover:bg-slate-700/50 rounded-md flex items-center justify-center transition-all duration-150 active:scale-95 shrink-0"
-                title={t('sidebar.renameChat')}
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" className="w-3.5 h-3.5 text-slate-400 hover:text-blue-400 transition-colors">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L6.832 19.82a4.5 4.5 0 0 1-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 0 1 1.13-1.897L16.863 4.487Zm0 0L19.5 7.125" />
-                </svg>
-              </button>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  startDelete(chat.id);
-                }}
-                className="p-1 hover:bg-slate-700/50 rounded-md flex items-center justify-center transition-all duration-150 active:scale-95 shrink-0"
-                title={t('sidebar.deleteChat')}
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" className="w-3.5 h-3.5 text-slate-400 hover:text-rose-400 transition-colors">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
-                </svg>
-              </button>
+          ) : isConfirmingDelete ? (
+            <div className="flex items-center justify-between w-full px-3 py-1.5 bg-red-950/20 text-red-200 min-h-[38px] animate-fade-in">
+              <span className="text-fluid-xs truncate flex-1 font-medium text-red-300">{t('sidebar.deletePrompt')}</span>
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    confirmDelete(chat.id);
+                  }}
+                  className="p-1 hover:text-emerald-400 transition-colors flex items-center justify-center hover:bg-emerald-500/10 rounded"
+                  title={t('sidebar.deleteBtn')}
+                >
+                  <span className="material-symbols-outlined notranslate text-sm font-bold" translate="no">check</span>
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    cancelDelete();
+                  }}
+                  className="p-1 hover:text-rose-400 transition-colors flex items-center justify-center hover:bg-rose-500/10 rounded"
+                  title={t('common.cancel')}
+                >
+                  <span className="material-symbols-outlined notranslate text-sm" translate="no">close</span>
+                </button>
+              </div>
             </div>
-          </>
+          ) : (
+            <>
+              <button
+                onClick={() => {
+                  onSelectChat(chat.id);
+                  if (window.innerWidth < 768) onClose();
+                }}
+                className="flex-grow text-left py-1.5 px-3.5 text-fluid-sm whitespace-nowrap overflow-hidden min-h-[38px] pr-20"
+              >
+                <span className="truncate block flex-1">{chat.title}</span>
+              </button>
+
+              {/* Action buttons shown on hover or if active */}
+              <div className={`
+                absolute right-1.5 top-1/2 -translate-y-1/2 flex items-center gap-1.5 px-1.5 py-0.5 rounded-lg
+                opacity-0 group-hover:opacity-100 transition-all duration-200
+                ${isActive ? 'opacity-100' : ''}
+                ${isActive ? 'bg-slate-800' : 'bg-slate-900/90 backdrop-blur-sm sm:group-hover:bg-slate-800/90'}
+              `}>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onPinChat(chat.id, !chat.isPinned);
+                  }}
+                  className="p-1 hover:bg-slate-700/50 rounded-md flex items-center justify-center transition-all duration-150 active:scale-95 shrink-0"
+                  title={chat.isPinned ? t('sidebar.unpinChat') : t('sidebar.pinChat')}
+                >
+                  {chat.isPinned ? (
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-3.5 h-3.5 text-amber-400 hover:text-amber-300 transition-colors">
+                      <path d="M16 12V4h1v-2H7v2h1v8l-2 2v2h5.2v6h1.6v-6H18v-2l-2-2z"></path>
+                    </svg>
+                  ) : (
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5 text-slate-400 hover:text-amber-400 transition-colors">
+                      <line x1="12" y1="17" x2="12" y2="22"></line>
+                      <path d="M5 17h14v-1.76a2 2 0 0 0-.44-1.24l-2.33-2.92A2 2 0 0 1 15.8 9.84V5a1 1 0 0 0-1-1H9.2a1 1 0 0 0-1 1v4.84a2 2 0 0 1-.43 1.24l-2.33 2.92a2 2 0 0 0-.44 1.24z"></path>
+                    </svg>
+                  )}
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    startRename(chat.id, chat.title);
+                  }}
+                  className="p-1 hover:bg-slate-700/50 rounded-md flex items-center justify-center transition-all duration-150 active:scale-95 shrink-0"
+                  title={t('sidebar.renameChat')}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" className="w-3.5 h-3.5 text-slate-400 hover:text-blue-400 transition-colors">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L6.832 19.82a4.5 4.5 0 0 1-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 0 1 1.13-1.897L16.863 4.487Zm0 0L19.5 7.125" />
+                  </svg>
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    startDelete(chat.id);
+                  }}
+                  className="p-1 hover:bg-slate-700/50 rounded-md flex items-center justify-center transition-all duration-150 active:scale-95 shrink-0"
+                  title={t('sidebar.deleteChat')}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" className="w-3.5 h-3.5 text-slate-400 hover:text-rose-400 transition-colors">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+                  </svg>
+                </button>
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* Snippets list for search results */}
+        {searchQuery.trim() && chat.matchingMessages && chat.matchingMessages.length > 0 && (
+          <div className="pl-4 pr-1 mt-1 mb-2 space-y-1.5">
+            {chat.matchingMessages.map((msg) => (
+              <button
+                key={msg.id}
+                onClick={() => {
+                  onSelectChat(chat.id, msg.id);
+                  if (window.innerWidth < 768) onClose();
+                }}
+                className="w-full text-left text-[11px] leading-snug font-normal text-slate-400 hover:text-sky-400 bg-slate-900/35 hover:bg-slate-900/60 p-2 rounded-lg border border-transparent hover:border-sky-500/20 transition-all block break-words"
+                title={msg.text}
+              >
+                <span className="font-semibold text-slate-500 dark:text-slate-400 mr-1 uppercase text-[9px]">
+                  {msg.role === 'user' ? t('sidebar.userLabel') : t('sidebar.aiLabel')}
+                </span>
+                {getHighlightedSnippet(msg.text, searchQuery)}
+              </button>
+            ))}
+          </div>
         )}
       </div>
     );
@@ -343,7 +401,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </button>
 
           <div className="relative mb-3 flex items-center gap-2.5 border-b border-slate-700/60 pb-2 focus-within:border-slate-500/80 transition-colors">
-            <span className="material-symbols-outlined notranslate text-slate-500 text-[18px] shrink-0 select-none" translate="no">search</span>
+            {isSearching ? (
+              <div className="w-[18px] h-[18px] border-2 border-slate-500 border-t-sky-500 rounded-full animate-spin shrink-0" />
+            ) : (
+              <span className="material-symbols-outlined notranslate text-slate-500 text-[18px] shrink-0 select-none" translate="no">search</span>
+            )}
             <input
               type="text"
               placeholder={t('sidebar.searchPlaceholder')}

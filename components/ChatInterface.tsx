@@ -19,6 +19,7 @@ interface ChatInterfaceProps {
   onStartLiveSession?: () => void;
   userFirstName: string;
   isKeyboardOpen?: boolean;
+  highlightedMessageId?: string | null;
 }
 
 export const ChatInterface: React.FC<ChatInterfaceProps> = ({
@@ -35,6 +36,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
   onStartLiveSession,
   userFirstName,
   isKeyboardOpen = false,
+  highlightedMessageId = null,
 }) => {
   const showWelcomeScreen = messages.length === 0 && !isLoading && !error && !currentInputState.imageFile;
 
@@ -49,6 +51,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
         onRegenerate={onRegenerate}
         onSwitchAlternative={onSwitchAlternative}
         isKeyboardOpen={isKeyboardOpen}
+        highlightedMessageId={highlightedMessageId}
       />
       <div className={`w-full max-w-6xl mx-auto px-2 ${showWelcomeScreen ? 'h-full flex flex-col justify-end' : ''}`}>
         {showWelcomeScreen && <WelcomeScreen firstName={userFirstName} onSuggestionClick={onSampleQuestion} isKeyboardOpen={isKeyboardOpen} />}

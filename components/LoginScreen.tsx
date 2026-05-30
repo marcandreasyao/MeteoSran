@@ -132,7 +132,7 @@ export const LoginScreen: React.FC = () => {
             <img src="/Meteosran-logo.png" alt="MeteoSran Logo" className="w-10 h-10 object-contain drop-shadow-md" />
           </div>
           <h1 className="text-3xl font-bold text-slate-900 dark:text-white tracking-tight text-glow-none">MeteoSran</h1>
-          <p className="text-slate-500 dark:text-slate-400 mt-2 text-sm font-medium">{t('login.tagline')}</p>
+          <p className="text-slate-500 dark:text-slate-300 mt-2 text-sm font-medium">{t('login.tagline')}</p>
         </div>
 
         {error && (
@@ -198,15 +198,15 @@ export const LoginScreen: React.FC = () => {
           <div className={`grid transition-all duration-500 ease-in-out ${!isLogin ? 'grid-rows-[1fr] opacity-100 mb-4' : 'grid-rows-[0fr] opacity-0 mb-0 pointer-events-none'}`}>
             <div className="overflow-hidden space-y-2 text-xs font-medium">
               <div className="pt-2"></div>
-              <div className={`flex items-center gap-2 transition-colors ${hasMinLength ? 'text-green-500 dark:text-green-400' : 'text-slate-400 dark:text-slate-500'}`}>
+              <div className={`flex items-center gap-2 transition-colors ${hasMinLength ? 'text-green-500 dark:text-green-400' : 'text-slate-400 dark:text-slate-300'}`}>
                 <span className="material-symbols-outlined notranslate text-sm" translate="no">{hasMinLength ? 'check_circle' : 'radio_button_unchecked'}</span>
                 <span>{t('login.minChar')}</span>
               </div>
-              <div className={`flex items-center gap-2 transition-colors ${hasUpperCase ? 'text-green-500 dark:text-green-400' : 'text-slate-400 dark:text-slate-500'}`}>
+              <div className={`flex items-center gap-2 transition-colors ${hasUpperCase ? 'text-green-500 dark:text-green-400' : 'text-slate-400 dark:text-slate-300'}`}>
                 <span className="material-symbols-outlined notranslate text-sm" translate="no">{hasUpperCase ? 'check_circle' : 'radio_button_unchecked'}</span>
                 <span>{t('login.uppercase')}</span>
               </div>
-              <div className={`flex items-center gap-2 transition-colors ${hasSymbol ? 'text-green-500 dark:text-green-400' : 'text-slate-400 dark:text-slate-500'}`}>
+              <div className={`flex items-center gap-2 transition-colors ${hasSymbol ? 'text-green-500 dark:text-green-400' : 'text-slate-400 dark:text-slate-300'}`}>
                 <span className="material-symbols-outlined notranslate text-sm" translate="no">{hasSymbol ? 'check_circle' : 'radio_button_unchecked'}</span>
                 <span>{t('login.specialChar')}</span>
               </div>
@@ -225,7 +225,7 @@ export const LoginScreen: React.FC = () => {
 
         <div className="mt-6 flex items-center justify-center space-x-4">
           <div className="h-px bg-slate-200 dark:bg-slate-700 flex-1"></div>
-          <span className="text-slate-400 dark:text-slate-500 text-xs font-semibold uppercase tracking-wider">{t('login.or')}</span>
+          <span className="text-slate-400 dark:text-slate-300 text-xs font-semibold uppercase tracking-wider">{t('login.or')}</span>
           <div className="h-px bg-slate-200 dark:bg-slate-700 flex-1"></div>
         </div>
 
@@ -257,7 +257,7 @@ export const LoginScreen: React.FC = () => {
           </button>
         </div>
 
-        <p className="mt-8 text-center text-slate-500 dark:text-slate-400 text-sm font-medium">
+        <p className="mt-8 text-center text-slate-500 dark:text-slate-300 text-sm font-medium">
           {isLogin ? t('login.noAccount') : t('login.hasAccount')}
           <button
             onClick={() => setIsLogin(!isLogin)}
@@ -269,8 +269,12 @@ export const LoginScreen: React.FC = () => {
       </div>
 
       {/* Footer link */}
-      <div className="absolute bottom-6 text-slate-400 dark:text-slate-500 text-xs font-semibold">
-        Secured by Firebase Auth.
+      <div className="absolute bottom-6 text-slate-400 dark:text-slate-300 text-xs font-semibold flex items-center gap-2">
+        <span>Secured by Firebase Auth.</span>
+        <span>•</span>
+        <a href="/privacy" className="hover:underline hover:text-sky-500 transition-colors">Privacy Policy</a>
+        <span>•</span>
+        <a href="/terms" className="hover:underline hover:text-sky-500 transition-colors">Terms of Service</a>
       </div>
     </div>
   );

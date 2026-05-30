@@ -52,6 +52,38 @@ export const fetchChatSessions = async (userId: string): Promise<ChatSession[]> 
   }
 };
 
+export interface SearchResultSession extends ChatSession {
+  matchingMessages?: {
+    id: string;
+    text: string;
+    role: string;
+    timestamp: Date;
+  }[];
+}
+
+export const searchChatSessions = async (userId: string, query: string): Promise<SearchResultSession[]> => {
+  if (!userId || !query.trim()) return [];
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/chats/${userId}/search?q=${encodeURIComponent(query)}`);
+    if (!response.ok) throw new Error("Failed to search chat sessions");
+    
+    const sessions = await response.json();
+    return sessions.map((session: any) => ({
+      ...session,
+      createdAt: new Date(session.createdAt),
+      updatedAt: new Date(session.updatedAt),
+      matchingMessages: session.messages ? session.messages.map((m: any) => ({
+        ...m,
+        timestamp: new Date(m.timestamp)
+      })) : []
+    }));
+  } catch (error) {
+    console.error("Error searching chat sessions:", error);
+    return [];
+  }
+};
+
 export const updateChatMemorySummary = async (userId: string, chatId: string, summary: string) => {
   try {
     const response = await fetch(`${API_BASE_URL}/chats/${chatId}`, {

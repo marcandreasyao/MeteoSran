@@ -214,7 +214,8 @@ export const sendMessageToAI = async (
   userName: string | null = null,
   memorySummary: string | null = null,
   latitude: number | null = null,
-  longitude: number | null = null
+  longitude: number | null = null,
+  userId: string | null = null
 ): Promise<Message> => {
   console.log("[MeteoSran] Building advanced prompt and sending via proxy...");
 
@@ -343,6 +344,7 @@ ${memorySummary}
         contents,
         mode,
         userName,
+        userId,
         systemInstruction: SYSTEM_INSTRUCTION
       }),
     });

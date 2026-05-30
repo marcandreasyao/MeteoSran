@@ -38,4 +38,11 @@ model Message {
 
   @@index([chatSessionId])
   @@index([timestamp])
+  @@index([text])
+}
+
+model UserGlobalMemory {
+  userId    String   @id // Firebase UID
+  memory    Json     // Store preferences, sensitivities, locations, routines, etc.
+  updatedAt DateTime @updatedAt
 }
