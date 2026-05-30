@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Message, MessageRole } from '../types';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -94,12 +94,133 @@ const CodeBlock: React.FC<{ language: string; children: React.ReactNode }> = ({ 
   );
 };
 
+const stripMarkdown = (text: string): string => {
+  return text
+    // Remove code blocks
+    .replace(/```[\s\S]*?```/g, '')
+    // Remove inline code
+    .replace(/`([^`]+)`/g, '$1')
+    // Remove images
+    .replace(/!\[([^\]]*)\]\([^\)]+\)/g, '$1')
+    // Remove links, keeping only text
+    .replace(/\[([^\]]+)\]\([^\)]+\)/g, '$1')
+    // Remove bold/italic markdown characters
+    .replace(/[*_#~>]/g, '')
+    // Replace multiple spaces/newlines with a single space
+    .replace(/\s+/g, ' ')
+    .trim();
+};
+
 export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, onRegenerate, onSwitchAlternative, isHighlighted = false }) => {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [copied, setCopied] = useState(false);
   const isUser = message.role === MessageRole.USER;
   const isSystem = message.role === MessageRole.SYSTEM;
   const [isTyping, setIsTyping] = useState(false);
+
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [isLoadingAudio, setIsLoadingAudio] = useState(false);
+  const globalAudioRef = useRef<HTMLAudioElement | null>(null);
+
+  const handleTogglePlayAudio = async () => {
+    alert(t('header.tts.comingSoon'));
+    return;
+    
+    /* Temporarily disabled - Coming Soon
+    if (isPlaying) {
+      if (globalAudioRef.current) {
+        globalAudioRef.current.pause();
+      }
+      setIsPlaying(false);
+      return;
+    }
+
+    if ((window as any).MeteoSranActiveAudio) {
+      (window as any).MeteoSranActiveAudio.pause();
+      if ((window as any).MeteoSranActiveAudioStopCallback) {
+        (window as any).MeteoSranActiveAudioStopCallback();
+      }
+    }
+
+    setIsLoadingAudio(true);
+
+    try {
+      const cleanText = stripMarkdown(message.text);
+
+      const storedVoice = localStorage.getItem('MeteoSranTtsVoice');
+      const voiceName = storedVoice || (language === 'fr' ? 'Leda' : 'Callirrhoe');
+      const targetLanguageCode = voiceName === 'Leda' ? 'fr-FR' : 'en-US';
+
+      const response = await fetch('/api/tts', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          text: cleanText,
+          languageCode: targetLanguageCode,
+          voiceName: voiceName
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to synthesize speech');
+      }
+
+      const data = await response.json();
+      if (!data.audioContent) {
+        throw new Error('No audio content received');
+      }
+
+      const audioUrl = `data:audio/mp3;base64,${data.audioContent}`;
+      const audio = new Audio(audioUrl);
+      globalAudioRef.current = audio;
+      
+      (window as any).MeteoSranActiveAudio = audio;
+      (window as any).MeteoSranActiveAudioStopCallback = () => {
+        setIsPlaying(false);
+        globalAudioRef.current = null;
+      };
+
+      audio.onended = () => {
+        setIsPlaying(false);
+        globalAudioRef.current = null;
+        (window as any).MeteoSranActiveAudio = null;
+        (window as any).MeteoSranActiveAudioStopCallback = null;
+      };
+
+      audio.onerror = (e) => {
+        console.error("Audio playback error:", e);
+        setIsPlaying(false);
+        globalAudioRef.current = null;
+        (window as any).MeteoSranActiveAudio = null;
+        (window as any).MeteoSranActiveAudioStopCallback = null;
+      };
+
+      await audio.play();
+      setIsPlaying(false); // keep false for now
+    } catch (error) {
+      console.error("Error playing audio:", error);
+      setIsPlaying(false);
+      (window as any).MeteoSranActiveAudio = null;
+      (window as any).MeteoSranActiveAudioStopCallback = null;
+    } finally {
+      setIsLoadingAudio(false);
+    }
+    */
+  };
+
+  useEffect(() => {
+    return () => {
+      if (isPlaying && globalAudioRef.current) {
+        globalAudioRef.current.pause();
+        if ((window as any).MeteoSranActiveAudio === globalAudioRef.current) {
+          (window as any).MeteoSranActiveAudio = null;
+          (window as any).MeteoSranActiveAudioStopCallback = null;
+        }
+      }
+    };
+  }, [isPlaying]);
 
   const hasImage = message.image && message.image.data && message.image.mimeType;
   const timeString = new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -263,6 +384,45 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, onRegener
           
           {/* ACTION BUTTONS — Premium glassmorphic row */}
           <div className="flex items-center gap-1.5 mt-3 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-all duration-300 ease-out">
+
+            {/* ── Listen (TTS) Button ── */}
+            <div className="relative tooltip-container">
+              <div className="premium-tooltip">{isPlaying ? t('common.stop') : t('common.listen')}</div>
+              <button
+                onClick={handleTogglePlayAudio}
+                disabled={isLoadingAudio}
+                className={`inline-flex items-center gap-[5px] px-2.5 py-[5px] rounded-full border backdrop-blur-md shadow-sm text-[11.5px] font-medium tracking-wide cursor-pointer transition-all duration-200 hover:scale-[1.04] active:scale-[0.95] whitespace-nowrap min-h-0 min-w-0
+                  ${isPlaying
+                    ? 'bg-rose-500/10 border-rose-500/35 text-rose-600 dark:text-rose-400 shadow-[0_0_12px_rgba(244,63,94,0.18),0_2px_8px_rgba(244,63,94,0.1)]'
+                    : 'bg-white/55 dark:bg-slate-800/65 border-slate-400/20 dark:border-slate-500/20 text-slate-500 dark:text-slate-400 hover:bg-sky-500/10 hover:text-sky-500 hover:border-sky-500/30 hover:shadow-[0_0_12px_rgba(14,165,233,0.18),0_2px_8px_rgba(14,165,233,0.1)]'
+                  }`}
+              >
+                {isLoadingAudio ? (
+                  <>
+                    <svg className="animate-spin w-[13px] h-[13px] text-sky-500" style={{flexShrink:0}} fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span>{t('common.loading')}</span>
+                  </>
+                ) : isPlaying ? (
+                  <>
+                    <svg style={{width:'13px',height:'13px',flexShrink:0}} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M9 10h6v4H9z" />
+                    </svg>
+                    <span>{t('common.stop')}</span>
+                  </>
+                ) : (
+                  <>
+                    <svg style={{width:'13px',height:'13px',flexShrink:0}} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+                    </svg>
+                    <span>{t('common.listen')}</span>
+                  </>
+                )}
+              </button>
+            </div>
 
             {/* ── Copy Button ── */}
             <div className="relative tooltip-container">

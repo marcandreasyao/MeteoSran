@@ -1242,6 +1242,75 @@ app.get('/api/messages/:chatId', async (req, res) => {
     }
 });
 
+// Google Cloud Text-to-Speech API proxy endpoint using Gemini-TTS models
+app.post('/api/tts', async (req, res) => {
+    try {
+        const { text, languageCode, voiceName } = req.body;
+        if (!text) {
+            return res.status(400).json({ error: "Missing text parameter" });
+        }
+
+        // Use the primary GEMINI_API_KEY from environment variables
+        const apiKey = process.env.GEMINI_API_KEY || (typeof GEMINI_KEYS !== 'undefined' && GEMINI_KEYS.length > 0 ? GEMINI_KEYS[0] : null);
+        if (!apiKey) {
+            return res.status(500).json({ error: "Server API Key is not configured." });
+        }
+
+        const lang = languageCode || 'fr-FR';
+
+        // Select speaker based on language code and options.
+        // We use Leda (Female) for French, and Callirrhoe (Female) for English.
+        let name = voiceName;
+        if (!name) {
+            if (lang.toLowerCase().startsWith('fr')) {
+                name = 'Leda';
+            } else {
+                name = 'Callirrhoe';
+            }
+        }
+
+        const googleTtsUrl = `https://texttospeech.googleapis.com/v1/text:synthesize?key=${apiKey}`;
+
+        const payload = {
+            input: {
+                text: text
+            },
+            voice: {
+                languageCode: lang,
+                name: name,
+                model_name: "gemini-2.5-flash-tts"
+            },
+            audioConfig: {
+                audioEncoding: "MP3"
+            }
+        };
+
+        const response = await fetch(googleTtsUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(payload)
+        });
+
+        if (!response.ok) {
+            const errBody = await response.text();
+            console.error(`Google Cloud TTS call failed with code ${response.status}:`, errBody);
+            return res.status(response.status).json({ error: "Text-to-Speech API call failed", details: errBody });
+        }
+
+        const resData = await response.json();
+        if (!resData.audioContent) {
+            return res.status(500).json({ error: "Invalid response from Google Text-to-Speech engine" });
+        }
+
+        res.json({ audioContent: resData.audioContent });
+    } catch (err) {
+        console.error("Error in /api/tts endpoint:", err);
+        res.status(500).json({ error: "Internal server error during speech synthesis" });
+    }
+});
+
 // Serve static files from the React app
 app.use(express.static(path.join(__dirname, '../dist')));
 

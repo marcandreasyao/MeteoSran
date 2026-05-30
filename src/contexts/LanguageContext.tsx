@@ -19,6 +19,8 @@ export const translations = {
       copy: "Copy",
       copied: "Copied",
       share: "Share",
+      listen: "Listen",
+      stop: "Stop",
     },
     login: {
       tagline: "Next-Level Climate Intelligence",
@@ -113,6 +115,17 @@ export const translations = {
         summary: "Daily Summary",
         alerts: "Severe Alerts",
         warnings: "Rain Warnings"
+      },
+      tts: {
+        title: "Speech Reader & Natural Voices",
+        desc: "Configure natural voices or write text to read out loud.",
+        voiceLabel: "Voice Selection",
+        placeholder: "Type something for MeteoSran to read...",
+        play: "Play Voice",
+        stop: "Stop Voice",
+        voiceEn: "Ivorian Natural Voice (Yao)",
+        voiceFr: "Ivorian Natural Voice (Aya)",
+        comingSoon: "Natural speech synthesis is coming soon to MeteoSran!",
       },
       modes: {
         default: {
@@ -318,6 +331,8 @@ export const translations = {
       copy: "Copier",
       copied: "Copié",
       share: "Partager",
+      listen: "Écouter",
+      stop: "Arrêter",
     },
     login: {
       tagline: "Météo-Intelligence Avancée de Nouvelle Génération",
@@ -412,6 +427,17 @@ export const translations = {
         summary: "Résumé quotidien",
         alerts: "Alertes critiques",
         warnings: "Alertes pluie"
+      },
+      tts: {
+        title: "Lecteur Vocal & Voix Naturelles",
+        desc: "Configure les voix naturelles ou saisis un texte à lire à haute voix.",
+        voiceLabel: "Choix de la voix",
+        placeholder: "Tape quelque chose pour que MeteoSran le lise...",
+        play: "Lire la voix",
+        stop: "Arrêter",
+        voiceEn: "Voix naturelle ivoirienne (Yao)",
+        voiceFr: "Voix naturelle ivoirienne (Aya)",
+        comingSoon: "La synthèse vocale naturelle sera bientôt disponible sur MeteoSran !",
       },
       modes: {
         default: {

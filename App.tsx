@@ -1039,6 +1039,7 @@ const App: React.FC = () => {
             locationMode={locationMode}
             setLocationMode={setLocationMode}
             onManualLocationRequested={handleManualLocation}
+            userFirstName={user?.displayName ? user.displayName.split(' ')[0] : ''}
           />
         </Suspense>
       )}
