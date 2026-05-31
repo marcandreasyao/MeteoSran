@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://meteosran.onrender.com/sitemap.xml
+Sitemap: https://meteosran.com/sitemap.xml
