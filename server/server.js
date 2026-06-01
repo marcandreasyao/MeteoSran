@@ -68,6 +68,58 @@ if (GEMINI_KEYS.length === 0) {
     console.log(`[MeteoSran Server] Loaded ${GEMINI_KEYS.length} Gemini API keys for rotation.`);
 }
 
+// Stateful key tracking for round-robin rotation and cooldowns
+const geminiKeysState = GEMINI_KEYS.map(key => ({
+    key,
+    cooldownUntil: 0
+}));
+
+let currentKeyIndex = 0;
+
+/**
+ * Returns the next available Gemini API key that is not in cooldown.
+ * If all keys are in cooldown, falls back to the key closest to recovery.
+ */
+const getNextAvailableKey = () => {
+    const now = Date.now();
+    const totalKeys = geminiKeysState.length;
+    if (totalKeys === 0) return null;
+
+    // Search starting from currentKeyIndex
+    for (let i = 0; i < totalKeys; i++) {
+        const index = (currentKeyIndex + i) % totalKeys;
+        const keyState = geminiKeysState[index];
+        if (keyState.cooldownUntil <= now) {
+            // Advance round-robin index for next lookup
+            currentKeyIndex = (index + 1) % totalKeys;
+            return { key: keyState.key, index };
+        }
+    }
+
+    // Fallback: If all keys are in cooldown, pick the one with the shortest remaining cooldown
+    let bestIndex = 0;
+    let minCooldown = Infinity;
+    for (let i = 0; i < totalKeys; i++) {
+        if (geminiKeysState[i].cooldownUntil < minCooldown) {
+            minCooldown = geminiKeysState[i].cooldownUntil;
+            bestIndex = i;
+        }
+    }
+    currentKeyIndex = (bestIndex + 1) % totalKeys;
+    return { key: geminiKeysState[bestIndex].key, index: bestIndex };
+};
+
+/**
+ * Puts a key on a 60-second cooldown due to rate-limits (429) or quota restrictions (403).
+ */
+const markKeyRateLimited = (index) => {
+    if (index >= 0 && index < geminiKeysState.length) {
+        // Cooldown for 60 seconds
+        geminiKeysState[index].cooldownUntil = Date.now() + 60000;
+        console.warn(`[MeteoSran Server] Gemini Key ${index + 1} hit rate limit. Cool-down for 60 seconds (until ${new Date(geminiKeysState[index].cooldownUntil).toLocaleTimeString()}).`);
+    }
+};
+
 // ==========================================
 // 1. ACCUWEATHER PROXY (Unchanged)
 // ==========================================
@@ -773,14 +825,21 @@ app.post('/api/ai/chat', async (req, res) => {
             ]
         }];
 
-        // Internal loop for model fallback and key rotation
+        // Internal loop for model fallback and stateful key rotation
         for (const modelName of SUPPORTED_MODELS) {
-            for (let k = 0; k < GEMINI_KEYS.length; k++) {
-                const currentKey = GEMINI_KEYS[k];
+            const maxKeyAttempts = geminiKeysState.length;
+            let keyAttempts = 0;
+
+            while (keyAttempts < maxKeyAttempts) {
+                const keyInfo = getNextAvailableKey();
+                if (!keyInfo) break;
+
+                const { key: currentKey, index: keyIdx } = keyInfo;
+                keyAttempts++;
                 const genAIInstance = new GoogleGenAI({ apiKey: currentKey, vertexai: false });
 
                 try {
-                    console.log(`[MeteoSran Server] Attempting generation with model: ${modelName} (Key ${k + 1}/${GEMINI_KEYS.length})`);
+                    console.log(`[MeteoSran Server] Attempting generation with model: ${modelName} (Key ${keyIdx + 1}/${geminiKeysState.length})`);
 
                     let loopCount = 0;
                     const MAX_LOOPS = 3;
@@ -823,11 +882,11 @@ app.post('/api/ai/chat', async (req, res) => {
                         const responseParts = [];
                         for (const fc of functionCalls) {
                             if (fc.name === 'update_user_memory') {
-                                const success = await executeUpdateUserMemory(userId, fc.args);
+                                const successUpdate = await executeUpdateUserMemory(userId, fc.args);
                                 responseParts.push({
                                     functionResponse: {
                                         name: fc.name,
-                                        response: { status: success ? "success" : "failed" }
+                                        response: { status: successUpdate ? "success" : "failed" }
                                     }
                                 });
                             } else {
@@ -854,11 +913,11 @@ app.post('/api/ai/chat', async (req, res) => {
                     return res.json({ text: responseText });
 
                 } catch (err) {
-                    console.warn(`[MeteoSran Server] Model ${modelName} with Key ${k + 1} failed: ${err.message}`);
+                    console.warn(`[MeteoSran Server] Model ${modelName} with Key ${keyIdx + 1} failed: ${err.message}`);
                     lastError = err;
 
-                    if (err.status === 429 || err.status === 403) {
-                        console.log(`[MeteoSran Server] Key ${k + 1} hit a limit/auth. Rotating...`);
+                    if (err.status === 429 || err.status === 403 || err.message?.includes("429") || err.message?.includes("quota")) {
+                        markKeyRateLimited(keyIdx);
                         continue;
                     }
                     break;
@@ -902,12 +961,19 @@ User message: "${text}"`;
         let lastError = null;
 
         for (const modelName of SUPPORTED_MODELS) {
-            for (let k = 0; k < GEMINI_KEYS.length; k++) {
-                const currentKey = GEMINI_KEYS[k];
+            const maxKeyAttempts = geminiKeysState.length;
+            let keyAttempts = 0;
+
+            while (keyAttempts < maxKeyAttempts) {
+                const keyInfo = getNextAvailableKey();
+                if (!keyInfo) break;
+
+                const { key: currentKey, index: keyIdx } = keyInfo;
+                keyAttempts++;
                 const genAIInstance = new GoogleGenAI({ apiKey: currentKey, vertexai: false });
 
                 try {
-                    console.log(`[MeteoSran Server] Smart Title: Attempting with model: ${modelName} (Key ${k + 1}/${GEMINI_KEYS.length})`);
+                    console.log(`[MeteoSran Server] Smart Title: Attempting with model: ${modelName} (Key ${keyIdx + 1}/${geminiKeysState.length})`);
 
                     const response = await genAIInstance.models.generateContent({
                         model: modelName,
@@ -925,10 +991,11 @@ User message: "${text}"`;
                         return res.json({ title });
                     }
                 } catch (err) {
-                    console.warn(`[MeteoSran Server] Smart Title: Model ${modelName} with Key ${k + 1} failed: ${err.message}`);
+                    console.warn(`[MeteoSran Server] Smart Title: Model ${modelName} with Key ${keyIdx + 1} failed: ${err.message}`);
                     lastError = err;
 
-                    if (err.status === 429 || err.status === 403) {
+                    if (err.status === 429 || err.status === 403 || err.message?.includes("429") || err.message?.includes("quota")) {
+                        markKeyRateLimited(keyIdx);
                         continue;
                     }
                     break;
@@ -983,9 +1050,18 @@ Rules:
         const userContent = `CONVERSATION TRANSCRIPT:\n${transcript}${existingBlock}\n\nProduce the updated memory summary now:`;
 
         for (const modelName of memoryModels) {
-            for (let k = 0; k < GEMINI_KEYS.length; k++) {
+            const maxKeyAttempts = geminiKeysState.length;
+            let keyAttempts = 0;
+
+            while (keyAttempts < maxKeyAttempts) {
+                const keyInfo = getNextAvailableKey();
+                if (!keyInfo) break;
+
+                const { key: currentKey, index: keyIdx } = keyInfo;
+                keyAttempts++;
+                const genAIInstance = new GoogleGenAI({ apiKey: currentKey, vertexai: false });
+
                 try {
-                    const genAIInstance = new GoogleGenAI({ apiKey: GEMINI_KEYS[k] });
                     const response = await genAIInstance.models.generateContent({
                         model: modelName,
                         contents: [{ role: 'user', parts: [{ text: userContent }] }],
@@ -997,12 +1073,17 @@ Rules:
                     });
                     const summary = response.text?.trim();
                     if (summary) {
-                        console.log(`[MeteoSran Server] Memory summarized via ${modelName}`);
+                        console.log(`[MeteoSran Server] Memory summarized via ${modelName} (Key ${keyIdx + 1})`);
                         return res.json({ summary });
                     }
                 } catch (err) {
                     lastError = err;
-                    if (err.status === 429 || err.status === 403) continue;
+                    console.warn(`[MeteoSran Server] Memory Summarize: Model ${modelName} with Key ${keyIdx + 1} failed: ${err.message}`);
+
+                    if (err.status === 429 || err.status === 403 || err.message?.includes("429") || err.message?.includes("quota")) {
+                        markKeyRateLimited(keyIdx);
+                        continue;
+                    }
                     break;
                 }
             }
