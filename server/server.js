@@ -1589,12 +1589,46 @@ const startServer = (port) => {
     const server = app.listen(port, () => {
         console.log(`[MeteoSran Server] Weather proxy server running on port ${port}`);
 
-        // Warm up the Neon database connection on startup so it's awake
-        // before the first user request comes in.
-        console.log('[MeteoSran Server] Warming up Neon database connection...');
-        withRetry(() => prisma.$queryRaw`SELECT 1`)
-            .then(() => console.log('[MeteoSran Server] ✅ Neon database is awake and ready.'))
-            .catch(err => console.warn('[MeteoSran Server] ⚠️ Database warm-up failed (will retry on first request):', err.message));
+        // ─────────────────────────────────────────────────────────────
+        // NEON KEEP-ALIVE: Ping every 4 minutes to prevent cold-starts.
+        // Neon suspends after ~5 min of inactivity — this keeps it warm.
+        // ─────────────────────────────────────────────────────────────
+        const NEON_PING_INTERVAL_MS = 4 * 60 * 1000; // 4 minutes
+
+        const pingNeon = async () => {
+            try {
+                await prisma.$queryRaw`SELECT 1`;
+                // Silent success — no console spam
+            } catch (err) {
+                console.warn('[MeteoSran Server] ⚠️ Neon keep-alive ping failed:', err.message);
+            }
+        };
+
+        // Initial warm-up on startup
+        console.log('[MeteoSran Server] 🔌 Warming up Neon database connection...');
+        pingNeon().then(() => {
+            console.log('[MeteoSran Server] ✅ Neon database is awake and ready.');
+        });
+
+        // Recurring ping to keep it alive
+        const neonKeepAlive = setInterval(pingNeon, NEON_PING_INTERVAL_MS);
+        console.log(`[MeteoSran Server] 💓 Neon keep-alive scheduled every ${NEON_PING_INTERVAL_MS / 60000} minutes.`);
+
+        // ─────────────────────────────────────────────────────────────
+        // GRACEFUL SHUTDOWN: Clean up on process termination
+        // ─────────────────────────────────────────────────────────────
+        const shutdown = async (signal) => {
+            console.log(`\n[MeteoSran Server] ${signal} received — shutting down gracefully...`);
+            clearInterval(neonKeepAlive);
+            server.close(async () => {
+                await prisma.$disconnect();
+                console.log('[MeteoSran Server] 🔌 Neon disconnected. Goodbye!');
+                process.exit(0);
+            });
+        };
+
+        process.on('SIGTERM', () => shutdown('SIGTERM'));
+        process.on('SIGINT',  () => shutdown('SIGINT'));
 
     }).on('error', (err) => {
         if (err.code === 'EADDRINUSE') {
