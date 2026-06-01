@@ -249,19 +249,20 @@ export const sendMessageToAI = async (
   console.log("[MeteoSran] Building advanced prompt and sending via proxy...");
 
   try {
-    const modeInstructions = {
-      [ResponseMode.DEFAULT]: "Use the core MeteoSran style with enhanced human-like personality, enthusiasm, and warm conversational tone.",
-      [ResponseMode.CONCISE]: "Keep your response brief and to the point, focusing on essential information while maintaining a warm, friendly personality.",
-      [ResponseMode.SHORT]: "Give a very brief response with only the most essential information, but keep it personal and engaging.",
-      [ResponseMode.STRAIGHT]: "Provide a direct, no-nonsense answer while maintaining approachability and human warmth.",
-      [ResponseMode.FUNNY]: "Include weather-related jokes and humor while still being informative and maintaining your enthusiastic personality.",
-      [ResponseMode.EINSTEIN]: "Complex, detailed scientific explanations with enthusiastic teaching style, always use the latest scientific research and data to explain the weather phenomena, or inventive explanations that spark curiosity, blending scientific rigor with visionary insights and electrifying analogies—always encouraging discovery and awe for the wonders of weather and nature."
-    };
+    const modeInstructions = new Map<ResponseMode, string>([
+      [ResponseMode.DEFAULT, "Use the core MeteoSran style with enhanced human-like personality, enthusiasm, and warm conversational tone."],
+      [ResponseMode.CONCISE, "Keep your response brief and to the point, focusing on essential information while maintaining a warm, friendly personality."],
+      [ResponseMode.SHORT, "Give a very brief response with only the most essential information, but keep it personal and engaging."],
+      [ResponseMode.STRAIGHT, "Provide a direct, no-nonsense answer while maintaining approachability and human warmth."],
+      [ResponseMode.FUNNY, "Include weather-related jokes and humor while still being informative and maintaining your enthusiastic personality."],
+      [ResponseMode.EINSTEIN, "Complex, detailed scientific explanations with enthusiastic teaching style, always use the latest scientific research and data to explain the weather phenomena, or inventive explanations that spark curiosity, blending scientific rigor with visionary insights and electrifying analogies—always encouraging discovery and awe for the wonders of weather and nature."]
+    ]);
 
-    const lastMessage = messages[messages.length - 1];
+    const lastMessage = messages.slice(-1)[0];
 
     // 1. Build invisible context for the current turn
-    let invisibleContext = `[SYSTEM NOTE: Current response mode is ${mode}. ${modeInstructions[mode]}]\n`;
+    const modeInstructionText = modeInstructions.get(mode) || modeInstructions.get(ResponseMode.DEFAULT) || "";
+    let invisibleContext = `[SYSTEM NOTE: Current response mode is ${mode}. ${modeInstructionText}]\n`;
 
     // Time & Seasonal context is always provided to keep the model anchored in time
     invisibleContext += `\n${getCurrentTimeContext()}\n${getSeasonalContext()}`;
@@ -354,14 +355,16 @@ ${memorySummary}
     });
 
     // 3. Append the invisible context block ONLY to the last message part
-    const finalUserMessageIndex = contents.length - 1;
+    const lastContent = contents.slice(-1)[0];
 
     // Provide a default MeteoSran-specific prompt if the user only sends an image
     const userQueryText = lastMessage.text && lastMessage.text.trim() !== ""
       ? lastMessage.text
       : "Could you analyze this image and explain the weather conditions or phenomena visible in it?";
 
-    contents[finalUserMessageIndex].parts[0].text = `${invisibleContext}\n\n[USER QUERY]:\n${userQueryText}`;
+    if (lastContent && lastContent.parts && lastContent.parts[0]) {
+      lastContent.parts[0].text = `${invisibleContext}\n\n[USER QUERY]:\n${userQueryText}`;
+    }
 
     // 4. Send to backend proxy, passing the payload AND system instruction
     const response = await fetch('/api/ai/chat', {

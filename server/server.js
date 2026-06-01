@@ -51,12 +51,23 @@ app.get('/ping', (req, res) => {
     res.status(200).send('pong');
 });
 
-// Load multiple Gemini API keys for rotation
+// Load multiple Gemini API keys for rotation safely without dynamic property access
 const GEMINI_KEYS = [];
-for (let i = 1; i <= 10; i++) {
-    const key = process.env[`GEMINI_API_KEY_${i}`];
+const geminiKeysList = [
+    process.env.GEMINI_API_KEY_1,
+    process.env.GEMINI_API_KEY_2,
+    process.env.GEMINI_API_KEY_3,
+    process.env.GEMINI_API_KEY_4,
+    process.env.GEMINI_API_KEY_5,
+    process.env.GEMINI_API_KEY_6,
+    process.env.GEMINI_API_KEY_7,
+    process.env.GEMINI_API_KEY_8,
+    process.env.GEMINI_API_KEY_9,
+    process.env.GEMINI_API_KEY_10
+];
+geminiKeysList.forEach(key => {
     if (key) GEMINI_KEYS.push(key);
-}
+});
 // Fallback to original key if no numbered keys are found
 if (GEMINI_KEYS.length === 0 && process.env.GEMINI_API_KEY) {
     GEMINI_KEYS.push(process.env.GEMINI_API_KEY);
@@ -88,8 +99,8 @@ const getNextAvailableKey = () => {
     // Search starting from currentKeyIndex
     for (let i = 0; i < totalKeys; i++) {
         const index = (currentKeyIndex + i) % totalKeys;
-        const keyState = geminiKeysState[index];
-        if (keyState.cooldownUntil <= now) {
+        const keyState = geminiKeysState.at(index);
+        if (keyState && keyState.cooldownUntil <= now) {
             // Advance round-robin index for next lookup
             currentKeyIndex = (index + 1) % totalKeys;
             return { key: keyState.key, index };
@@ -100,13 +111,15 @@ const getNextAvailableKey = () => {
     let bestIndex = 0;
     let minCooldown = Infinity;
     for (let i = 0; i < totalKeys; i++) {
-        if (geminiKeysState[i].cooldownUntil < minCooldown) {
-            minCooldown = geminiKeysState[i].cooldownUntil;
+        const keyState = geminiKeysState.at(i);
+        if (keyState && keyState.cooldownUntil < minCooldown) {
+            minCooldown = keyState.cooldownUntil;
             bestIndex = i;
         }
     }
     currentKeyIndex = (bestIndex + 1) % totalKeys;
-    return { key: geminiKeysState[bestIndex].key, index: bestIndex };
+    const bestKeyState = geminiKeysState.at(bestIndex);
+    return { key: bestKeyState ? bestKeyState.key : null, index: bestIndex };
 };
 
 /**
@@ -114,9 +127,12 @@ const getNextAvailableKey = () => {
  */
 const markKeyRateLimited = (index) => {
     if (index >= 0 && index < geminiKeysState.length) {
-        // Cooldown for 60 seconds
-        geminiKeysState[index].cooldownUntil = Date.now() + 60000;
-        console.warn(`[MeteoSran Server] Gemini Key ${index + 1} hit rate limit. Cool-down for 60 seconds (until ${new Date(geminiKeysState[index].cooldownUntil).toLocaleTimeString()}).`);
+        const keyState = geminiKeysState.at(index);
+        if (keyState) {
+            // Cooldown for 60 seconds
+            keyState.cooldownUntil = Date.now() + 60000;
+            console.warn(`[MeteoSran Server] Gemini Key ${index + 1} hit rate limit. Cool-down for 60 seconds (until ${new Date(keyState.cooldownUntil).toLocaleTimeString()}).`);
+        }
     }
 };
 
@@ -164,20 +180,20 @@ const mapOpenWeather25ToSchema = (currentData, forecastData, locationLabel) => {
     const isDayTime = currentData.dt >= currentData.sys.sunrise && currentData.dt <= currentData.sys.sunset;
 
     // Group 3-hourly forecast by day
-    const dayGroups = {};
+    const dayGroups = new Map();
     forecastData.list.forEach(item => {
         const dateObj = new Date(item.dt * 1000);
         const dateStr = dateObj.toISOString().split('T')[0];
         
-        if (!dayGroups[dateStr]) {
-            dayGroups[dateStr] = [];
+        if (!dayGroups.has(dateStr)) {
+            dayGroups.set(dateStr, []);
         }
-        dayGroups[dateStr].push(item);
+        dayGroups.get(dateStr).push(item);
     });
 
     const daysFr = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'];
-    const forecast = Object.keys(dayGroups).slice(0, 6).map(dateStr => {
-        const items = dayGroups[dateStr];
+    const forecast = Array.from(dayGroups.keys()).slice(0, 6).map(dateStr => {
+        const items = dayGroups.get(dateStr);
         const dateObj = new Date(dateStr);
         const dayOfWeek = daysFr[dateObj.getDay()];
 
@@ -229,7 +245,7 @@ const mapOpenWeather25ToSchema = (currentData, forecastData, locationLabel) => {
     const degToCompass = (num) => {
         const val = Math.floor((num / 22.5) + 0.5);
         const arr = ["N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE", "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW"];
-        return arr[(val % 16)];
+        return arr.at(val % 16);
     };
 
     return {
@@ -281,7 +297,7 @@ app.get('/api/weather/current', async (req, res) => {
                 lon = parseFloat(req.query.lon);
                 locationLabel = `Coordinates: ${lat.toFixed(4)}, ${lon.toFixed(4)}`;
             } else {
-                const ip = req.headers['x-forwarded-for']?.split(',')[0] || req.connection.remoteAddress;
+                const ip = req.get('x-forwarded-for')?.split(',')[0] || req.connection.remoteAddress;
                 if (ip && !isLocalIp(ip)) {
                     try {
                         const ipGeoResp = await fetch(`http://ip-api.com/json/${ip}`);
@@ -353,7 +369,7 @@ app.get('/api/weather/current', async (req, res) => {
     } else if (req.query.lat && req.query.lon) {
         query = `${req.query.lat},${req.query.lon}`;
     } else {
-        const ip = req.headers['x-forwarded-for']?.split(',')[0] || req.connection.remoteAddress;
+        const ip = req.get('x-forwarded-for')?.split(',')[0] || req.connection.remoteAddress;
         if (ip && !isLocalIp(ip)) {
             query = ip;
         } else {
@@ -472,7 +488,7 @@ app.get('/api/weather/current', async (req, res) => {
 
             if (!locationKey) {
                 try {
-                    const ip = req.headers['x-forwarded-for']?.split(',')[0] || req.connection.remoteAddress;
+                    const ip = req.get('x-forwarded-for')?.split(',')[0] || req.connection.remoteAddress;
                     const ipGeoResp = await fetch(`http://ip-api.com/json/${ip}`);
                     if (ipGeoResp.ok) {
                         const ipGeoData = await ipGeoResp.json();
@@ -772,12 +788,11 @@ app.post('/api/ai/chat', async (req, res) => {
         });
 
         const SUPPORTED_MODELS = [
-            'gemini-flash-latest',       
-            'gemini-3.1-flash',          
-            'gemini-3.1-flash-lite',     
-            'gemini-3.0-flash',          
-            'gemini-2.5-flash',          
-            'gemini-2.0-flash'           
+            'gemini-2.5-flash',
+            'gemini-2.0-flash',
+            'gemini-1.5-flash',
+            'gemini-2.5-pro',
+            'gemini-1.5-pro'
         ];
 
         let lastError = null;
@@ -792,7 +807,7 @@ app.post('/api/ai/chat', async (req, res) => {
                     where: { userId }
                 }));
                 if (userMemory && userMemory.memory) {
-                    const lastUserMessage = contents[contents.length - 1];
+                    const lastUserMessage = contents.slice(-1)[0];
                     const lastUserText = lastUserMessage?.parts?.[0]?.text || '';
                     const parsedMemory = typeof userMemory.memory === 'string'
                         ? JSON.parse(userMemory.memory)
@@ -855,7 +870,13 @@ app.post('/api/ai/chat', async (req, res) => {
                                 temperature: generationTemperature,
                                 topP: 0.95,
                                 topK: 40,
-                                tools: memoryTools
+                                tools: memoryTools,
+                                safetySettings: [
+                                    { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
+                                    { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
+                                    { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
+                                    { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' }
+                                ]
                             }
                         });
 
@@ -950,12 +971,9 @@ app.post('/api/ai/title', async (req, res) => {
 User message: "${text}"`;
 
         const SUPPORTED_MODELS = [
-            'gemini-flash-latest',
-            'gemini-3.1-flash',
-            'gemini-3.1-flash-lite',
-            'gemini-3.0-flash',
             'gemini-2.5-flash',
-            'gemini-2.0-flash'
+            'gemini-2.0-flash',
+            'gemini-1.5-flash'
         ];
 
         let lastError = null;
@@ -980,7 +998,13 @@ User message: "${text}"`;
                         contents: [{ role: 'user', parts: [{ text: prompt }] }],
                         config: {
                             temperature: 0.5,
-                            maxOutputTokens: 20
+                            maxOutputTokens: 20,
+                            safetySettings: [
+                                { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
+                                { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
+                                { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
+                                { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' }
+                            ]
                         }
                     });
 
@@ -1040,7 +1064,11 @@ Rules:
 - NEVER invent facts not present in the transcript.
 - Output ONLY the structured memory block. No preamble, no explanation.`;
 
-        const memoryModels = ['gemini-2.0-flash', 'gemini-2.5-flash', 'gemini-flash-latest'];
+        const memoryModels = [
+            'gemini-2.5-flash',
+            'gemini-2.0-flash',
+            'gemini-1.5-flash'
+        ];
         let lastError = null;
 
         const existingBlock = existingSummary
@@ -1069,6 +1097,12 @@ Rules:
                             systemInstruction: MEMORY_SYSTEM_PROMPT,
                             temperature: 0.2,
                             maxOutputTokens: 300,
+                            safetySettings: [
+                                { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
+                                { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
+                                { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
+                                { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' }
+                            ]
                         }
                     });
                     const summary = response.text?.trim();
