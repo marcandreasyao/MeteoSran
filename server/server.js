@@ -788,13 +788,15 @@ app.post('/api/ai/chat', async (req, res) => {
         });
 
         const SUPPORTED_MODELS = [
+            'gemini-flash-latest',
+            'gemini-3.1-flash',
+            'gemini-3.1-flash-lite',
+            'gemini-3.0-flash',
             'gemini-2.5-flash',
-            'gemini-2.0-flash',
-            'gemini-1.5-flash',
-            'gemini-2.5-pro',
-            'gemini-1.5-pro'
+            'gemini-2.0-flash'
         ];
 
+        let rateLimitError = null;
         let lastError = null;
         const modeKey = mode ? mode.toLowerCase() : 'default';
         const generationTemperature = modeKey === 'funny' ? 0.9 : (modeKey === 'einstein' ? 0.6 : 0.7);
@@ -937,7 +939,8 @@ app.post('/api/ai/chat', async (req, res) => {
                     console.warn(`[MeteoSran Server] Model ${modelName} with Key ${keyIdx + 1} failed: ${err.message}`);
                     lastError = err;
 
-                    if (err.status === 429 || err.status === 403 || err.message?.includes("429") || err.message?.includes("quota")) {
+                    if (err.status === 429 || err.status === 403 || err.message?.includes("429") || err.message?.includes("quota") || err.message?.includes("RESOURCE_EXHAUSTED")) {
+                        rateLimitError = err;
                         markKeyRateLimited(keyIdx);
                         continue;
                     }
@@ -946,7 +949,7 @@ app.post('/api/ai/chat', async (req, res) => {
             }
         }
 
-        throw lastError || new Error("All AI models failed to respond.");
+        throw rateLimitError || lastError || new Error("All AI models failed to respond.");
 
     } catch (error) {
         console.error('[MeteoSran Server] AI Proxy Error:', error);
@@ -971,11 +974,15 @@ app.post('/api/ai/title', async (req, res) => {
 User message: "${text}"`;
 
         const SUPPORTED_MODELS = [
+            'gemini-flash-latest',
+            'gemini-3.1-flash',
+            'gemini-3.1-flash-lite',
+            'gemini-3.0-flash',
             'gemini-2.5-flash',
-            'gemini-2.0-flash',
-            'gemini-1.5-flash'
+            'gemini-2.0-flash'
         ];
 
+        let rateLimitError = null;
         let lastError = null;
 
         for (const modelName of SUPPORTED_MODELS) {
@@ -1018,7 +1025,8 @@ User message: "${text}"`;
                     console.warn(`[MeteoSran Server] Smart Title: Model ${modelName} with Key ${keyIdx + 1} failed: ${err.message}`);
                     lastError = err;
 
-                    if (err.status === 429 || err.status === 403 || err.message?.includes("429") || err.message?.includes("quota")) {
+                    if (err.status === 429 || err.status === 403 || err.message?.includes("429") || err.message?.includes("quota") || err.message?.includes("RESOURCE_EXHAUSTED")) {
+                        rateLimitError = err;
                         markKeyRateLimited(keyIdx);
                         continue;
                     }
@@ -1027,7 +1035,7 @@ User message: "${text}"`;
             }
         }
 
-        throw lastError || new Error("Failed to generate title with all models and keys.");
+        throw rateLimitError || lastError || new Error("Failed to generate title with all models and keys.");
 
     } catch (error) {
         console.error('[MeteoSran Server] AI Title Error:', error);
@@ -1065,10 +1073,14 @@ Rules:
 - Output ONLY the structured memory block. No preamble, no explanation.`;
 
         const memoryModels = [
+            'gemini-flash-latest',
+            'gemini-3.1-flash',
+            'gemini-3.1-flash-lite',
+            'gemini-3.0-flash',
             'gemini-2.5-flash',
-            'gemini-2.0-flash',
-            'gemini-1.5-flash'
+            'gemini-2.0-flash'
         ];
+        let rateLimitError = null;
         let lastError = null;
 
         const existingBlock = existingSummary
@@ -1114,7 +1126,8 @@ Rules:
                     lastError = err;
                     console.warn(`[MeteoSran Server] Memory Summarize: Model ${modelName} with Key ${keyIdx + 1} failed: ${err.message}`);
 
-                    if (err.status === 429 || err.status === 403 || err.message?.includes("429") || err.message?.includes("quota")) {
+                    if (err.status === 429 || err.status === 403 || err.message?.includes("429") || err.message?.includes("quota") || err.message?.includes("RESOURCE_EXHAUSTED")) {
+                        rateLimitError = err;
                         markKeyRateLimited(keyIdx);
                         continue;
                     }
@@ -1122,7 +1135,7 @@ Rules:
                 }
             }
         }
-        throw lastError || new Error('Memory summarization failed');
+        throw rateLimitError || lastError || new Error('Memory summarization failed');
     } catch (error) {
         console.error('[MeteoSran Server] Memory Error:', error);
         res.status(500).json({ error: error.message || 'Failed to summarize memory' });
