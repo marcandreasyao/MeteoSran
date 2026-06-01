@@ -205,6 +205,15 @@ ${getSeasonalContext()}`;
 
 // --- CORE MESSAGE SERVICE ---
 
+const RATE_LIMIT_MESSAGES = [
+  "I'm feeling a bit tired due to some limits and taking a quick nap! 😴 MeteoSran is under higher usage right now—please try again in a few moments.",
+  "Phew! Talking about all this weather has me a bit overheated. Let me grab a glass of water and take a quick break! 🥤 Try again in a few moments.",
+  "Hold on, my meteorological sensors are working overtime! Taking a brief pause to cool down my processors. 🌡️ Please try again shortly!",
+  "Looks like a little data cloud is passing over me. I'm taking a short nap to recharge! ☁️😴 Back in a few moments!",
+  "I'm under a bit of high pressure right now! Taking a quick breather to clear the skies. 🌤️ Please give me a moment and try again.",
+  "Even meteorologists need to rest under high winds! I'm taking a quick nap to let the storm pass. 🌪️💤 Try again in a few moments!"
+];
+
 /**
  * Sends a message to the AI via our secure backend proxy.
  */
@@ -245,7 +254,7 @@ export const sendMessageToAI = async (
     if (userName) {
       invisibleContext += `\n[USER_CONTEXT]: You are currently talking to ${userName}. Address them warmly by their name occasionally.`;
     }
-    
+
     if (memorySummary) {
       invisibleContext += `\n\n[LONG_TERM_MEMORY — from previous sessions]:
 ${memorySummary}
@@ -370,7 +379,8 @@ ${memorySummary}
     let errorMessage = "I seem to be caught in a bit of a data storm right now and couldn't fetch that for you. Could you try asking again?";
 
     if (error.message.includes("quota") || error.message.includes("429")) {
-      errorMessage = "MeteoSran is taking a quick breath (API rate limit). Please try again in a few moments!";
+      const randomIndex = Math.floor(Math.random() * RATE_LIMIT_MESSAGES.length);
+      errorMessage = RATE_LIMIT_MESSAGES[randomIndex];
     } else if (error.message.includes("key")) {
       errorMessage = "I'm having trouble connecting to my brain. Please notify the developer that the API key needs attention.";
     }
