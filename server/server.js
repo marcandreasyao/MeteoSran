@@ -51,6 +51,46 @@ app.get('/ping', (req, res) => {
     res.status(200).send('pong');
 });
 
+// ─────────────────────────────────────────────────────────────────
+// KEY HEALTH STATUS ENDPOINT
+// GET /api/keys/status — returns live state of all Gemini API keys
+// ─────────────────────────────────────────────────────────────────
+app.get('/api/keys/status', (req, res) => {
+    const now = Date.now();
+    const status = geminiKeysState.map((ks, i) => {
+        const cooldownRemainingMs = Math.max(0, ks.cooldownUntil - now);
+        const state = ks.invalidKey
+            ? 'invalid'
+            : ks.billingExhausted && cooldownRemainingMs > 0
+                ? 'billing_exhausted'
+                : cooldownRemainingMs > 0
+                    ? 'cooling_down'
+                    : 'available';
+        return {
+            key: i + 1,
+            label: ks.label,
+            state,
+            lastError: ks.lastError,
+            failureCount: ks.failureCount,
+            cooldownRemainingSeconds: Math.ceil(cooldownRemainingMs / 1000),
+            totalRequests: ks.totalRequests,
+            totalSuccess: ks.totalSuccess,
+            successRate: ks.totalRequests > 0
+                ? `${Math.round((ks.totalSuccess / ks.totalRequests) * 100)}%`
+                : 'N/A',
+        };
+    });
+
+    const availableCount = status.filter(k => k.state === 'available').length;
+    res.json({
+        totalKeys: geminiKeysState.length,
+        availableKeys: availableCount,
+        allExhausted: availableCount === 0,
+        keys: status,
+        timestamp: new Date().toISOString(),
+    });
+});
+
 // Load multiple Gemini API keys for rotation safely without dynamic property access
 const GEMINI_KEYS = [];
 const geminiKeysList = [
@@ -79,62 +119,141 @@ if (GEMINI_KEYS.length === 0) {
     console.log(`[MeteoSran Server] Loaded ${GEMINI_KEYS.length} Gemini API keys for rotation.`);
 }
 
-// Stateful key tracking for round-robin rotation and cooldowns
-const geminiKeysState = GEMINI_KEYS.map(key => ({
+// ============================================================
+// ULTIMATE KEY ROTATION STATE
+// Tracks: cooldowns, failure counts, billing exhaustion
+// ============================================================
+
+/**
+ * Error types for smart key rotation:
+ * - 'rate_limit'   : 429 Too Many Requests — temporary, use exponential backoff
+ * - 'billing'      : RESOURCE_EXHAUSTED / credits depleted — long cooldown (10 min)
+ * - 'auth'         : 401/403 invalid key — skip permanently
+ * - 'server_error' : 5xx — short cooldown (15s)
+ */
+const geminiKeysState = GEMINI_KEYS.map((key, i) => ({
     key,
-    cooldownUntil: 0
+    label: `Key ${i + 1}`,
+    cooldownUntil: 0,       // timestamp when this key can be used again
+    failureCount: 0,        // consecutive failures (for exponential backoff)
+    billingExhausted: false, // true = credits depleted, requires billing action
+    invalidKey: false,      // true = bad API key, skip permanently
+    lastError: null,        // last error type string
+    totalRequests: 0,       // lifetime requests made with this key
+    totalSuccess: 0,        // lifetime successes
 }));
 
 let currentKeyIndex = 0;
 
 /**
  * Returns the next available Gemini API key that is not in cooldown.
- * If all keys are in cooldown, falls back to the key closest to recovery.
+ * Skips permanently-broken keys (billing exhausted, invalid).
+ * Falls back to least-recently-available key if all are in cooldown.
  */
 const getNextAvailableKey = () => {
     const now = Date.now();
     const totalKeys = geminiKeysState.length;
     if (totalKeys === 0) return null;
 
-    // Search starting from currentKeyIndex
+    // Pass 1: Find an available key (no cooldown, not permanently broken)
     for (let i = 0; i < totalKeys; i++) {
         const index = (currentKeyIndex + i) % totalKeys;
         const keyState = geminiKeysState.at(index);
-        if (keyState && keyState.cooldownUntil <= now) {
-            // Advance round-robin index for next lookup
+        if (!keyState) continue;
+        if (keyState.invalidKey) continue; // skip permanently bad keys
+        if (keyState.cooldownUntil <= now) {
             currentKeyIndex = (index + 1) % totalKeys;
-            return { key: keyState.key, index };
+            return { key: keyState.key, index, state: keyState };
         }
     }
 
-    // Fallback: If all keys are in cooldown, pick the one with the shortest remaining cooldown
-    let bestIndex = 0;
+    // Pass 2: All usable keys are in cooldown — pick the soonest to recover
+    let bestIndex = -1;
     let minCooldown = Infinity;
     for (let i = 0; i < totalKeys; i++) {
         const keyState = geminiKeysState.at(i);
-        if (keyState && keyState.cooldownUntil < minCooldown) {
+        if (!keyState || keyState.invalidKey) continue;
+        if (keyState.cooldownUntil < minCooldown) {
             minCooldown = keyState.cooldownUntil;
             bestIndex = i;
         }
     }
+
+    if (bestIndex === -1) {
+        console.error('[MeteoSran Server] ❌ ALL Gemini keys are permanently unavailable (billing exhausted or invalid).');
+        return null;
+    }
+
     currentKeyIndex = (bestIndex + 1) % totalKeys;
     const bestKeyState = geminiKeysState.at(bestIndex);
-    return { key: bestKeyState ? bestKeyState.key : null, index: bestIndex };
+    const waitSec = Math.ceil((bestKeyState.cooldownUntil - now) / 1000);
+    console.warn(`[MeteoSran Server] ⏳ All keys cooling down. Using ${bestKeyState.label}, available in ${waitSec}s.`);
+    return { key: bestKeyState.key, index: bestIndex, state: bestKeyState };
 };
 
 /**
- * Puts a key on a 60-second cooldown due to rate-limits (429) or quota restrictions (403).
+ * Smart key failure handler.
+ * Distinguishes billing exhaustion (long cooldown) from rate limits (exponential backoff).
  */
-const markKeyRateLimited = (index) => {
-    if (index >= 0 && index < geminiKeysState.length) {
-        const keyState = geminiKeysState.at(index);
-        if (keyState) {
-            // Cooldown for 60 seconds
-            keyState.cooldownUntil = Date.now() + 60000;
-            console.warn(`[MeteoSran Server] Gemini Key ${index + 1} hit rate limit. Cool-down for 60 seconds (until ${new Date(keyState.cooldownUntil).toLocaleTimeString()}).`);
-        }
+const markKeyFailed = (index, errorMessage = '', status = null) => {
+    if (index < 0 || index >= geminiKeysState.length) return;
+    const keyState = geminiKeysState.at(index);
+    if (!keyState) return;
+
+    keyState.failureCount++;
+    const isBillingExhausted = errorMessage.includes('prepayment credits') ||
+                               errorMessage.includes('credits are depleted') ||
+                               errorMessage.includes('RESOURCE_EXHAUSTED') && (status === 429 || errorMessage.includes('billing'));
+    const isRateLimit = status === 429 || errorMessage.includes('429') || errorMessage.includes('Too Many Requests');
+    const isInvalidAuth = status === 401 || status === 403 && errorMessage.includes('API_KEY_INVALID');
+    const isServerError = status >= 500;
+
+    if (isInvalidAuth) {
+        keyState.invalidKey = true;
+        keyState.lastError = 'auth';
+        keyState.cooldownUntil = Infinity;
+        console.error(`[MeteoSran Server] 🔑 ${keyState.label} is INVALID — skipping permanently.`);
+    } else if (isBillingExhausted) {
+        // Long cooldown: 10 minutes for billing issues
+        const cooldownMs = 10 * 60 * 1000;
+        keyState.billingExhausted = true;
+        keyState.lastError = 'billing';
+        keyState.cooldownUntil = Date.now() + cooldownMs;
+        console.warn(`[MeteoSran Server] 💳 ${keyState.label} billing credits EXHAUSTED. Cooling down 10 minutes (until ${new Date(keyState.cooldownUntil).toLocaleTimeString()}).`);
+    } else if (isRateLimit) {
+        // Exponential backoff: 60s → 120s → 300s → 600s (caps at 10 min)
+        const backoffSeconds = Math.min(60 * Math.pow(2, keyState.failureCount - 1), 600);
+        keyState.lastError = 'rate_limit';
+        keyState.cooldownUntil = Date.now() + backoffSeconds * 1000;
+        console.warn(`[MeteoSran Server] ⏱️  ${keyState.label} rate limited (429). Backoff: ${backoffSeconds}s (failure #${keyState.failureCount}, until ${new Date(keyState.cooldownUntil).toLocaleTimeString()}).`);
+    } else if (isServerError) {
+        // Short cooldown for server errors: 15s
+        keyState.lastError = 'server_error';
+        keyState.cooldownUntil = Date.now() + 15000;
+        console.warn(`[MeteoSran Server] 🔥 ${keyState.label} server error (${status}). Short cooldown: 15s.`);
+    } else {
+        // Generic error — 30s cooldown
+        keyState.lastError = 'unknown';
+        keyState.cooldownUntil = Date.now() + 30000;
+        console.warn(`[MeteoSran Server] ⚠️  ${keyState.label} failed (unknown error). Cooldown: 30s.`);
     }
 };
+
+/**
+ * Resets a key's failure count on success (so backoff resets for next failure).
+ */
+const markKeySuccess = (index) => {
+    const keyState = geminiKeysState.at(index);
+    if (!keyState) return;
+    keyState.failureCount = 0;
+    keyState.billingExhausted = false;
+    keyState.cooldownUntil = 0;
+    keyState.totalSuccess++;
+    keyState.totalRequests++;
+};
+
+// Backwards-compat shim: markKeyRateLimited is kept in case anything else calls it
+const markKeyRateLimited = (index) => markKeyFailed(index, '429 Too Many Requests', 429);
 
 // ==========================================
 // 1. ACCUWEATHER PROXY (Unchanged)
@@ -856,7 +975,8 @@ app.post('/api/ai/chat', async (req, res) => {
                 const genAIInstance = new GoogleGenAI({ apiKey: currentKey, vertexai: false });
 
                 try {
-                    console.log(`[MeteoSran Server] Attempting generation with model: ${modelName} (Key ${keyIdx + 1}/${geminiKeysState.length})`);
+                    const ksLabel = geminiKeysState.at(keyIdx)?.label || `Key ${keyIdx + 1}`;
+                    console.log(`[MeteoSran Server] 🔄 Attempting: ${modelName} (${ksLabel}/${geminiKeysState.length} keys)`);
 
                     let loopCount = 0;
                     const MAX_LOOPS = 3;
@@ -933,17 +1053,27 @@ app.post('/api/ai/chat', async (req, res) => {
 
                     if (!responseText) throw new Error("Received empty response or exceeded max loops during tool calling.");
 
+                    markKeySuccess(keyIdx);
                     return res.json({ text: responseText });
 
                 } catch (err) {
-                    console.warn(`[MeteoSran Server] Model ${modelName} with Key ${keyIdx + 1} failed: ${err.message}`);
+                    const errStatus = err.status || null;
+                    const errMsg = err.message || '';
+                    console.warn(`[MeteoSran Server] ❌ ${modelName} (${ksLabel}) failed [${errStatus}]: ${errMsg.slice(0, 120)}`);
                     lastError = err;
 
-                    if (err.status === 429 || err.status === 403 || err.message?.includes("429") || err.message?.includes("quota") || err.message?.includes("RESOURCE_EXHAUSTED")) {
+                    const isQuotaOrBilling = errStatus === 429 || errStatus === 403 ||
+                        errMsg.includes('429') || errMsg.includes('quota') ||
+                        errMsg.includes('RESOURCE_EXHAUSTED') || errMsg.includes('prepayment') ||
+                        errMsg.includes('credits');
+
+                    if (isQuotaOrBilling) {
                         rateLimitError = err;
-                        markKeyRateLimited(keyIdx);
-                        continue;
+                        markKeyFailed(keyIdx, errMsg, errStatus);
+                        continue; // try next key
                     }
+                    // Non-quota errors: still track failure but break model attempts
+                    markKeyFailed(keyIdx, errMsg, errStatus);
                     break;
                 }
             }
@@ -1019,17 +1149,26 @@ User message: "${text}"`;
                     if (title) {
                         // Strip quotes if Gemini wrapped the response in quotes
                         title = title.replace(/^["']|["']$/g, '').trim();
+                        markKeySuccess(keyIdx);
                         return res.json({ title });
                     }
                 } catch (err) {
-                    console.warn(`[MeteoSran Server] Smart Title: Model ${modelName} with Key ${keyIdx + 1} failed: ${err.message}`);
+                    const errStatus = err.status || null;
+                    const errMsg = err.message || '';
+                    console.warn(`[MeteoSran Server] Smart Title: ${modelName} (Key ${keyIdx + 1}) failed [${errStatus}]: ${errMsg.slice(0, 80)}`);
                     lastError = err;
 
-                    if (err.status === 429 || err.status === 403 || err.message?.includes("429") || err.message?.includes("quota") || err.message?.includes("RESOURCE_EXHAUSTED")) {
+                    const isQuotaOrBilling = errStatus === 429 || errStatus === 403 ||
+                        errMsg.includes('429') || errMsg.includes('quota') ||
+                        errMsg.includes('RESOURCE_EXHAUSTED') || errMsg.includes('prepayment') ||
+                        errMsg.includes('credits');
+
+                    if (isQuotaOrBilling) {
                         rateLimitError = err;
-                        markKeyRateLimited(keyIdx);
+                        markKeyFailed(keyIdx, errMsg, errStatus);
                         continue;
                     }
+                    markKeyFailed(keyIdx, errMsg, errStatus);
                     break;
                 }
             }
