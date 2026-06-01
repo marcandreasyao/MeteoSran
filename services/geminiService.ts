@@ -93,6 +93,17 @@ const isWeatherRelatedQuery = (text: string): boolean => {
   return keywords.some(keyword => lowerText.includes(keyword));
 };
 
+const isFrenchText = (text: string): boolean => {
+  if (!text) return false;
+  const frenchKeywords = new Set([
+    'le', 'la', 'les', 'des', 'un', 'une', 'dans', 'pour', 'avec', 'mais', 'donc', 'pourquoi', 'comment', 'quel', 'quelle', 'temps',
+    'météo', 'meteo', 'pluie', 'température', 'temperature', 'vent', 'soleil', 'nuage', 'saison', 'climat', 'chaud', 'froid',
+    'bonjour', 'salut', 'bonsoir', 'merci', 'oui', 'non', 'je', 'tu', 'il', 'elle', 'nous', 'vous', 'ils', 'elles', 'suis', 'es', 'est', 'sont'
+  ]);
+  const words = text.toLowerCase().split(/[^\wàâäéèêëîïôöùûüç]+/);
+  return words.some(word => frenchKeywords.has(word));
+};
+
 export const getCurrentTimeContext = (): string => {
   const now = new Date();
   const timeString = now.toLocaleTimeString('en-US', {
@@ -205,13 +216,22 @@ ${getSeasonalContext()}`;
 
 // --- CORE MESSAGE SERVICE ---
 
-const RATE_LIMIT_MESSAGES = [
+const RATE_LIMIT_MESSAGES_EN = [
   "I'm feeling a bit tired due to some limits and taking a quick nap! 😴 MeteoSran is under higher usage right now—please try again in a few moments.",
   "Phew! Talking about all this weather has me a bit overheated. Let me grab a glass of water and take a quick break! 🥤 Try again in a few moments.",
   "Hold on, my meteorological sensors are working overtime! Taking a brief pause to cool down my processors. 🌡️ Please try again shortly!",
   "Looks like a little data cloud is passing over me. I'm taking a short nap to recharge! ☁️😴 Back in a few moments!",
   "I'm under a bit of high pressure right now! Taking a quick breather to clear the skies. 🌤️ Please give me a moment and try again.",
   "Even meteorologists need to rest under high winds! I'm taking a quick nap to let the storm pass. 🌪️💤 Try again in a few moments!"
+];
+
+const RATE_LIMIT_MESSAGES_FR = [
+  "Je me sens un peu fatigué en raison de certaines limites et je fais une sieste rapide ! 😴 MeteoSran est très sollicité en ce moment — veuillez réessayer dans quelques instants.",
+  "Ouf ! Parler de toute cette météo m'a un peu surchauffé. Je vais prendre un verre d'eau et faire une courte pause ! 🥤 Réessayez dans quelques instants.",
+  "Attendez, mes capteurs météorologiques tournent à plein régime ! Je fais une brève pause pour refroidir mes processeurs. 🌡️ Veuillez réessayer d'ici peu !",
+  "On dirait qu'un petit nuage de données passe au-dessus de moi. Je fais une petite sieste pour recharger mes batteries ! ☁️😴 De retour dans quelques instants !",
+  "Je subis une zone de haute pression en ce moment ! Je prends une petite respiration pour éclaircir le ciel. 🌤️ Laissez-moi un instant et réessayez.",
+  "Même les météorologues ont besoin de se reposer sous des vents forts ! Je fais une sieste rapide pour laisser passer la tempête. 🌪️💤 Réessayez dans quelques instants."
 ];
 
 /**
@@ -375,14 +395,22 @@ ${memorySummary}
   } catch (error: any) {
     console.error('Error in sendMessageToAI:', error);
 
+    const lastUserMessage = messages.slice().reverse().find(m => m.role === MessageRole.USER);
+    const isFrench = lastUserMessage ? isFrenchText(lastUserMessage.text) : false;
+
     // Provide a friendly error message to the user
-    let errorMessage = "I seem to be caught in a bit of a data storm right now and couldn't fetch that for you. Could you try asking again?";
+    let errorMessage = isFrench
+      ? "Je crois que je suis pris dans une petite tempête de données en ce moment et je n'ai pas pu récupérer cela pour vous. Pourriez-vous réessayer ?"
+      : "I seem to be caught in a bit of a data storm right now and couldn't fetch that for you. Could you try asking again?";
 
     if (error.message.includes("quota") || error.message.includes("429")) {
-      const randomIndex = Math.floor(Math.random() * RATE_LIMIT_MESSAGES.length);
-      errorMessage = RATE_LIMIT_MESSAGES[randomIndex];
+      const messagesList = isFrench ? RATE_LIMIT_MESSAGES_FR : RATE_LIMIT_MESSAGES_EN;
+      const randomIndex = Math.floor(Math.random() * messagesList.length);
+      errorMessage = messagesList[randomIndex];
     } else if (error.message.includes("key")) {
-      errorMessage = "I'm having trouble connecting to my brain. Please notify the developer that the API key needs attention.";
+      errorMessage = isFrench
+        ? "J'ai du mal à me connecter à mon cerveau. Veuillez informer le développeur que la clé API nécessite son attention."
+        : "I'm having trouble connecting to my brain. Please notify the developer that the API key needs attention.";
     }
 
     return {
