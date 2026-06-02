@@ -74,8 +74,7 @@ export const TermsOfService: React.FC<TermsOfServiceProps> = ({ theme, toggleThe
 
             {/* Terms Content */}
             <section className="space-y-4 text-sm leading-relaxed text-slate-700 dark:text-slate-300">
-              <h3 className="text-lg font-bold text-slate-950 dark:text-slate-100 flex items-center gap-2">
-                <span className="material-symbols-outlined notranslate text-sky-500" translate="no">gavel</span>
+              <h3 className="text-lg font-bold text-slate-950 dark:text-slate-100">
                 1. Acceptance of Terms
               </h3>
               <p>
@@ -84,18 +83,16 @@ export const TermsOfService: React.FC<TermsOfServiceProps> = ({ theme, toggleThe
             </section>
 
             <section className="space-y-4 text-sm leading-relaxed text-slate-700 dark:text-slate-300">
-              <h3 className="text-lg font-bold text-slate-950 dark:text-slate-100 flex items-center gap-2">
-                <span className="material-symbols-outlined notranslate text-sky-500" translate="no">info</span>
+              <h3 className="text-lg font-bold text-slate-950 dark:text-slate-100">
                 2. Description of Service
               </h3>
               <p>
-                MeteoSran AI is an intelligent weather education and forecasting assistant platform developed by <strong>Marc Andréas Yao</strong>. It merges real-time data feeds (such as AccuWeather API), Open-Meteo Climatology normals, and Google's Gemini models. It provides contextual reports, voice capabilities, multi-modal input processing, and dynamic historical comparisons. The application is provided for informational and learning purposes.
+                MeteoSran AI is an intelligent weather education and forecasting assistant platform developed by <strong>Marc Andréas Yao</strong>. It merges real-time data feeds (such as AccuWeather API), Open-Meteo Climatology normals, and our proprietary AI models. It provides contextual reports, voice capabilities, multi-modal input processing, and dynamic historical comparisons. The application is provided for informational and learning purposes.
               </p>
             </section>
 
             <section className="space-y-4 text-sm leading-relaxed text-slate-700 dark:text-slate-300">
-              <h3 className="text-lg font-bold text-slate-950 dark:text-slate-100 flex items-center gap-2">
-                <span className="material-symbols-outlined notranslate text-sky-500" translate="no">person</span>
+              <h3 className="text-lg font-bold text-slate-950 dark:text-slate-100">
                 3. User Account and Responsibilities
               </h3>
               <p>
@@ -110,8 +107,7 @@ export const TermsOfService: React.FC<TermsOfServiceProps> = ({ theme, toggleThe
             </section>
 
             <section className="space-y-4 text-sm leading-relaxed text-slate-700 dark:text-slate-300">
-              <h3 className="text-lg font-bold text-slate-950 dark:text-slate-100 flex items-center gap-2">
-                <span className="material-symbols-outlined notranslate text-sky-500" translate="no">copyright</span>
+              <h3 className="text-lg font-bold text-slate-950 dark:text-slate-100">
                 4. Intellectual Property Rights
               </h3>
               <p>
@@ -120,8 +116,7 @@ export const TermsOfService: React.FC<TermsOfServiceProps> = ({ theme, toggleThe
             </section>
 
             <section className="space-y-4 text-sm leading-relaxed text-slate-700 dark:text-slate-300">
-              <h3 className="text-lg font-bold text-slate-950 dark:text-slate-100 flex items-center gap-2">
-                <span className="material-symbols-outlined notranslate text-sky-500" translate="no">warning</span>
+              <h3 className="text-lg font-bold text-slate-950 dark:text-slate-100">
                 5. Limitation of Liability and Forecast Accuracy
               </h3>
               <p>
@@ -133,8 +128,7 @@ export const TermsOfService: React.FC<TermsOfServiceProps> = ({ theme, toggleThe
             </section>
 
             <section className="space-y-4 text-sm leading-relaxed text-slate-700 dark:text-slate-300">
-              <h3 className="text-lg font-bold text-slate-950 dark:text-slate-100 flex items-center gap-2">
-                <span className="material-symbols-outlined notranslate text-sky-500" translate="no">payments</span>
+              <h3 className="text-lg font-bold text-slate-950 dark:text-slate-100">
                 6. Future Premium Tiers and Subscription Plans
               </h3>
               <p>
@@ -143,8 +137,7 @@ export const TermsOfService: React.FC<TermsOfServiceProps> = ({ theme, toggleThe
             </section>
 
             <section className="space-y-4 text-sm leading-relaxed text-slate-700 dark:text-slate-300">
-              <h3 className="text-lg font-bold text-slate-950 dark:text-slate-100 flex items-center gap-2">
-                <span className="material-symbols-outlined notranslate text-sky-500" translate="no">map</span>
+              <h3 className="text-lg font-bold text-slate-950 dark:text-slate-100">
                 7. Governing Law
               </h3>
               <p>
@@ -153,12 +146,11 @@ export const TermsOfService: React.FC<TermsOfServiceProps> = ({ theme, toggleThe
             </section>
 
             <section className="space-y-4 border-t border-slate-200/50 dark:border-slate-800/50 pt-6 text-sm leading-relaxed text-slate-700 dark:text-slate-300">
-              <h3 className="text-lg font-bold text-slate-950 dark:text-slate-100 flex items-center gap-2">
-                <span className="material-symbols-outlined notranslate text-sky-500" translate="no">contact_support</span>
+              <h3 className="text-lg font-bold text-slate-950 dark:text-slate-100">
                 8. Questions and Support
               </h3>
               <p>
-                For any questions regarding these Terms, or if you need developers support for code issues, contact us:
+                For any questions regarding these Terms, or if you need developer support for code issues, contact us:
               </p>
               <div className="p-4 rounded-2xl bg-slate-50/50 dark:bg-slate-800/30 border border-slate-200/50 dark:border-slate-800/50 text-xs sm:text-sm space-y-1.5 ml-2">
                 <p><strong>Creator</strong>: Marc Andréas Yao</p>

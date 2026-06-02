@@ -84,8 +84,7 @@ export const PrivacyPolicy: React.FC<PrivacyPolicyProps> = ({ theme, toggleTheme
 
             {/* Core Data Points */}
             <section className="space-y-6">
-              <h3 className="text-lg font-bold text-slate-950 dark:text-slate-100 flex items-center gap-2">
-                <span className="material-symbols-outlined notranslate text-sky-500" translate="no">database_upload</span>
+              <h3 className="text-lg font-bold text-slate-950 dark:text-slate-100">
                 1. Information We Collect and Process
               </h3>
               
@@ -93,8 +92,7 @@ export const PrivacyPolicy: React.FC<PrivacyPolicyProps> = ({ theme, toggleTheme
                 
                 {/* Geolocation */}
                 <div className="p-4 rounded-2xl bg-white/30 dark:bg-slate-900/40 border border-slate-200/30 dark:border-slate-800/30">
-                  <h4 className="text-sm font-bold text-slate-900 dark:text-slate-200 flex items-center gap-2">
-                    <span className="material-symbols-outlined notranslate text-sky-400 text-lg" translate="no">location_on</span>
+                  <h4 className="text-sm font-bold text-slate-900 dark:text-slate-200">
                     Geolocation Data
                   </h4>
                   <p className="text-xs text-slate-600 dark:text-slate-400 mt-1.5 leading-relaxed">
@@ -109,30 +107,27 @@ export const PrivacyPolicy: React.FC<PrivacyPolicyProps> = ({ theme, toggleTheme
 
                 {/* Voice / Audio */}
                 <div className="p-4 rounded-2xl bg-white/30 dark:bg-slate-900/40 border border-slate-200/30 dark:border-slate-800/30">
-                  <h4 className="text-sm font-bold text-slate-900 dark:text-slate-200 flex items-center gap-2">
-                    <span className="material-symbols-outlined notranslate text-sky-400 text-lg" translate="no">mic</span>
-                    Audio Recording (Gemini Live Session)
+                  <h4 className="text-sm font-bold text-slate-900 dark:text-slate-200">
+                    Audio Recording (Live Session)
                   </h4>
                   <p className="text-xs text-slate-600 dark:text-slate-400 mt-1.5 leading-relaxed">
-                    When you launch the voice-controlled Live Session mode, the app requests microphone permissions. MeteoSran captures raw 16kHz PCM audio data and streams it directly to Google's live multi-modal API via a secure WebSocket connection. We do not store, record, or analyze your audio files. Audio streams exist momentarily in memory and are discarded immediately after content generation.
+                    When you launch the voice-controlled Live Session mode, the app requests microphone permissions. MeteoSran captures raw 16kHz PCM audio data and streams it directly to our live multi-modal API via a secure WebSocket connection. We do not store, record, or analyze your audio files. Audio streams exist momentarily in memory and are discarded immediately after content generation.
                   </p>
                 </div>
 
                 {/* Image Uploads */}
                 <div className="p-4 rounded-2xl bg-white/30 dark:bg-slate-900/40 border border-slate-200/30 dark:border-slate-800/30">
-                  <h4 className="text-sm font-bold text-slate-900 dark:text-slate-200 flex items-center gap-2">
-                    <span className="material-symbols-outlined notranslate text-sky-400 text-lg" translate="no">image</span>
+                  <h4 className="text-sm font-bold text-slate-900 dark:text-slate-200">
                     Multi-Modal Input (Image Uploads)
                   </h4>
                   <p className="text-xs text-slate-600 dark:text-slate-400 mt-1.5 leading-relaxed">
-                    MeteoSran supports image uploads to analyze weather phenomena (such as cloud types or storm damage). These images are converted to base64 encoding client-side and transmitted securely to Google's Gemini models for visual inspection. We do not persist these images on our database.
+                    MeteoSran supports image uploads to analyze weather phenomena (such as cloud types or storm damage). These images are converted to base64 encoding client-side and transmitted securely to our AI models for visual inspection. We do not persist these images on our database.
                   </p>
                 </div>
 
                 {/* Database Synced Data */}
                 <div className="p-4 rounded-2xl bg-white/30 dark:bg-slate-900/40 border border-slate-200/30 dark:border-slate-800/30">
-                  <h4 className="text-sm font-bold text-slate-900 dark:text-slate-200 flex items-center gap-2">
-                    <span className="material-symbols-outlined notranslate text-sky-400 text-lg" translate="no">history</span>
+                  <h4 className="text-sm font-bold text-slate-900 dark:text-slate-200">
                     Account and Conversation Storage
                   </h4>
                   <p className="text-xs text-slate-600 dark:text-slate-400 mt-1.5 leading-relaxed">
@@ -149,25 +144,23 @@ export const PrivacyPolicy: React.FC<PrivacyPolicyProps> = ({ theme, toggleTheme
 
             {/* Third party services */}
             <section className="space-y-4">
-              <h3 className="text-lg font-bold text-slate-950 dark:text-slate-100 flex items-center gap-2">
-                <span className="material-symbols-outlined notranslate text-sky-500" translate="no">cloud</span>
+              <h3 className="text-lg font-bold text-slate-950 dark:text-slate-100">
                 2. Third-Party Integrations and Data Flow
               </h3>
               <p className="text-sm leading-relaxed text-slate-700 dark:text-slate-300">
                 To generate forecast insights, we forward requests to highly secure third-party provider platforms. No personally identifiable information (PII) is attached to these external calls:
               </p>
               <ul className="list-disc list-inside text-xs text-slate-700 dark:text-slate-300 space-y-2 ml-4">
-                <li><strong>Google Gemini AI API</strong>: Processes text, image, and PCM voice requests. Subject to Google's standard developer API privacy guidelines.</li>
+                <li><strong>MeteoSran AI Models (Powered by Google)</strong>: Processes text, image, and PCM voice requests. Subject to Google's standard developer API privacy guidelines.</li>
                 <li><strong>AccuWeather API</strong>: Retransmits local regional forecasts using sanitized city coordinates.</li>
                 <li><strong>Open-Meteo API</strong>: Queries historical weather archive data using location coordinates.</li>
-                <li><strong>Vercel Analytics & Speed Insights</strong>: Collects anonymized, GDPR-compliant Core Web Vitals to improve performance and prevent application crashes.</li>
+                <li><strong>Vercel Analytics &amp; Speed Insights</strong>: Collects anonymized, GDPR-compliant Core Web Vitals to improve performance and prevent application crashes.</li>
               </ul>
             </section>
 
             {/* Privacy Protection and GDPR */}
             <section className="space-y-4">
-              <h3 className="text-lg font-bold text-slate-950 dark:text-slate-100 flex items-center gap-2">
-                <span className="material-symbols-outlined notranslate text-sky-500" translate="no">shield</span>
+              <h3 className="text-lg font-bold text-slate-950 dark:text-slate-100">
                 3. Privacy Protection and User Rights
               </h3>
               <p className="text-sm leading-relaxed text-slate-700 dark:text-slate-300">
@@ -181,19 +174,17 @@ export const PrivacyPolicy: React.FC<PrivacyPolicyProps> = ({ theme, toggleTheme
 
             {/* Subscriptions section */}
             <section className="space-y-4">
-              <h3 className="text-lg font-bold text-slate-950 dark:text-slate-100 flex items-center gap-2">
-                <span className="material-symbols-outlined notranslate text-sky-500" translate="no">payments</span>
+              <h3 className="text-lg font-bold text-slate-950 dark:text-slate-100">
                 4. Forthcoming Premium Tiers and Subscription Plans
               </h3>
               <p className="text-sm leading-relaxed text-slate-700 dark:text-slate-300">
-                MeteoSran is currently a public educational resource. To sustain live WebSocket connection hosting andAccuWeather API costs, a premium subscription model may be introduced in a forthcoming future version to support advanced real-time features. Transactions will be handled via third-party, PCI-DSS compliant secure payment gateways. No card details will ever touch our servers.
+                MeteoSran is currently a public educational resource. To sustain live WebSocket connection hosting and AccuWeather API costs, a premium subscription model may be introduced in a forthcoming future version to support advanced real-time features. Transactions will be handled via third-party, PCI-DSS compliant secure payment gateways. No card details will ever touch our servers.
               </p>
             </section>
 
             {/* Contact details */}
             <section className="space-y-4 border-t border-slate-200/50 dark:border-slate-800/50 pt-6">
-              <h3 className="text-lg font-bold text-slate-950 dark:text-slate-100 flex items-center gap-2">
-                <span className="material-symbols-outlined notranslate text-sky-500" translate="no">contact_page</span>
+              <h3 className="text-lg font-bold text-slate-950 dark:text-slate-100">
                 5. Contact Us
               </h3>
               <p className="text-sm leading-relaxed text-slate-700 dark:text-slate-300">
