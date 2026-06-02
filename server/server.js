@@ -906,12 +906,15 @@ app.post('/api/ai/chat', async (req, res) => {
             };
         });
 
+        // Models ordered newest → oldest so best quality is tried first.
+        // Source: https://ai.google.dev/gemini-api/docs/models (June 2026)
         const SUPPORTED_MODELS = [
-            'gemini-2.5-flash-preview-05-20',
-            'gemini-2.5-flash',
-            'gemini-2.0-flash',
-            'gemini-2.0-flash-lite',
-            'gemini-1.5-flash',
+            'gemini-2.5-flash-preview-05-20', // Latest 2.5 Flash preview
+            'gemini-2.5-flash',               // Stable 2.5 Flash
+            'gemini-2.5-pro',                 // Most capable
+            'gemini-2.0-flash',               // Stable 2.0 Flash
+            'gemini-2.0-flash-lite',          // Lightweight fallback
+            'gemini-flash-latest',            // Alias: always latest Flash
         ];
 
         let rateLimitError = null;
@@ -1108,7 +1111,7 @@ User message: "${text}"`;
             'gemini-2.5-flash',
             'gemini-2.0-flash',
             'gemini-2.0-flash-lite',
-            'gemini-1.5-flash',
+            'gemini-flash-latest',
         ];
 
         let rateLimitError = null;
@@ -1215,7 +1218,7 @@ Rules:
             'gemini-2.5-flash',
             'gemini-2.0-flash',
             'gemini-2.0-flash-lite',
-            'gemini-1.5-flash',
+            'gemini-flash-latest',
         ];
         let rateLimitError = null;
         let lastError = null;
