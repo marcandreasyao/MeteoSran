@@ -59,6 +59,11 @@ app.get('/api/keys/status', (req, res) => {
     const now = Date.now();
     const status = geminiKeysState.map((ks, i) => {
         const cooldownRemainingMs = Math.max(0, ks.cooldownUntil - now);
+        // Refresh minute window for accurate RPM display
+        if (now - ks.minuteWindowStart >= 60000) {
+            ks.minuteRequests = 0;
+            ks.minuteWindowStart = now;
+        }
         const state = ks.invalidKey
             ? 'invalid'
             : ks.billingExhausted && cooldownRemainingMs > 0
@@ -73,6 +78,8 @@ app.get('/api/keys/status', (req, res) => {
             lastError: ks.lastError,
             failureCount: ks.failureCount,
             cooldownRemainingSeconds: Math.ceil(cooldownRemainingMs / 1000),
+            rpm: ks.minuteRequests,
+            rpmCap: RPM_SOFT_CAP,
             totalRequests: ks.totalRequests,
             totalSuccess: ks.totalSuccess,
             successRate: ks.totalRequests > 0
@@ -82,10 +89,17 @@ app.get('/api/keys/status', (req, res) => {
     });
 
     const availableCount = status.filter(k => k.state === 'available').length;
+    const totalRpmUsed = status.reduce((sum, k) => sum + k.rpm, 0);
+    const effectiveCapacity = geminiKeysState.length * RPM_SOFT_CAP;
     res.json({
         totalKeys: geminiKeysState.length,
         availableKeys: availableCount,
         allExhausted: availableCount === 0,
+        rpmUsed: totalRpmUsed,
+        rpmCapacity: effectiveCapacity,
+        rpmUtilization: effectiveCapacity > 0
+            ? `${Math.round((totalRpmUsed / effectiveCapacity) * 100)}%`
+            : 'N/A',
         keys: status,
         timestamp: new Date().toISOString(),
     });
@@ -120,17 +134,14 @@ if (GEMINI_KEYS.length === 0) {
 }
 
 // ============================================================
-// ULTIMATE KEY ROTATION STATE
-// Tracks: cooldowns, failure counts, billing exhaustion
+// ULTIMATE COST-EFFICIENT KEY ROTATION STATE
+// Tracks: cooldowns, failure counts, billing, per-minute RPM
+// Designed for 100+ concurrent users on free tier (15 RPM/key)
 // ============================================================
 
-/**
- * Error types for smart key rotation:
- * - 'rate_limit'   : 429 Too Many Requests — temporary, use exponential backoff
- * - 'billing'      : RESOURCE_EXHAUSTED / credits depleted — long cooldown (10 min)
- * - 'auth'         : 401/403 invalid key — skip permanently
- * - 'server_error' : 5xx — short cooldown (15s)
- */
+// Soft RPM cap per key — leave headroom below Google's 15 RPM hard limit
+const RPM_SOFT_CAP = 12;
+
 const geminiKeysState = GEMINI_KEYS.map((key, i) => ({
     key,
     label: `Key ${i + 1}`,
@@ -141,37 +152,74 @@ const geminiKeysState = GEMINI_KEYS.map((key, i) => ({
     lastError: null,        // last error type string
     totalRequests: 0,       // lifetime requests made with this key
     totalSuccess: 0,        // lifetime successes
+    // Per-minute request tracking (proactive rate spreading)
+    minuteRequests: 0,      // requests made in the current minute window
+    minuteWindowStart: 0,   // timestamp when the current minute window began
 }));
 
 let currentKeyIndex = 0;
 
 /**
- * Returns the next available Gemini API key that is not in cooldown.
- * Skips permanently-broken keys (billing exhausted, invalid).
- * Falls back to least-recently-available key if all are in cooldown.
+ * Resets the per-minute counter if the current 60s window has elapsed.
+ */
+const refreshMinuteWindow = (keyState) => {
+    const now = Date.now();
+    if (now - keyState.minuteWindowStart >= 60000) {
+        keyState.minuteRequests = 0;
+        keyState.minuteWindowStart = now;
+    }
+};
+
+/**
+ * Returns the next available Gemini API key using LEAST-LOADED selection.
+ * Priority: pick the available key with the fewest requests this minute.
+ * This proactively spreads load across keys BEFORE any 429s hit.
  */
 const getNextAvailableKey = () => {
     const now = Date.now();
     const totalKeys = geminiKeysState.length;
     if (totalKeys === 0) return null;
 
-    // Pass 1: Find an available key (no cooldown, not permanently broken)
+    // Pass 1: Collect all available keys (not in cooldown, not permanently broken)
+    const availableKeys = [];
     for (let i = 0; i < totalKeys; i++) {
-        const index = (currentKeyIndex + i) % totalKeys;
-        const keyState = geminiKeysState.at(index);
+        const keyState = geminiKeysState[i];
         if (!keyState) continue;
-        if (keyState.invalidKey) continue; // skip permanently bad keys
+        if (keyState.invalidKey) continue;
+        refreshMinuteWindow(keyState);
         if (keyState.cooldownUntil <= now) {
-            currentKeyIndex = (index + 1) % totalKeys;
-            return { key: keyState.key, index, state: keyState };
+            availableKeys.push({ keyState, index: i });
         }
+    }
+
+    if (availableKeys.length > 0) {
+        // Sort by fewest requests this minute (least-loaded first)
+        // Break ties with round-robin (distance from currentKeyIndex)
+        availableKeys.sort((a, b) => {
+            const rpmDiff = a.keyState.minuteRequests - b.keyState.minuteRequests;
+            if (rpmDiff !== 0) return rpmDiff;
+            // Break tie: prefer the key closest to currentKeyIndex in round-robin order
+            const distA = (a.index - currentKeyIndex + totalKeys) % totalKeys;
+            const distB = (b.index - currentKeyIndex + totalKeys) % totalKeys;
+            return distA - distB;
+        });
+
+        const best = availableKeys[0];
+        // If the least-loaded key is at or over the soft cap, prefer one that isn't
+        const underCap = availableKeys.find(k => k.keyState.minuteRequests < RPM_SOFT_CAP);
+        const chosen = underCap || best;
+
+        currentKeyIndex = (chosen.index + 1) % totalKeys;
+        // Increment per-minute counter proactively
+        chosen.keyState.minuteRequests++;
+        return { key: chosen.keyState.key, index: chosen.index, state: chosen.keyState };
     }
 
     // Pass 2: All usable keys are in cooldown — pick the soonest to recover
     let bestIndex = -1;
     let minCooldown = Infinity;
     for (let i = 0; i < totalKeys; i++) {
-        const keyState = geminiKeysState.at(i);
+        const keyState = geminiKeysState[i];
         if (!keyState || keyState.invalidKey) continue;
         if (keyState.cooldownUntil < minCooldown) {
             minCooldown = keyState.cooldownUntil;
@@ -185,9 +233,11 @@ const getNextAvailableKey = () => {
     }
 
     currentKeyIndex = (bestIndex + 1) % totalKeys;
-    const bestKeyState = geminiKeysState.at(bestIndex);
+    const bestKeyState = geminiKeysState[bestIndex];
     const waitSec = Math.ceil((bestKeyState.cooldownUntil - now) / 1000);
     console.warn(`[MeteoSran Server] ⏳ All keys cooling down. Using ${bestKeyState.label}, available in ${waitSec}s.`);
+    refreshMinuteWindow(bestKeyState);
+    bestKeyState.minuteRequests++;
     return { key: bestKeyState.key, index: bestIndex, state: bestKeyState };
 };
 
@@ -197,10 +247,11 @@ const getNextAvailableKey = () => {
  */
 const markKeyFailed = (index, errorMessage = '', status = null) => {
     if (index < 0 || index >= geminiKeysState.length) return;
-    const keyState = geminiKeysState.at(index);
+    const keyState = geminiKeysState[index];
     if (!keyState) return;
 
     keyState.failureCount++;
+    keyState.totalRequests++;
     const isBillingExhausted = errorMessage.includes('prepayment credits') ||
                                errorMessage.includes('credits are depleted') ||
                                errorMessage.includes('RESOURCE_EXHAUSTED') && (status === 429 || errorMessage.includes('billing'));
@@ -214,7 +265,6 @@ const markKeyFailed = (index, errorMessage = '', status = null) => {
         keyState.cooldownUntil = Infinity;
         console.error(`[MeteoSran Server] 🔑 ${keyState.label} is INVALID — skipping permanently.`);
     } else if (isBillingExhausted) {
-        // Long cooldown: 10 minutes for billing issues
         const cooldownMs = 10 * 60 * 1000;
         keyState.billingExhausted = true;
         keyState.lastError = 'billing';
@@ -227,12 +277,10 @@ const markKeyFailed = (index, errorMessage = '', status = null) => {
         keyState.cooldownUntil = Date.now() + backoffSeconds * 1000;
         console.warn(`[MeteoSran Server] ⏱️  ${keyState.label} rate limited (429). Backoff: ${backoffSeconds}s (failure #${keyState.failureCount}, until ${new Date(keyState.cooldownUntil).toLocaleTimeString()}).`);
     } else if (isServerError) {
-        // Short cooldown for server errors: 15s
         keyState.lastError = 'server_error';
         keyState.cooldownUntil = Date.now() + 15000;
         console.warn(`[MeteoSran Server] 🔥 ${keyState.label} server error (${status}). Short cooldown: 15s.`);
     } else {
-        // Generic error — 30s cooldown
         keyState.lastError = 'unknown';
         keyState.cooldownUntil = Date.now() + 30000;
         console.warn(`[MeteoSran Server] ⚠️  ${keyState.label} failed (unknown error). Cooldown: 30s.`);
@@ -243,7 +291,7 @@ const markKeyFailed = (index, errorMessage = '', status = null) => {
  * Resets a key's failure count on success (so backoff resets for next failure).
  */
 const markKeySuccess = (index) => {
-    const keyState = geminiKeysState.at(index);
+    const keyState = geminiKeysState[index];
     if (!keyState) return;
     keyState.failureCount = 0;
     keyState.billingExhausted = false;
@@ -252,8 +300,12 @@ const markKeySuccess = (index) => {
     keyState.totalRequests++;
 };
 
-// Backwards-compat shim: markKeyRateLimited is kept in case anything else calls it
+// Backwards-compat shim
 const markKeyRateLimited = (index) => markKeyFailed(index, '429 Too Many Requests', 429);
+
+// Log effective RPM capacity at startup
+const effectiveRPM = GEMINI_KEYS.length * RPM_SOFT_CAP;
+console.log(`[MeteoSran Server] 🚀 Effective capacity: ~${effectiveRPM} RPM across ${GEMINI_KEYS.length} keys (soft cap ${RPM_SOFT_CAP}/key).`);
 
 // ==========================================
 // 1. ACCUWEATHER PROXY (Unchanged)
@@ -906,17 +958,17 @@ app.post('/api/ai/chat', async (req, res) => {
             };
         });
 
-        // Models ordered newest → oldest so best quality is tried first.
+        // Models ordered CHEAPEST → most expensive for maximum cost efficiency.
+        // Lite models handle weather chat well and cost 4-10x less.
         // Source: https://ai.google.dev/gemini-api/docs/models (June 2026)
         const SUPPORTED_MODELS = [
-            'gemini-3.5-flash',               // Latest Gemini 3.5 Flash
-            'gemini-2.5-pro',                 // Capable 2.5 Pro
-            'gemini-2.5-flash',               // Stable 2.5 Flash
-            'gemini-3.1-flash-lite',          // Stable 3.1 Flash Lite (high quality, cost-effective)
-            'gemini-2.5-flash-lite',          // Stable 2.5 Flash Lite
-            'gemini-2.0-flash',               // Stable 2.0 Flash
-            'gemini-2.0-flash-lite',          // Lightweight 2.0 fallback
-            'gemini-flash-latest',            // Alias: always latest Flash
+            'gemini-2.5-flash-lite',          // Cheapest: $0.075/1M in, $0.30/1M out
+            'gemini-3.1-flash-lite',          // Very cheap lite model
+            'gemini-2.0-flash-lite',          // Legacy lite fallback
+            'gemini-2.5-flash',               // Mid-tier: $0.30/1M in, $2.50/1M out
+            'gemini-2.0-flash',               // Legacy mid-tier
+            'gemini-flash-latest',            // Alias: latest Flash
+            'gemini-3.5-flash',               // Premium: $1.50/1M in, $9.00/1M out
         ];
 
         let rateLimitError = null;
@@ -1108,14 +1160,12 @@ app.post('/api/ai/title', async (req, res) => {
         const prompt = `Based on the following first message from a user in a weather chat assistant, generate a super concise, short title (maximum 3 to 4 words). Do not use quotes, punctuation, or explanations. Respond with ONLY the title itself.
 User message: "${text}"`;
 
+        // Title generation is a trivial task — use ONLY ultra-cheap lite models
         const SUPPORTED_MODELS = [
-            'gemini-3.5-flash',
-            'gemini-2.5-flash',
-            'gemini-3.1-flash-lite',
-            'gemini-2.5-flash-lite',
-            'gemini-2.0-flash',
-            'gemini-2.0-flash-lite',
-            'gemini-flash-latest',
+            'gemini-2.5-flash-lite',           // Cheapest, perfect for titles
+            'gemini-3.1-flash-lite',           // Very cheap fallback
+            'gemini-2.0-flash-lite',           // Legacy lite fallback
+            'gemini-flash-lite-latest',        // Alias to latest lite
         ];
 
         let rateLimitError = null;
@@ -1217,14 +1267,12 @@ Rules:
 - NEVER invent facts not present in the transcript.
 - Output ONLY the structured memory block. No preamble, no explanation.`;
 
+        // Memory summarization is a simple extraction task — use ONLY cheap lite models
         const memoryModels = [
-            'gemini-3.5-flash',
-            'gemini-2.5-flash',
-            'gemini-3.1-flash-lite',
-            'gemini-2.5-flash-lite',
-            'gemini-2.0-flash',
-            'gemini-2.0-flash-lite',
-            'gemini-flash-latest',
+            'gemini-2.5-flash-lite',           // Cheapest, great for extraction
+            'gemini-3.1-flash-lite',           // Very cheap fallback
+            'gemini-2.0-flash-lite',           // Legacy lite fallback
+            'gemini-flash-lite-latest',        // Alias to latest lite
         ];
         let rateLimitError = null;
         let lastError = null;
