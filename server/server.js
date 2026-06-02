@@ -909,11 +909,13 @@ app.post('/api/ai/chat', async (req, res) => {
         // Models ordered newest → oldest so best quality is tried first.
         // Source: https://ai.google.dev/gemini-api/docs/models (June 2026)
         const SUPPORTED_MODELS = [
-            'gemini-2.5-flash-preview-05-20', // Latest 2.5 Flash preview
+            'gemini-3.5-flash',               // Latest Gemini 3.5 Flash
+            'gemini-2.5-pro',                 // Capable 2.5 Pro
             'gemini-2.5-flash',               // Stable 2.5 Flash
-            'gemini-2.5-pro',                 // Most capable
+            'gemini-3.1-flash-lite',          // Stable 3.1 Flash Lite (high quality, cost-effective)
+            'gemini-2.5-flash-lite',          // Stable 2.5 Flash Lite
             'gemini-2.0-flash',               // Stable 2.0 Flash
-            'gemini-2.0-flash-lite',          // Lightweight fallback
+            'gemini-2.0-flash-lite',          // Lightweight 2.0 fallback
             'gemini-flash-latest',            // Alias: always latest Flash
         ];
 
@@ -1107,8 +1109,10 @@ app.post('/api/ai/title', async (req, res) => {
 User message: "${text}"`;
 
         const SUPPORTED_MODELS = [
-            'gemini-2.5-flash-preview-05-20',
+            'gemini-3.5-flash',
             'gemini-2.5-flash',
+            'gemini-3.1-flash-lite',
+            'gemini-2.5-flash-lite',
             'gemini-2.0-flash',
             'gemini-2.0-flash-lite',
             'gemini-flash-latest',
@@ -1214,8 +1218,10 @@ Rules:
 - Output ONLY the structured memory block. No preamble, no explanation.`;
 
         const memoryModels = [
-            'gemini-2.5-flash-preview-05-20',
+            'gemini-3.5-flash',
             'gemini-2.5-flash',
+            'gemini-3.1-flash-lite',
+            'gemini-2.5-flash-lite',
             'gemini-2.0-flash',
             'gemini-2.0-flash-lite',
             'gemini-flash-latest',
