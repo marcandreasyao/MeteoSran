@@ -291,7 +291,7 @@ export const WeatherCard: React.FC<WeatherCardProps> = ({ data }) => {
       `}</style>
 
       <div
-        className={`relative max-w-md w-full rounded-3xl overflow-hidden backdrop-blur-xl border border-white/15 shadow-[0_30px_70px_-10px_rgba(0,0,0,0.5),0_15px_35px_-12px_rgba(0,0,0,0.3)] dark:shadow-[0_40px_90px_-12px_rgba(0,0,0,0.75),0_20px_45px_-15px_rgba(0,0,0,0.55)] ${getContainerBg(data.icon)}`}
+        className={`relative max-w-md w-full rounded-3xl overflow-hidden backdrop-blur-xl border border-white/15 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.25),0_15px_30px_-15px_rgba(0,0,0,0.15)] dark:shadow-[0_30px_70px_-15px_rgba(0,0,0,0.5),0_15px_35px_-15px_rgba(0,0,0,0.3)] ${getContainerBg(data.icon)}`}
         style={{ animation: 'wc-card-enter 0.5s cubic-bezier(0.16,1,0.3,1) forwards' }}
       >
         {/* Ambient gradient overlay */}
@@ -415,7 +415,7 @@ export const WeatherCardLoading: React.FC = () => {
         @keyframes wc-card-enter { from { opacity: 0; transform: translateY(12px) scale(0.97); } to { opacity: 1; transform: translateY(0) scale(1); } }
       `}</style>
       <div
-        className="relative max-w-md w-full rounded-3xl overflow-hidden backdrop-blur-xl border border-white/10 bg-gradient-to-br from-slate-700/60 to-gray-800/55 shadow-[0_30px_70px_-10px_rgba(0,0,0,0.5),0_15px_35px_-12px_rgba(0,0,0,0.3)] dark:shadow-[0_40px_90px_-12px_rgba(0,0,0,0.75),0_20px_45px_-15px_rgba(0,0,0,0.55)]"
+        className="relative max-w-md w-full rounded-3xl overflow-hidden backdrop-blur-xl border border-white/10 bg-gradient-to-br from-slate-700/60 to-gray-800/55 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.25),0_15px_30px_-15px_rgba(0,0,0,0.15)] dark:shadow-[0_30px_70px_-15px_rgba(0,0,0,0.5),0_15px_35px_-15px_rgba(0,0,0,0.3)]"
         style={{ animation: 'wc-card-enter 0.5s cubic-bezier(0.16,1,0.3,1) forwards' }}
       >
         <div className="p-5 space-y-4">
