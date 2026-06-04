@@ -1686,6 +1686,46 @@ app.post('/api/tts', async (req, res) => {
     }
 });
 
+// Dynamic robots.txt and sitemap.xml for multi-domain support
+app.get('/robots.txt', (req, res) => {
+    const protocol = req.secure || req.headers['x-forwarded-proto'] === 'https' ? 'https' : 'http';
+    const host = req.get('host');
+    res.type('text/plain');
+    res.send(`User-agent: *\nAllow: /\n\nSitemap: ${protocol}://${host}/sitemap.xml`);
+});
+
+app.get('/sitemap.xml', (req, res) => {
+    const protocol = req.secure || req.headers['x-forwarded-proto'] === 'https' ? 'https' : 'http';
+    const host = req.get('host');
+    const baseUrl = `${protocol}://${host}`;
+    const today = new Date().toISOString().split('T')[0];
+
+    const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>${baseUrl}/</loc>
+    <lastmod>${today}</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>1.0</priority>
+  </url>
+  <url>
+    <loc>${baseUrl}/privacy</loc>
+    <lastmod>${today}</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  <url>
+    <loc>${baseUrl}/terms</loc>
+    <lastmod>${today}</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+  </url>
+</urlset>`;
+
+    res.type('application/xml');
+    res.send(xml);
+});
+
 // Serve static files from the React app
 app.use(express.static(path.join(__dirname, '../dist')));
 

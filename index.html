@@ -7,6 +7,39 @@
     content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0, viewport-fit=cover, interactive-widget=resizes-content">
   <title>MeteoSran - AI-Powered Weather Assistant</title>
 
+  <!-- Dynamic Canonical URL Injection -->
+  <script>
+    (function() {
+      var link = document.createElement('link');
+      link.rel = 'canonical';
+      link.href = window.location.origin + window.location.pathname;
+      document.head.appendChild(link);
+    })();
+  </script>
+
+  <!-- Google Structured Data (JSON-LD) -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "MeteoSran",
+    "description": "MeteoSran is the first advanced Ivorian AI Weather Assistant. Ask weather questions and get instant real-time AI weather analysis in French and English.",
+    "url": "https://meteosran.onrender.com",
+    "applicationCategory": "WeatherApplication, EducationalApplication",
+    "operatingSystem": "All",
+    "browserRequirements": "Requires JavaScript. Requires HTML5.",
+    "offers": {
+      "@type": "Offer",
+      "price": "0.00",
+      "priceCurrency": "XOF"
+    },
+    "author": {
+      "@type": "Person",
+      "name": "Marc Andréas Yao"
+    }
+  }
+  </script>
+
   <!-- PWA Manifest -->
   <link rel="manifest" href="/manifest.json">
 
