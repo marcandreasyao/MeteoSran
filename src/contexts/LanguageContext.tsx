@@ -263,17 +263,17 @@ export const translations = {
           date: "May 2026",
           badge: "Current",
           features: {
-            memoryTitle: "🧠 Cross-Session Global Memory",
+            memoryTitle: "Cross-Session Global Memory",
             memoryDesc: "MeteoSran now understands you. Storing your preferences and cities across all sessions dynamically for seamless, long-term AI recall.",
-            weatherTitle: "📊 Visual Weather Cards",
+            weatherTitle: "Visual Weather Cards",
             weatherDesc: "Beautifully rendered mini-forecast and atmospheric panels injected directly into the chat conversation.",
-            searchTitle: "🔍 Full-Text Semantic Search",
+            searchTitle: "Full-Text Semantic Search",
             searchDesc: "Instantly search through the actual message contents of all your chats, not just their titles.",
-            privacyTitle: "🛡️ Privacy & Terms of Service",
+            privacyTitle: "Privacy & Terms of Service",
             privacyDesc: "Added fully-compliant legal documents and public routing to clear Google developer validation, featuring circular wipe transitions and custom footer layouts.",
-            bundleTitle: "🏎️ High Performance & Bundle Splitting",
+            bundleTitle: "High Performance & Bundle Splitting",
             bundleDesc: "Optimized application bundle sizes for faster loading speeds, reducing main package footprint by up to 60%.",
-            speechTitle: "🎙️ Advanced Voice Dictation & Silence Detection",
+            speechTitle: "Advanced Voice Dictation & Silence Detection",
             speechDesc: "Experience seamless dictation inspired by Apple Notes. It automatically calibrates to your room's ambient noise floor and stops recording after 1.5 seconds of silence."
           }
         },
