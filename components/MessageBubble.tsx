@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Message, MessageRole } from '../types';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { useLanguage } from '../src/contexts/LanguageContext';
+import { WeatherCard, WeatherCardData } from './WeatherCard';
 
 interface MessageBubbleProps {
   message: Message;
@@ -96,6 +97,8 @@ const CodeBlock: React.FC<{ language: string; children: React.ReactNode }> = ({ 
 
 const stripMarkdown = (text: string): string => {
   return text
+    // Remove weather card blocks first
+    .replace(/<weather-card>[\s\S]*?<\/weather-card>/gi, '')
     // Remove code blocks
     .replace(/```[\s\S]*?```/g, '')
     // Remove inline code
@@ -109,6 +112,50 @@ const stripMarkdown = (text: string): string => {
     // Replace multiple spaces/newlines with a single space
     .replace(/\s+/g, ' ')
     .trim();
+};
+
+// ── Weather Card Parser ──
+const parseWeatherCard = (text: string): { cleanText: string; cardData: WeatherCardData | null } => {
+  const tagRegex = /<weather-card>([\s\S]*?)<\/weather-card>/i;
+  const match = text.match(tagRegex);
+
+  if (!match) {
+    return { cleanText: text, cardData: null };
+  }
+
+  const cleanText = text.replace(tagRegex, '').trim();
+  let cardData: WeatherCardData | null = null;
+
+  try {
+    const parsed = JSON.parse(match[1].trim());
+    const d = parsed.data || parsed;
+    
+    cardData = {
+      location: d.location || 'Unknown',
+      condition: d.condition || '',
+      icon: d.icon || 'cloudy',
+      temperature: {
+        current: d.temperature?.current ?? 0,
+        high: d.temperature?.high ?? d.temperature?.current ?? 0,
+        low: d.temperature?.low ?? d.temperature?.current ?? 0,
+        unit: d.temperature?.unit || 'C',
+      },
+      metrics: {
+        humidity: d.metrics?.humidity ?? 0,
+        windSpeed: d.metrics?.windSpeed ?? 0,
+        windDirection: d.metrics?.windDirection || 'N',
+        uvIndex: d.metrics?.uvIndex ?? 0,
+        precipitationChance: d.metrics?.precipitationChance ?? 0,
+      },
+      feelsLike: d.feelsLike,
+      isDayTime: d.isDayTime,
+      hourlyStrip: Array.isArray(d.hourlyStrip) ? d.hourlyStrip : undefined,
+    };
+  } catch (e) {
+    console.warn('[WeatherCard] Failed to parse weather card JSON:', e);
+  }
+
+  return { cleanText, cardData };
 };
 
 export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, onRegenerate, onSwitchAlternative, isHighlighted = false }) => {
@@ -344,43 +391,57 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, onRegener
             <span className="text-[10px] md:text-xs text-slate-400 dark:text-slate-500">{timeString}</span>
           </div>
 
-          <div 
-            className={`text-slate-800 dark:text-slate-200 text-[14px] md:text-[15px] leading-relaxed transition-opacity duration-300 ${isTyping ? 'opacity-100' : ''}`}
-            style={{ textShadow: '0 0.5px 1.5px rgba(0, 0, 0, 0.12)' }}
-          >
-            <ReactMarkdown
-              remarkPlugins={[remarkGfm]}
-              components={{
-                h1: ({node, ...props}) => <h1 className="text-xl md:text-2xl font-bold mt-4 md:mt-6 mb-2 text-slate-900 dark:text-white" {...props} />,
-                h2: ({node, ...props}) => <h2 className="text-lg md:text-xl font-semibold mt-4 md:mt-5 mb-2 text-slate-800 dark:text-slate-100" {...props} />,
-                h3: ({node, ...props}) => <h3 className="text-base md:text-lg font-medium mt-3 md:mt-4 mb-1 text-slate-800 dark:text-slate-200" {...props} />,
-                ul: ({node, ...props}) => <ul className="list-disc list-outside ml-4 md:ml-5 my-2 md:my-3 space-y-1.5 marker:text-slate-400" {...props} />,
-                ol: ({node, ...props}) => <ol className="list-decimal list-outside ml-4 md:ml-5 my-2 md:my-3 space-y-1.5 marker:text-slate-400" {...props} />,
-                li: ({node, ...props}) => <li className="pl-1" {...props} />,
-                p: ({node, children, ...props}) => <p className="mb-3 md:mb-4 last:mb-0" {...props}>{children}</p>,
-                strong: ({node, ...props}) => <strong className="font-semibold text-slate-900 dark:text-white" {...props} />,
-                a: ({node, ...props}) => <a className="text-sky-600 dark:text-sky-400 hover:text-sky-700 dark:hover:text-sky-300 underline decoration-sky-400/30 underline-offset-2 transition-colors" target="_blank" rel="noopener noreferrer" {...props} />,
-                blockquote: ({node, ...props}) => <blockquote className="border-l-4 border-slate-300 dark:border-slate-600 pl-4 py-1 my-3 italic text-slate-600 dark:text-slate-400 bg-slate-50/50 dark:bg-slate-800/50 rounded-r-lg" {...props} />,
-                code: ({node, inline, className, children, ...props}: any) => {
-                  const match = /language-(\w+)/.exec(className || '');
-                  const language = match ? match[1] : 'code';
-                  
-                  return inline ? (
-                    <code className="bg-slate-100 dark:bg-slate-800/80 px-1.5 py-0.5 rounded-md border border-slate-200/50 dark:border-slate-700/50 text-[0.9em] font-mono text-sky-700 dark:text-sky-300 shadow-sm" {...props}>
-                      {children}
-                    </code>
-                  ) : (
-                    <CodeBlock language={language}>
-                      {children}
-                    </CodeBlock>
-                  );
-                }
-              }}
-            >
-              {displayedText}
-            </ReactMarkdown>
-            {isTyping && <AuraCursor />}
-          </div>
+          {(() => {
+            const { cleanText, cardData } = parseWeatherCard(displayedText);
+            return (
+              <>
+                <div 
+                  className={`text-slate-800 dark:text-slate-200 text-[14px] md:text-[15px] leading-relaxed transition-opacity duration-300 ${isTyping ? 'opacity-100' : ''}`}
+                  style={{ textShadow: '0 0.5px 1.5px rgba(0, 0, 0, 0.12)' }}
+                >
+                  <ReactMarkdown
+                    remarkPlugins={[remarkGfm]}
+                    components={{
+                      h1: ({node, ...props}) => <h1 className="text-xl md:text-2xl font-bold mt-4 md:mt-6 mb-2 text-slate-900 dark:text-white" {...props} />,
+                      h2: ({node, ...props}) => <h2 className="text-lg md:text-xl font-semibold mt-4 md:mt-5 mb-2 text-slate-800 dark:text-slate-100" {...props} />,
+                      h3: ({node, ...props}) => <h3 className="text-base md:text-lg font-medium mt-3 md:mt-4 mb-1 text-slate-800 dark:text-slate-200" {...props} />,
+                      ul: ({node, ...props}) => <ul className="list-disc list-outside ml-4 md:ml-5 my-2 md:my-3 space-y-1.5 marker:text-slate-400" {...props} />,
+                      ol: ({node, ...props}) => <ol className="list-decimal list-outside ml-4 md:ml-5 my-2 md:my-3 space-y-1.5 marker:text-slate-400" {...props} />,
+                      li: ({node, ...props}) => <li className="pl-1" {...props} />,
+                      p: ({node, children, ...props}) => <p className="mb-3 md:mb-4 last:mb-0" {...props}>{children}</p>,
+                      strong: ({node, ...props}) => <strong className="font-semibold text-slate-900 dark:text-white" {...props} />,
+                      a: ({node, ...props}) => <a className="text-sky-600 dark:text-sky-400 hover:text-sky-700 dark:hover:text-sky-300 underline decoration-sky-400/30 underline-offset-2 transition-colors" target="_blank" rel="noopener noreferrer" {...props} />,
+                      blockquote: ({node, ...props}) => <blockquote className="border-l-4 border-slate-300 dark:border-slate-600 pl-4 py-1 my-3 italic text-slate-600 dark:text-slate-400 bg-slate-50/50 dark:bg-slate-800/50 rounded-r-lg" {...props} />,
+                      code: ({node, inline, className, children, ...props}: any) => {
+                        const match = /language-(\w+)/.exec(className || '');
+                        const language = match ? match[1] : 'code';
+                        
+                        return inline ? (
+                          <code className="bg-slate-100 dark:bg-slate-800/80 px-1.5 py-0.5 rounded-md border border-slate-200/50 dark:border-slate-700/50 text-[0.9em] font-mono text-sky-700 dark:text-sky-300 shadow-sm" {...props}>
+                            {children}
+                          </code>
+                        ) : (
+                          <CodeBlock language={language}>
+                            {children}
+                          </CodeBlock>
+                        );
+                      }
+                    }}
+                  >
+                    {cleanText}
+                  </ReactMarkdown>
+                  {isTyping && <AuraCursor />}
+                </div>
+
+                {/* ── Visual Weather Card ── */}
+                {cardData && !isTyping && (
+                  <div className="mt-4">
+                    <WeatherCard data={cardData} />
+                  </div>
+                )}
+              </>
+            );
+          })()}
           
           {/* ACTION BUTTONS — Premium glassmorphic row */}
           <div className="flex items-center gap-1.5 mt-3 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-all duration-300 ease-out">

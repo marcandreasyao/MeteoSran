@@ -1,0 +1,23 @@
+@import "tailwindcss";
+@config "../tailwind.config.js";
+
+/* Font loading protection for Material Icons */
+.material-symbols-outlined {
+  color: transparent !important;
+  width: 24px;
+  height: 24px;
+  display: inline-block;
+  overflow: hidden;
+  text-align: center;
+  white-space: nowrap;
+  vertical-align: middle;
+  font-family: inherit; /* Prevent fallback rendering weird sizing */
+}
+
+/* Once font is loaded, show the icon glyph natively */
+.fonts-loaded .material-symbols-outlined {
+  color: inherit !important;
+  width: auto;
+  height: auto;
+  font-family: 'Material Symbols Outlined';
+}

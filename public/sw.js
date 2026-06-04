@@ -1,6 +1,6 @@
-const CACHE_NAME = 'meteosran-v1.6.5';
-const STATIC_CACHE_NAME = 'meteosran-static-v1.6.5';
-const DYNAMIC_CACHE_NAME = 'meteosran-dynamic-v1.6.5';
+const CACHE_NAME = 'meteosran-v1.7.1';
+const STATIC_CACHE_NAME = 'meteosran-static-v1.7.1';
+const DYNAMIC_CACHE_NAME = 'meteosran-dynamic-v1.7.1';
 
 // Files to cache immediately
 const STATIC_ASSETS = [
@@ -10,11 +10,9 @@ const STATIC_ASSETS = [
   '/Meteosran-Icon_128x128.ico',
   '/manifest.json',
   '/offline.html',
-  'https://cdn.tailwindcss.com',
   'https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;700&display=swap',
   'https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200'
 ];
-
 // Network-first resources (always try network first)
 const NETWORK_FIRST = [
   '/api/',

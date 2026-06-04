@@ -144,7 +144,7 @@ const App: React.FC = () => {
   const [highlightedMessageId, setHighlightedMessageId] = useState<string | null>(null);
 
   // Release Notes State
-  const CURRENT_VERSION = '1.7';
+  const CURRENT_VERSION = '1.7.1';
   const [showReleaseNotes, setShowReleaseNotes] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [hasUnreadNotifications, setHasUnreadNotifications] = useState(false);

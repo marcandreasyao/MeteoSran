@@ -413,11 +413,42 @@ const mapOpenWeather25ToSchema = (currentData, forecastData, locationLabel) => {
         };
     });
 
+    // Build hourly strip from the first 8 forecast items (3-hour intervals)
+    const mapOWIconToCondition = (owIcon) => {
+        const code = owIcon.replace(/[dn]$/, '');
+        const isNight = owIcon.endsWith('n');
+        const map = {
+            '01': isNight ? 'clear-night' : 'sunny',
+            '02': 'partly-cloudy',
+            '03': 'cloudy',
+            '04': 'cloudy',
+            '09': 'drizzle',
+            '10': 'rain',
+            '11': 'thunderstorms-rain',
+            '13': 'snow',
+            '50': 'fog',
+        };
+        return map[code] || 'cloudy';
+    };
+
+    const hourlyStrip = forecastData.list.slice(0, 8).map(item => {
+        const d = new Date(item.dt * 1000);
+        const timeLabel = d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', hour12: false });
+        return {
+            time: timeLabel,
+            temp: Math.round(item.main.temp),
+            icon: mapOWIconToCondition(item.weather[0].icon),
+        };
+    });
+
     const degToCompass = (num) => {
         const val = Math.floor((num / 22.5) + 0.5);
         const arr = ["N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE", "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW"];
         return arr.at(val % 16);
     };
+
+    // Map current weather icon to condition string for the card
+    const currentConditionIcon = mapOWIconToCondition(currentData.weather[0].icon);
 
     return {
         location: locationLabel,
@@ -446,6 +477,8 @@ const mapOpenWeather25ToSchema = (currentData, forecastData, locationLabel) => {
         uvIndexText: uvText,
         precipitationType: precipType,
         precip_mm: parseFloat(precipMm.toFixed(1)),
+        conditionIcon: currentConditionIcon,
+        hourlyStrip: hourlyStrip,
         forecast: forecast
     };
 };

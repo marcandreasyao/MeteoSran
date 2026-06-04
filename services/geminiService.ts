@@ -306,6 +306,44 @@ ${memorySummary}
           const lon = longitude ?? -4.01266;
           const historicalContext = await getClimateNormals(lat, lon);
           invisibleContext += `\n${historicalContext}`;
+
+          // WeatherCard visual trigger: instruct the model to emit structured JSON
+          invisibleContext += `\n\n[WEATHER_CARD_TRIGGER_INSTRUCTIONS]:
+CRITICAL: After your natural language weather response text, you MUST append a single JSON block on a new line, wrapped in <weather-card> tags. This block will be intercepted by the UI to render a visual weather card. The user will NOT see this JSON.
+
+Format:
+<weather-card>
+{
+  "component": "WeatherCard",
+  "data": {
+    "location": "${weatherData.location || 'Unknown'}",
+    "condition": "${weatherData.weatherText || 'Unknown'}",
+    "icon": "${weatherData.conditionIcon || 'cloudy'}",
+    "temperature": {
+      "current": ${Math.round(weatherData.temperature || 0)},
+      "high": ${Math.round(weatherData.forecast?.[0]?.maxTemp || weatherData.temperature || 0)},
+      "low": ${Math.round(weatherData.forecast?.[0]?.minTemp || weatherData.temperature || 0)},
+      "unit": "C"
+    },
+    "metrics": {
+      "humidity": ${weatherData.relativeHumidity || 0},
+      "windSpeed": ${weatherData.wind?.speed || 0},
+      "windDirection": "${weatherData.wind?.direction || 'N'}",
+      "uvIndex": ${weatherData.uvIndex || 0},
+      "precipitationChance": ${weatherData.forecast?.[0]?.chanceOfRain || 0}
+    },
+    "feelsLike": ${Math.round(weatherData.realFeelTemperature?.value || weatherData.temperature || 0)},
+    "isDayTime": ${weatherData.isDayTime ?? true},
+    "hourlyStrip": ${JSON.stringify(weatherData.hourlyStrip || [])}
+  }
+}
+</weather-card>
+
+RULES:
+- Use the EXACT values above for the JSON fields — do NOT hallucinate or estimate.
+- The <weather-card> block must appear AFTER your entire text response, on a separate line.
+- Do NOT mention or reference the weather card in your text. Write your response naturally, then append the card.
+- Always include the <weather-card> block when responding to weather queries that have real data.`;
         }
       } catch (fetchError) {
         console.error('Error calling weather proxy:', fetchError);

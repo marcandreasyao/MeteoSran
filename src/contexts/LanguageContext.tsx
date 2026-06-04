@@ -313,6 +313,15 @@ export const translations = {
           }
         }
       }
+    },
+    weatherCard: {
+      feelsLike: "Feels Like",
+      humidity: "Humidity",
+      wind: "Wind",
+      uvIndex: "UV Index",
+      chanceOfRain: "Rain",
+      loading: "Loading weather...",
+      hourly: "Hourly Forecast"
     }
   },
   fr: {
@@ -625,6 +634,15 @@ export const translations = {
           }
         }
       }
+    },
+    weatherCard: {
+      feelsLike: "Ressenti",
+      humidity: "Humidité",
+      wind: "Vent",
+      uvIndex: "Indice UV",
+      chanceOfRain: "Pluie",
+      loading: "Chargement météo...",
+      hourly: "Prévisions Horaires"
     }
   }
 };
