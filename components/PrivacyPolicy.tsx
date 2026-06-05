@@ -98,9 +98,11 @@ export const PrivacyPolicy: React.FC<PrivacyPolicyProps> = ({ theme, toggleTheme
                   </p>
                   <p className="text-sm leading-relaxed text-slate-700 dark:text-slate-300">
                     La présente Politique de Confidentialité décrit la manière dont nous collectons, utilisons, traitons et protégeons vos informations lorsque vous accédez à notre plateforme via{' '}
-                    <a href="https://meteosran.onrender.com" className="text-sky-500 hover:underline">https://meteosran.onrender.com</a>{' '}
-                    (futur domaine{' '}
-                    <a href="https://meteosran.com" className="text-sky-500 hover:underline">https://meteosran.com</a>)
+                    <a href="https://meteosran.com" className="text-sky-500 hover:underline">https://meteosran.com</a>{' '}
+                    (et son sous-domaine de redirection{' '}
+                    <a href="https://www.meteosran.com" className="text-sky-500 hover:underline">https://www.meteosran.com</a>{' '}
+                    ou le domaine d'hébergement technique{' '}
+                    <a href="https://meteosran.onrender.com" className="text-sky-500 hover:underline">https://meteosran.onrender.com</a>)
                     {' '}ou nos futurs produits mobiles natifs.
                   </p>
                 </>
@@ -111,9 +113,11 @@ export const PrivacyPolicy: React.FC<PrivacyPolicyProps> = ({ theme, toggleTheme
                   </p>
                   <p className="text-sm leading-relaxed text-slate-700 dark:text-slate-300">
                     This Privacy Policy documents how we collect, use, process, and protect your information when you access our weather assistant platform via{' '}
-                    <a href="https://meteosran.onrender.com" className="text-sky-500 hover:underline">https://meteosran.onrender.com</a>{' '}
-                    (future home at{' '}
-                    <a href="https://meteosran.com" className="text-sky-500 hover:underline">https://meteosran.com</a>)
+                    <a href="https://meteosran.com" className="text-sky-500 hover:underline">https://meteosran.com</a>{' '}
+                    (along with its redirect subdomain{' '}
+                    <a href="https://www.meteosran.com" className="text-sky-500 hover:underline">https://www.meteosran.com</a>{' '}
+                    or the technical web service hosting at{' '}
+                    <a href="https://meteosran.onrender.com" className="text-sky-500 hover:underline">https://meteosran.onrender.com</a>)
                     {' '}or use our forthcoming mobile app products.
                   </p>
                 </>

@@ -97,17 +97,21 @@ export const TermsOfService: React.FC<TermsOfServiceProps> = ({ theme, toggleThe
               {lang === 'fr' ? (
                 <p>
                   En accédant ou en utilisant l'application MeteoSran AI (que ce soit via notre Progressive Web App sur{' '}
-                  <a href="https://meteosran.onrender.com" className="text-sky-500 hover:underline">https://meteosran.onrender.com</a>,
-                  {' '}le futur domaine{' '}
-                  <a href="https://meteosran.com" className="text-sky-500 hover:underline">https://meteosran.com</a>,
+                  <a href="https://meteosran.com" className="text-sky-500 hover:underline">https://meteosran.com</a>{' '}
+                  (et son sous-domaine de redirection{' '}
+                  <a href="https://www.meteosran.com" className="text-sky-500 hover:underline">https://www.meteosran.com</a>{' '}
+                  ou le domaine d'hébergement technique{' '}
+                  <a href="https://meteosran.onrender.com" className="text-sky-500 hover:underline">https://meteosran.onrender.com</a>),
                   {' '}ou nos futurs produits mobiles natifs), vous reconnaissez avoir lu, compris et accepté d'être lié par les présentes Conditions d'Utilisation. Si vous n'acceptez pas ces conditions, vous devez immédiatement cesser toute utilisation de la plateforme.
                 </p>
               ) : (
                 <p>
                   By accessing or using the MeteoSran AI application (whether via our Progressive Web App at{' '}
-                  <a href="https://meteosran.onrender.com" className="text-sky-500 hover:underline">https://meteosran.onrender.com</a>,
-                  {' '}the future domain{' '}
-                  <a href="https://meteosran.com" className="text-sky-500 hover:underline">https://meteosran.com</a>,
+                  <a href="https://meteosran.com" className="text-sky-500 hover:underline">https://meteosran.com</a>{' '}
+                  (along with its redirect subdomain{' '}
+                  <a href="https://www.meteosran.com" className="text-sky-500 hover:underline">https://www.meteosran.com</a>{' '}
+                  or the technical web service hosting at{' '}
+                  <a href="https://meteosran.onrender.com" className="text-sky-500 hover:underline">https://meteosran.onrender.com</a>),
                   {' '}or our forthcoming native mobile products), you acknowledge that you have read, understood, and agree to be bound by these Terms of Service. If you do not agree to these terms, you must immediately cease all usage of the platform.
                 </p>
               )}
