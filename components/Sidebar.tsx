@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useRef } from 'react';
+import React, { useMemo, useState, useRef, useEffect } from 'react';
 import { ChatSession, SearchResultSession } from '../src/services/dbService';
 import { useLanguage } from '../src/contexts/LanguageContext';
 
@@ -51,6 +51,21 @@ const shimmerStyle = `
 }
 .shimmer-btn:hover { color: #bfdbfe; }
 .shimmer-btn:active { opacity: 0.75; }
+
+@keyframes premium-dropdown-enter {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+.animate-premium-dropdown {
+  animation: premium-dropdown-enter 0.18s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  transform-origin: top right;
+}
 `;
 
 let shimmerInjected = false;
@@ -98,6 +113,22 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const [editTitle, setEditTitle] = useState('');
   const [deletingChatId, setDeletingChatId] = useState<string | null>(null);
   const editInputRef = useRef<HTMLInputElement>(null);
+  const [activeMenuChatId, setActiveMenuChatId] = useState<string | null>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  // Close menu on click outside
+  useEffect(() => {
+    const handleOutsideClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (activeMenuChatId && !target.closest('.menu-container') && !target.closest('.menu-trigger-btn')) {
+        setActiveMenuChatId(null);
+      }
+    };
+    document.addEventListener('mousedown', handleOutsideClick);
+    return () => {
+      document.removeEventListener('mousedown', handleOutsideClick);
+    };
+  }, [activeMenuChatId]);
 
   const startRename = (chatId: string, currentTitle: string) => {
     setEditingChatId(chatId);
@@ -169,7 +200,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         {start > 0 && '...'}
         {parts.map((part, i) => 
           queryRegex.test(part) ? (
-            <mark key={i} className="bg-sky-500/35 text-sky-200 font-semibold px-0.5 rounded-sm">
+            <mark key={i} className="bg-sky-400/25 text-sky-200 font-medium px-0.5 rounded-sm not-italic">
               {part}
             </mark>
           ) : (
@@ -190,10 +221,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
       <div key={chat.id} className="flex flex-col w-full">
         <div
           className={`
-            group relative flex items-center w-full rounded-xl transition-all overflow-hidden border
+            group relative flex items-center w-full rounded-xl transition-all duration-200 border
             ${isActive
-              ? 'bg-slate-800 text-white border-slate-700 shadow-sm'
-              : 'text-slate-400 sm:hover:bg-slate-800/40 active:bg-slate-800/60 sm:hover:text-slate-200 border-transparent'}
+              ? 'bg-white/[0.07] text-white border-white/[0.08]'
+              : 'text-slate-400 sm:hover:bg-white/[0.05] active:bg-white/[0.07] sm:hover:text-slate-200 border-transparent'}
           `}
         >
           {isEditing ? (
@@ -273,62 +304,90 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   onSelectChat(chat.id);
                   if (window.innerWidth < 768) onClose();
                 }}
-                className="flex-grow text-left py-1.5 px-3.5 text-[0.8rem] sm:text-xs whitespace-nowrap overflow-hidden min-h-[38px] pr-20"
+                className="flex-grow text-left py-1 px-3.5 text-[0.8rem] sm:text-xs whitespace-nowrap overflow-hidden min-h-[30px] pr-8"
               >
                 <span className="truncate block flex-1">{chat.title}</span>
               </button>
 
-              {/* Action buttons shown on hover or if active */}
-              <div className={`
-                absolute right-1.5 top-1/2 -translate-y-1/2 flex items-center gap-1.5 px-1.5 py-0.5 rounded-lg
-                opacity-0 group-hover:opacity-100 transition-all duration-200
-                ${isActive ? 'opacity-100' : ''}
-                ${isActive ? 'bg-slate-800' : 'bg-slate-900/90 backdrop-blur-sm sm:group-hover:bg-slate-800/90'}
-              `}>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onPinChat(chat.id, !chat.isPinned);
-                  }}
-                  className="p-1 hover:bg-slate-700/50 rounded-md flex items-center justify-center transition-all duration-150 active:scale-95 shrink-0"
-                  title={chat.isPinned ? t('sidebar.unpinChat') : t('sidebar.pinChat')}
+              {/* 3-dots actions trigger */}
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setActiveMenuChatId(activeMenuChatId === chat.id ? null : chat.id);
+                }}
+                className={`
+                  absolute right-1.5 top-1/2 -translate-y-1/2 p-1 rounded-md flex items-center justify-center transition-all duration-150 active:scale-95 shrink-0 menu-trigger-btn
+                  opacity-0 group-hover:opacity-100 transition-opacity duration-200
+                  ${isActive ? 'opacity-100' : ''}
+                  ${activeMenuChatId === chat.id ? 'opacity-100 bg-white/[0.08] text-white' : 'text-slate-400 hover:text-white hover:bg-white/[0.06]'}
+                `}
+                title={t('common.options') || 'Options'}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
+                  <path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z" />
+                </svg>
+              </button>
+
+              {/* Dropdown Menu */}
+              {activeMenuChatId === chat.id && (
+                <div
+                  ref={menuRef}
+                  className="absolute right-1.5 top-[calc(100%-2px)] mt-1 w-44 bg-slate-950/90 backdrop-blur-xl border border-white/[0.08] rounded-xl p-1 shadow-[0_10px_30px_rgba(0,0,0,0.5),0_0_0_1px_rgba(255,255,255,0.05)] z-[100] animate-premium-dropdown flex flex-col gap-0.5 menu-container"
+                  onClick={(e) => e.stopPropagation()}
                 >
-                  {chat.isPinned ? (
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-3.5 h-3.5 text-amber-400 hover:text-amber-300 transition-colors">
-                      <path d="M16 12V4h1v-2H7v2h1v8l-2 2v2h5.2v6h1.6v-6H18v-2l-2-2z"></path>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onPinChat(chat.id, !chat.isPinned);
+                      setActiveMenuChatId(null);
+                    }}
+                    className="flex items-center gap-2.5 w-full text-left px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-white/[0.06] transition-all text-xs"
+                  >
+                    {chat.isPinned ? (
+                      <>
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-3.5 h-3.5 text-amber-400">
+                          <path d="M16 12V4h1v-2H7v2h1v8l-2 2v2h5.2v6h1.6v-6H18v-2l-2-2z"></path>
+                        </svg>
+                        <span>{t('sidebar.unpinChat')}</span>
+                      </>
+                    ) : (
+                      <>
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5 text-slate-400">
+                          <line x1="12" y1="17" x2="12" y2="22"></line>
+                          <path d="M5 17h14v-1.76a2 2 0 0 0-.44-1.24l-2.33-2.92A2 2 0 0 1 15.8 9.84V5a1 1 0 0 0-1-1H9.2a1 1 0 0 0-1 1v4.84a2 2 0 0 1-.43 1.24l-2.33 2.92a2 2 0 0 0-.44 1.24z"></path>
+                        </svg>
+                        <span>{t('sidebar.pinChat')}</span>
+                      </>
+                    )}
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      startRename(chat.id, chat.title);
+                      setActiveMenuChatId(null);
+                    }}
+                    className="flex items-center gap-2.5 w-full text-left px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-white/[0.06] transition-all text-xs"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" className="w-3.5 h-3.5 text-slate-400">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L6.832 19.82a4.5 4.5 0 0 1-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 0 1 1.13-1.897L16.863 4.487Zm0 0L19.5 7.125" />
                     </svg>
-                  ) : (
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5 text-slate-400 hover:text-amber-400 transition-colors">
-                      <line x1="12" y1="17" x2="12" y2="22"></line>
-                      <path d="M5 17h14v-1.76a2 2 0 0 0-.44-1.24l-2.33-2.92A2 2 0 0 1 15.8 9.84V5a1 1 0 0 0-1-1H9.2a1 1 0 0 0-1 1v4.84a2 2 0 0 1-.43 1.24l-2.33 2.92a2 2 0 0 0-.44 1.24z"></path>
+                    <span>{t('sidebar.renameChat')}</span>
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      startDelete(chat.id);
+                      setActiveMenuChatId(null);
+                    }}
+                    className="flex items-center gap-2.5 w-full text-left px-2.5 py-1.5 rounded-lg text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 transition-all text-xs border-t border-white/[0.04] mt-0.5 pt-2"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" className="w-3.5 h-3.5 text-rose-400">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
                     </svg>
-                  )}
-                </button>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    startRename(chat.id, chat.title);
-                  }}
-                  className="p-1 hover:bg-slate-700/50 rounded-md flex items-center justify-center transition-all duration-150 active:scale-95 shrink-0"
-                  title={t('sidebar.renameChat')}
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" className="w-3.5 h-3.5 text-slate-400 hover:text-blue-400 transition-colors">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L6.832 19.82a4.5 4.5 0 0 1-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 0 1 1.13-1.897L16.863 4.487Zm0 0L19.5 7.125" />
-                  </svg>
-                </button>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    startDelete(chat.id);
-                  }}
-                  className="p-1 hover:bg-slate-700/50 rounded-md flex items-center justify-center transition-all duration-150 active:scale-95 shrink-0"
-                  title={t('sidebar.deleteChat')}
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" className="w-3.5 h-3.5 text-slate-400 hover:text-rose-400 transition-colors">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
-                  </svg>
-                </button>
-              </div>
+                    <span>{t('sidebar.deleteChat')}</span>
+                  </button>
+                </div>
+              )}
             </>
           )}
         </div>
@@ -411,7 +470,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               placeholder={t('sidebar.searchPlaceholder')}
               value={searchQuery}
               onChange={(e) => onSearchChange(e.target.value)}
-              className="flex-1 min-w-0 bg-transparent border-none outline-none ring-0 focus:ring-0 focus:outline-none shadow-none appearance-none text-[0.8rem] text-slate-300 placeholder-slate-500 caret-sky-400 p-0"
+              className="flex-1 min-w-0 bg-transparent !border-0 !outline-none !ring-0 focus:!ring-0 focus:!outline-none !shadow-none appearance-none text-[0.8rem] text-slate-300 placeholder-slate-500 caret-sky-400 !p-0"
             />
           </div>
 
@@ -425,7 +484,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   </svg>
                   {t('sidebar.pinned')}
                 </div>
-                <div className="space-y-1">
+                <div className="space-y-0.5">
                   {pinnedSessions.map((chat) => renderChatRow(chat))}
                 </div>
                 <div className="border-t border-slate-800/60 my-3 mx-1" />
@@ -437,7 +496,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               {t('sidebar.recent')}
             </div>
 
-            <div className="space-y-1 flex-grow">
+            <div className="space-y-0.5 flex-grow">
               {recentSessions.map((chat) => renderChatRow(chat))}
               
               {recentSessions.length === 0 && pinnedSessions.length === 0 && (
