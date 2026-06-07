@@ -273,7 +273,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   onSelectChat(chat.id);
                   if (window.innerWidth < 768) onClose();
                 }}
-                className="flex-grow text-left py-1.5 px-3.5 text-fluid-sm whitespace-nowrap overflow-hidden min-h-[38px] pr-20"
+                className="flex-grow text-left py-1.5 px-3.5 text-[0.8rem] sm:text-xs whitespace-nowrap overflow-hidden min-h-[38px] pr-20"
               >
                 <span className="truncate block flex-1">{chat.title}</span>
               </button>
@@ -400,18 +400,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
             {t('sidebar.newChat')}
           </button>
 
-          <div className="relative mb-3 flex items-center gap-2.5 border-b border-slate-700/60 pb-2 focus-within:border-slate-500/80 transition-colors">
+          <div className="relative mb-3 flex items-center gap-2 pb-2 border-b border-slate-700/60 focus-within:border-slate-500/80 transition-colors duration-200">
             {isSearching ? (
-              <div className="w-[18px] h-[18px] border-2 border-slate-500 border-t-sky-500 rounded-full animate-spin shrink-0" />
+              <div className="w-[16px] h-[16px] border-2 border-slate-500 border-t-sky-400 rounded-full animate-spin shrink-0" />
             ) : (
-              <span className="material-symbols-outlined notranslate text-slate-500 text-[18px] shrink-0 select-none" translate="no">search</span>
+              <span className="material-symbols-outlined notranslate text-slate-500 text-[17px] shrink-0 select-none" translate="no">search</span>
             )}
             <input
               type="text"
               placeholder={t('sidebar.searchPlaceholder')}
               value={searchQuery}
               onChange={(e) => onSearchChange(e.target.value)}
-              className="flex-1 bg-transparent border-none outline-none appearance-none text-sm text-slate-300 placeholder-slate-500 caret-blue-400"
+              className="flex-1 min-w-0 bg-transparent border-none outline-none ring-0 focus:ring-0 focus:outline-none shadow-none appearance-none text-[0.8rem] text-slate-300 placeholder-slate-500 caret-sky-400 p-0"
             />
           </div>
 
