@@ -316,10 +316,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   setActiveMenuChatId(activeMenuChatId === chat.id ? null : chat.id);
                 }}
                 className={`
-                  absolute right-1.5 top-1/2 -translate-y-1/2 p-1 rounded-md flex items-center justify-center transition-all duration-150 active:scale-95 shrink-0 menu-trigger-btn
+                  absolute right-1.5 top-1/2 -translate-y-1/2 p-1.5 flex items-center justify-center transition-all duration-150 active:scale-95 shrink-0 menu-trigger-btn
                   opacity-0 group-hover:opacity-100 transition-opacity duration-200
                   ${isActive ? 'opacity-100' : ''}
-                  ${activeMenuChatId === chat.id ? 'opacity-100 bg-white/[0.08] text-white' : 'text-slate-400 hover:text-white hover:bg-white/[0.06]'}
+                  ${activeMenuChatId === chat.id ? 'opacity-100 text-white' : 'text-slate-400 hover:text-slate-200'}
                 `}
                 title={t('common.options') || 'Options'}
               >
