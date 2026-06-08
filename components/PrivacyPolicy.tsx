@@ -61,7 +61,7 @@ export const PrivacyPolicy: React.FC<PrivacyPolicyProps> = ({ theme, toggleTheme
 
             <button
               onClick={handleBackToApp}
-              className="px-4 py-1.5 rounded-full text-xs font-semibold bg-sky-500 hover:bg-sky-600 text-white shadow-md hover:shadow-lg transition-all focus:outline-none focus:ring-2 focus:ring-sky-500/50 active:scale-95 flex items-center gap-1.5 min-touch-target"
+              className="px-4 py-1.5 rounded-full bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white text-xs font-semibold shadow-lg shadow-blue-500/20 active:scale-[0.97] transition-all focus:outline-none flex items-center gap-1.5 min-touch-target"
             >
               <span className="material-symbols-outlined notranslate text-sm" translate="no">arrow_back</span>
               {lang === 'fr' ? 'Retour à MeteoSran' : 'Back to MeteoSran'}

@@ -8,6 +8,9 @@ export default {
   darkMode: 'class',
   theme: {
     extend: {
+      fontFamily: {
+        sans: ['Poppins', 'sans-serif'],
+      },
       fontSize: {
         'fluid-xs': 'clamp(0.75rem, 1vw + 0.5rem, 0.875rem)',
         'fluid-sm': 'clamp(0.875rem, 1.5vw + 0.5rem, 1rem)',

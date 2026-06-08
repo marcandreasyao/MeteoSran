@@ -375,7 +375,7 @@ export const WeatherCard: React.FC<WeatherCardProps> = ({ data }) => {
       `}</style>
 
       <div
-        className={`relative max-w-md w-full rounded-3xl overflow-hidden backdrop-blur-xl border border-white/15 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.28),0_15px_30px_-15px_rgba(0,0,0,0.18)] dark:shadow-[0_30px_70px_-15px_rgba(0,0,0,0.5),0_15px_35px_-15px_rgba(0,0,0,0.34)] ${getContainerBg(data.icon, data.timeOfDay)}`}
+        className={`relative max-w-md w-full rounded-[32px] overflow-hidden backdrop-blur-3xl backdrop-saturate-150 border border-white/40 border-b-white/10 border-r-white/10 dark:border-white/20 dark:border-b-white/5 dark:border-r-white/5 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.3),inset_0_1px_1px_rgba(255,255,255,0.4)] dark:shadow-[0_30px_70px_-15px_rgba(0,0,0,0.5),inset_0_1px_1px_rgba(255,255,255,0.15)] ${getContainerBg(data.icon, data.timeOfDay)}`}
         style={{ animation: 'wc-card-enter 0.5s cubic-bezier(0.16,1,0.3,1) forwards' }}
       >
         {/* Ambient gradient overlay */}
@@ -415,7 +415,7 @@ export const WeatherCard: React.FC<WeatherCardProps> = ({ data }) => {
           {/* ── Data Grid ── */}
           <div className="grid grid-cols-4 gap-2 md:gap-2.5 mt-5">
             {/* Feels Like */}
-            <div className="bg-white/10 rounded-2xl p-2.5 text-center backdrop-blur-sm border border-white/5">
+            <div className="bg-white/20 dark:bg-black/10 rounded-2xl p-2.5 text-center backdrop-blur-lg border border-white/40 border-b-white/10 border-r-white/10 dark:border-white/10 dark:border-b-transparent dark:border-r-transparent shadow-[inset_0_1px_1px_rgba(255,255,255,0.3),0_4px_12px_rgba(0,0,0,0.05)] dark:shadow-[inset_0_1px_1px_rgba(255,255,255,0.1),0_4px_12px_rgba(0,0,0,0.2)]">
               <svg className="w-4 h-4 mx-auto text-white/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 9V3m0 0L9.5 5.5M12 3l2.5 2.5M12 9a4 4 0 100 8 4 4 0 000-8z" />
               </svg>
@@ -424,7 +424,7 @@ export const WeatherCard: React.FC<WeatherCardProps> = ({ data }) => {
             </div>
 
             {/* Humidity */}
-            <div className="bg-white/10 rounded-2xl p-2.5 text-center backdrop-blur-sm border border-white/5">
+            <div className="bg-white/20 dark:bg-black/10 rounded-2xl p-2.5 text-center backdrop-blur-lg border border-white/40 border-b-white/10 border-r-white/10 dark:border-white/10 dark:border-b-transparent dark:border-r-transparent shadow-[inset_0_1px_1px_rgba(255,255,255,0.3),0_4px_12px_rgba(0,0,0,0.05)] dark:shadow-[inset_0_1px_1px_rgba(255,255,255,0.1),0_4px_12px_rgba(0,0,0,0.2)]">
               <svg className="w-4 h-4 mx-auto text-white/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 21.5c-3.6 0-6.5-2.9-6.5-6.5 0-4.5 6.5-12.5 6.5-12.5s6.5 8 6.5 12.5c0 3.6-2.9 6.5-6.5 6.5z" />
               </svg>
@@ -433,7 +433,7 @@ export const WeatherCard: React.FC<WeatherCardProps> = ({ data }) => {
             </div>
 
             {/* Wind */}
-            <div className="bg-white/10 rounded-2xl p-2.5 text-center backdrop-blur-sm border border-white/5">
+            <div className="bg-white/20 dark:bg-black/10 rounded-2xl p-2.5 text-center backdrop-blur-lg border border-white/40 border-b-white/10 border-r-white/10 dark:border-white/10 dark:border-b-transparent dark:border-r-transparent shadow-[inset_0_1px_1px_rgba(255,255,255,0.3),0_4px_12px_rgba(0,0,0,0.05)] dark:shadow-[inset_0_1px_1px_rgba(255,255,255,0.1),0_4px_12px_rgba(0,0,0,0.2)]">
               <svg className="w-4 h-4 mx-auto text-white/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3.5 12h13a2.5 2.5 0 000-5M3.5 17h9a2.5 2.5 0 010 5M3.5 7h7a2.5 2.5 0 000-5" />
               </svg>
@@ -442,7 +442,7 @@ export const WeatherCard: React.FC<WeatherCardProps> = ({ data }) => {
             </div>
 
             {/* UV Index */}
-            <div className="bg-white/10 rounded-2xl p-2.5 text-center backdrop-blur-sm border border-white/5">
+            <div className="bg-white/20 dark:bg-black/10 rounded-2xl p-2.5 text-center backdrop-blur-lg border border-white/40 border-b-white/10 border-r-white/10 dark:border-white/10 dark:border-b-transparent dark:border-r-transparent shadow-[inset_0_1px_1px_rgba(255,255,255,0.3),0_4px_12px_rgba(0,0,0,0.05)] dark:shadow-[inset_0_1px_1px_rgba(255,255,255,0.1),0_4px_12px_rgba(0,0,0,0.2)]">
               <svg className="w-4 h-4 mx-auto text-white/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <circle cx="12" cy="12" r="4" strokeWidth={1.5} />
                 <path strokeLinecap="round" strokeWidth={1.5} d="M12 2v2m0 16v2m10-10h-2M4 12H2m15.07-7.07l-1.41 1.41M8.34 15.66l-1.41 1.41m12.14 0l-1.41-1.41M8.34 8.34L6.93 6.93" />
@@ -499,7 +499,7 @@ export const WeatherCardLoading: React.FC = () => {
         @keyframes wc-card-enter { from { opacity: 0; transform: translateY(12px) scale(0.97); } to { opacity: 1; transform: translateY(0) scale(1); } }
       `}</style>
       <div
-        className="relative max-w-md w-full rounded-3xl overflow-hidden backdrop-blur-xl border border-white/10 bg-gradient-to-br from-slate-700/60 to-gray-800/55 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.38),0_15px_30px_-15px_rgba(0,0,0,0.23)] dark:shadow-[0_30px_70px_-15px_rgba(0,0,0,0.75),0_15px_35px_-15px_rgba(0,0,0,0.45)]"
+        className="relative max-w-md w-full rounded-[32px] overflow-hidden backdrop-blur-3xl backdrop-saturate-150 border border-white/30 border-b-white/10 border-r-white/10 dark:border-white/20 dark:border-b-transparent dark:border-r-transparent bg-gradient-to-br from-slate-700/60 to-gray-800/55 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.4),inset_0_1px_1px_rgba(255,255,255,0.2)] dark:shadow-[0_30px_70px_-15px_rgba(0,0,0,0.75),inset_0_1px_1px_rgba(255,255,255,0.1)]"
         style={{ animation: 'wc-card-enter 0.5s cubic-bezier(0.16,1,0.3,1) forwards' }}
       >
         <div className="p-5 space-y-4">

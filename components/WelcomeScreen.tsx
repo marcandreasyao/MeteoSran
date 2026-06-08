@@ -38,6 +38,7 @@ const getRandomQuestions = (count: number) => {
 
 export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ firstName, onSuggestionClick, isKeyboardOpen = false }) => {
   const { t } = useLanguage();
+  const [subtitleIndex] = useState(() => Math.floor(Math.random() * 11));
 
   const getGreetingKey = () => {
     const hour = new Date().getHours();
@@ -95,7 +96,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ firstName, onSugge
           </SparklesText>
         </h1>
         <p className="text-slate-500 dark:text-slate-400 font-medium mb-8 md:mb-12 text-[clamp(1.25rem,4vw,1.75rem)]" style={{ textShadow: '0 1px 2px rgba(0, 0, 0, 0.12)' }}>
-          {t('welcome.subtitle')}
+          {t(`welcome.subtitle${subtitleIndex}`)}
         </p>
 
         {/* Suggestion List wrapped in Fade Mask */}

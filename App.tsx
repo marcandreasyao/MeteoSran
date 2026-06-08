@@ -143,8 +143,13 @@ const App: React.FC = () => {
   const [isSearching, setIsSearching] = useState(false);
   const [highlightedMessageId, setHighlightedMessageId] = useState<string | null>(null);
 
+  // Guest experience state
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [hasShownGuestPrompt, setHasShownGuestPrompt] = useState(false);
+  const guestMessagesRef = useRef<Message[]>([]); // Track guest messages for retroactive save
+
   // Release Notes State
-  const CURRENT_VERSION = '1.7.1';
+  const CURRENT_VERSION = '1.7.2';
   const [showReleaseNotes, setShowReleaseNotes] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [hasUnreadNotifications, setHasUnreadNotifications] = useState(false);
@@ -252,21 +257,64 @@ const App: React.FC = () => {
   // Fetch messages when user logs in
   useEffect(() => {
     if (user && isInitialized) {
-      fetchChatSessions(user.uid).then(async sessions => {
-        setChatSessions(sessions);
-        if (sessions.length > 0) {
-          const latestChat = sessions[0];
-          setActiveChatId(latestChat.id);
-          const history = await fetchUserMessages(user.uid, latestChat.id);
-          setMessages(history.length > 0 ? history : []);
-        } else {
-          // No chats exist at all. Don't create one yet until the user sends a message.
-          setActiveChatId(null);
-          setMessages([]);
-        }
-      }).catch(err => {
-        console.error("Failed to load chat sessions:", err);
-      });
+      // Close login modal on successful auth
+      setShowLoginModal(false);
+
+      // Retroactive save: if guest had an active conversation, save it now
+      if (guestMessagesRef.current.length > 0) {
+        const guestMessages = [...guestMessagesRef.current];
+        guestMessagesRef.current = []; // Clear ref
+
+        (async () => {
+          try {
+            const firstUserMsg = guestMessages.find(m => m.role === MessageRole.USER);
+            const titleText = firstUserMsg?.text || 'New Chat';
+            const newTitle = await generateSmartTitle(titleText);
+            const newChatId = await createChatSession(user.uid, newTitle);
+
+            if (newChatId) {
+              setActiveChatId(newChatId);
+              setChatSessions(prev => [{ id: newChatId, title: newTitle, createdAt: new Date(), updatedAt: new Date() }, ...prev]);
+
+              // Save all guest messages to the new chat
+              for (const msg of guestMessages) {
+                await saveMessageToDB(user.uid, newChatId, msg);
+              }
+
+              // Run memory summarization on the retroactively saved conversation
+              maybeUpdateMemory(
+                guestMessages,
+                null,
+                newChatId,
+                user.uid,
+                (chatId, newSummary) => {
+                  setChatSessions(prev =>
+                    prev.map(c => c.id === chatId ? { ...c, memorySummary: newSummary } : c)
+                  );
+                }
+              );
+            }
+          } catch (err) {
+            console.error('Failed to retroactively save guest conversation:', err);
+          }
+        })();
+      } else {
+        // Normal login flow: fetch existing chat sessions
+        fetchChatSessions(user.uid).then(async sessions => {
+          setChatSessions(sessions);
+          if (sessions.length > 0) {
+            const latestChat = sessions[0];
+            setActiveChatId(latestChat.id);
+            const history = await fetchUserMessages(user.uid, latestChat.id);
+            setMessages(history.length > 0 ? history : []);
+          } else {
+            setActiveChatId(null);
+            setMessages([]);
+          }
+        }).catch(err => {
+          console.error("Failed to load chat sessions:", err);
+        });
+      }
     }
   }, [user, isInitialized]);
 
@@ -643,6 +691,13 @@ const App: React.FC = () => {
   const handleSendMessage = async (text: string, imageFile?: File | null) => {
     if (!text.trim() && !imageFile) return;
 
+    // Guest prompt: show login modal on first message if not authenticated
+    if (!user && !hasShownGuestPrompt) {
+      setHasShownGuestPrompt(true);
+      setShowLoginModal(true);
+      // Don't block -- still send the message below
+    }
+
     // Save current input values in case we need to restore them on error
     const originalText = text;
     const originalImage = imageFile;
@@ -753,6 +808,9 @@ const App: React.FC = () => {
               );
             }
           );
+        } else if (!user) {
+          // Guest mode: track messages for retroactive save
+          guestMessagesRef.current = [...currentConversation, response];
         }
       })().catch(err => console.error("Background DB save failed:", err));
 
@@ -897,16 +955,8 @@ const App: React.FC = () => {
     );
   }
 
-  if (authLoading || !isInitialized) {
+  if (!isInitialized) {
     return <LoadingProgress progress={initProgress} message={authLoading ? t("errors.authenticating") : t(initMessageKey)} />;
-  }
-
-  if (!user) {
-    return (
-      <Suspense fallback={<SuspenseLoader />}>
-        <LoginScreen />
-      </Suspense>
-    );
   }
 
   return (
@@ -920,8 +970,7 @@ const App: React.FC = () => {
         </div>
       )}
 
-      {user && (
-        <Sidebar
+      <Sidebar
           isOpen={isSidebarOpen}
           onClose={() => setIsSidebarOpen(false)}
           chatSessions={chatSessions}
@@ -935,8 +984,9 @@ const App: React.FC = () => {
           onPinChat={handlePinChat}
           searchResults={searchResults}
           isSearching={isSearching}
+          isAuthenticated={!!user}
+          onSignIn={() => setShowLoginModal(true)}
         />
-      )}
 
       <div className={`flex-1 flex flex-col h-full w-full relative overflow-hidden pt-safe`}>
         {locationError && (
@@ -988,6 +1038,8 @@ const App: React.FC = () => {
           hasUnreadNotifications={hasUnreadNotifications}
           showSettings={showSettings}
           onOpenSettings={() => setShowSettings(true)}
+          isAuthenticated={!!user}
+          onSignIn={() => setShowLoginModal(true)}
         />
 
         <main className="flex-grow flex flex-col overflow-hidden px-1.5 sm:px-2 md:p-4 relative">
@@ -1041,6 +1093,12 @@ const App: React.FC = () => {
             onManualLocationRequested={handleManualLocation}
             userFirstName={user?.displayName ? user.displayName.split(' ')[0] : ''}
           />
+        </Suspense>
+      )}
+
+      {showLoginModal && (
+        <Suspense fallback={<SuspenseLoader />}>
+          <LoginScreen isModal onClose={() => setShowLoginModal(false)} />
         </Suspense>
       )}
     </div>
