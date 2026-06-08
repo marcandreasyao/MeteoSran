@@ -120,6 +120,11 @@ const parseWeatherCard = (text: string): { cleanText: string; cardData: WeatherC
   const match = text.match(tagRegex);
 
   if (!match) {
+    const textLower = text.toLowerCase();
+    const openTagIndex = textLower.indexOf('<weather-card>');
+    if (openTagIndex !== -1) {
+      return { cleanText: text.substring(0, openTagIndex).trim(), cardData: null };
+    }
     return { cleanText: text, cardData: null };
   }
 
@@ -149,6 +154,7 @@ const parseWeatherCard = (text: string): { cleanText: string; cardData: WeatherC
       },
       feelsLike: d.feelsLike,
       isDayTime: d.isDayTime,
+      timeOfDay: d.timeOfDay,
       hourlyStrip: Array.isArray(d.hourlyStrip) ? d.hourlyStrip : undefined,
     };
   } catch (e) {

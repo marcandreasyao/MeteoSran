@@ -334,6 +334,7 @@ Format:
     },
     "feelsLike": ${Math.round(weatherData.realFeelTemperature?.value || weatherData.temperature || 0)},
     "isDayTime": ${weatherData.isDayTime ?? true},
+    "timeOfDay": "${weatherData.timeOfDay ?? 'day'}",
     "hourlyStrip": ${JSON.stringify(weatherData.hourlyStrip || [])}
   }
 }

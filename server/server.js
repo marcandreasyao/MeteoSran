@@ -349,7 +349,14 @@ const mapOpenWeather25ToSchema = (currentData, forecastData, locationLabel) => {
     const iconUrl = `https://openweathermap.org/img/wn/${currentData.weather[0].icon}@2x.png`;
 
     const isDayTime = currentData.dt >= currentData.sys.sunrise && currentData.dt <= currentData.sys.sunset;
-
+    
+    let timeOfDay = isDayTime ? 'day' : 'night';
+    const oneHour = 3600;
+    if (Math.abs(currentData.dt - currentData.sys.sunrise) <= oneHour) {
+        timeOfDay = 'dawn';
+    } else if (Math.abs(currentData.dt - currentData.sys.sunset) <= oneHour) {
+        timeOfDay = 'sunset';
+    }
     // Group 3-hourly forecast by day
     const dayGroups = new Map();
     forecastData.list.forEach(item => {
@@ -414,21 +421,26 @@ const mapOpenWeather25ToSchema = (currentData, forecastData, locationLabel) => {
     });
 
     // Build hourly strip from the first 8 forecast items (3-hour intervals)
-    const mapOWIconToCondition = (owIcon) => {
-        const code = owIcon.replace(/[dn]$/, '');
+    const mapOWIdToCondition = (id, owIcon) => {
         const isNight = owIcon.endsWith('n');
-        const map = {
-            '01': isNight ? 'clear-night' : 'sunny',
-            '02': 'partly-cloudy',
-            '03': 'cloudy',
-            '04': 'cloudy',
-            '09': 'drizzle',
-            '10': 'rain',
-            '11': 'thunderstorms-rain',
-            '13': 'snow',
-            '50': 'fog',
-        };
-        return map[code] || 'cloudy';
+        if (id >= 200 && id < 300) return 'thunderstorms-rain';
+        if (id >= 300 && id < 400) return 'drizzle';
+        if (id === 500 || id === 501 || id === 520 || id === 521) return 'rain';
+        if (id >= 502 && id <= 531 && id !== 511) return 'heavy-rain';
+        if (id === 511 || id === 615 || id === 616) return 'freezing-rain';
+        if (id >= 611 && id <= 613) return 'sleet';
+        if (id === 600 || id === 601 || id === 620 || id === 621) return 'snow';
+        if (id === 602 || id === 622) return 'heavy-snow';
+        if (id === 701 || id === 741) return 'fog';
+        if (id === 711) return 'smoke';
+        if (id === 721) return 'haze';
+        if (id === 731 || id === 751 || id === 761 || id === 762) return 'dust';
+        if (id === 771) return 'squall';
+        if (id === 781) return 'tornado';
+        if (id === 800) return isNight ? 'clear-night' : 'sunny';
+        if (id === 801 || id === 802) return 'partly-cloudy';
+        if (id === 803 || id === 804) return 'cloudy';
+        return 'cloudy';
     };
 
     const hourlyStrip = forecastData.list.slice(0, 8).map(item => {
@@ -437,7 +449,7 @@ const mapOpenWeather25ToSchema = (currentData, forecastData, locationLabel) => {
         return {
             time: timeLabel,
             temp: Math.round(item.main.temp),
-            icon: mapOWIconToCondition(item.weather[0].icon),
+            icon: mapOWIdToCondition(item.weather[0].id, item.weather[0].icon),
         };
     });
 
@@ -448,7 +460,7 @@ const mapOpenWeather25ToSchema = (currentData, forecastData, locationLabel) => {
     };
 
     // Map current weather icon to condition string for the card
-    const currentConditionIcon = mapOWIconToCondition(currentData.weather[0].icon);
+    const currentConditionIcon = mapOWIdToCondition(currentData.weather[0].id, currentData.weather[0].icon);
 
     return {
         location: locationLabel,
@@ -457,6 +469,7 @@ const mapOpenWeather25ToSchema = (currentData, forecastData, locationLabel) => {
         weatherText: capitalizedWeatherDesc,
         hasPrecipitation: hasPrecip,
         isDayTime: isDayTime,
+        timeOfDay: timeOfDay,
         weatherIcon: 1,
         iconUrl: iconUrl,
         relativeHumidity: currentData.main.humidity,

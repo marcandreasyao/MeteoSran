@@ -21,6 +21,7 @@ export interface WeatherCardData {
   };
   feelsLike?: number;
   isDayTime?: boolean;
+  timeOfDay?: string;
   hourlyStrip?: Array<{
     time: string;
     temp: number;
@@ -189,6 +190,74 @@ const WeatherIcon: React.FC<{ icon: string; size?: number }> = ({ icon, size = 4
         </svg>
       );
 
+    case 'heavy-rain':
+      return (
+        <svg width={s} height={s} viewBox="0 0 48 48" fill="none">
+          <path d="M10 24a8 8 0 01.4-2.5 6 6 0 0111.2-1A5 5 0 0136 24H10z" fill="white" opacity="0.85" />
+          {[14, 18, 22, 26, 30, 34].map((x, i) => (
+            <line
+              key={i}
+              x1={x} y1="28" x2={x - 3} y2="40"
+              stroke="#60A5FA" strokeWidth="2" strokeLinecap="round"
+              style={{ animation: `wc-drip 0.8s ease-in infinite ${i * 0.15}s` }}
+            />
+          ))}
+        </svg>
+      );
+
+    case 'heavy-snow':
+      return (
+        <svg width={s} height={s} viewBox="0 0 48 48" fill="none">
+          <path d="M12 24a7 7 0 01.35-2.2 5.5 5.5 0 0110.3-.9A4.5 4.5 0 0136 24H12z" fill="white" opacity="0.9" />
+          {[14, 20, 26, 32].map((x, i) => (
+            <g key={i} style={{ animation: `wc-snow-fall 1.2s linear infinite ${i * 0.25}s` }}>
+              <text x={x} y={30} fill="white" fontSize="7" textAnchor="middle" opacity="0.9">{'\u2744'}</text>
+            </g>
+          ))}
+        </svg>
+      );
+
+    case 'freezing-rain':
+    case 'sleet':
+      return (
+        <svg width={s} height={s} viewBox="0 0 48 48" fill="none">
+          <path d="M12 24a8 8 0 01.4-2.5 6 6 0 0111.2-1A5 5 0 0134 24H12z" fill="white" opacity="0.8" />
+          <line x1="16" y1="28" x2="14" y2="36" stroke="#60A5FA" strokeWidth="1.8" strokeLinecap="round" style={{ animation: 'wc-drip 1.2s ease-in infinite' }} />
+          <g style={{ animation: 'wc-snow-fall 2s ease-in infinite 0.5s' }}><text x="24" y="32" fill="white" fontSize="6" textAnchor="middle" opacity="0.9">{'\u2744'}</text></g>
+          <line x1="32" y1="28" x2="30" y2="36" stroke="#60A5FA" strokeWidth="1.8" strokeLinecap="round" style={{ animation: 'wc-drip 1.2s ease-in infinite 0.3s' }} />
+        </svg>
+      );
+
+    case 'tornado':
+    case 'squall':
+      return (
+        <svg width={s} height={s} viewBox="0 0 48 48" fill="none">
+          <g style={{ animation: 'wc-wind-wave 1.5s ease-in-out infinite' }}>
+            <path d="M10 16 Q24 12 38 16" stroke="#94A3B8" strokeWidth="3" fill="none" strokeLinecap="round" opacity="0.9" />
+            <path d="M14 24 Q24 20 34 24" stroke="#64748B" strokeWidth="3" fill="none" strokeLinecap="round" opacity="0.8" />
+            <path d="M18 32 Q24 29 30 32" stroke="#475569" strokeWidth="3" fill="none" strokeLinecap="round" opacity="0.7" />
+            <path d="M22 40 Q24 38 26 40" stroke="#334155" strokeWidth="3" fill="none" strokeLinecap="round" opacity="0.6" />
+          </g>
+        </svg>
+      );
+
+    case 'smoke':
+    case 'haze':
+    case 'dust':
+      return (
+        <svg width={s} height={s} viewBox="0 0 48 48" fill="none">
+          {[16, 24, 32].map((y, i) => (
+            <path
+              key={i}
+              d={`M8 ${y} Q24 ${y - 4} 40 ${y}`}
+              stroke="#D6D3D1" strokeWidth="2.5" fill="none" strokeLinecap="round"
+              opacity={0.5 + i * 0.15}
+              style={{ animation: `wc-fog-wave ${2.5 + i * 0.5}s ease-in-out infinite ${i * 0.4}s` }}
+            />
+          ))}
+        </svg>
+      );
+
     default:
       return (
         <svg width={s} height={s} viewBox="0 0 48 48" fill="none">
@@ -201,7 +270,15 @@ const WeatherIcon: React.FC<{ icon: string; size?: number }> = ({ icon, size = 4
 };
 
 // ── Gradient Backdrops by Condition ──
-const getContainerBg = (icon: string): string => {
+const getContainerBg = (icon: string, timeOfDay?: string): string => {
+  // Genuine ambient themes based on time of day
+  if (timeOfDay === 'sunset' && ['sunny', 'clear-night', 'partly-cloudy'].includes(icon)) {
+    return 'bg-gradient-to-br from-orange-500/90 via-rose-500/85 to-purple-800/80';
+  }
+  if (timeOfDay === 'dawn' && ['sunny', 'clear-night', 'partly-cloudy'].includes(icon)) {
+    return 'bg-gradient-to-br from-indigo-600/85 via-fuchsia-500/80 to-amber-400/85';
+  }
+
   switch (icon) {
     case 'sunny': 
       // Sunlight blue sky (daytime clear sky)
@@ -236,7 +313,14 @@ const getContainerBg = (icon: string): string => {
   }
 };
 
-const getGradientOverlay = (icon: string, isDayTime?: boolean): string => {
+const getGradientOverlay = (icon: string, isDayTime?: boolean, timeOfDay?: string): string => {
+  if (timeOfDay === 'sunset' && ['sunny', 'clear-night', 'partly-cloudy'].includes(icon)) {
+    return 'from-orange-400/25 via-pink-500/20 to-purple-900/30';
+  }
+  if (timeOfDay === 'dawn' && ['sunny', 'clear-night', 'partly-cloudy'].includes(icon)) {
+    return 'from-indigo-400/25 via-pink-400/15 to-yellow-300/20';
+  }
+
   switch (icon) {
     case 'sunny': return 'from-amber-400/25 via-orange-300/15 to-yellow-300/10';
     case 'clear-night': return 'from-indigo-950/45 via-slate-900/25 to-blue-950/15';
@@ -291,11 +375,11 @@ export const WeatherCard: React.FC<WeatherCardProps> = ({ data }) => {
       `}</style>
 
       <div
-        className={`relative max-w-md w-full rounded-3xl overflow-hidden backdrop-blur-xl border border-white/15 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.38),0_15px_30px_-15px_rgba(0,0,0,0.23)] dark:shadow-[0_30px_70px_-15px_rgba(0,0,0,0.75),0_15px_35px_-15px_rgba(0,0,0,0.45)] ${getContainerBg(data.icon)}`}
+        className={`relative max-w-md w-full rounded-3xl overflow-hidden backdrop-blur-xl border border-white/15 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.57),0_15px_30px_-15px_rgba(0,0,0,0.35)] dark:shadow-[0_30px_70px_-15px_rgba(0,0,0,1),0_15px_35px_-15px_rgba(0,0,0,0.68)] ${getContainerBg(data.icon, data.timeOfDay)}`}
         style={{ animation: 'wc-card-enter 0.5s cubic-bezier(0.16,1,0.3,1) forwards' }}
       >
         {/* Ambient gradient overlay */}
-        <div className={`absolute inset-0 bg-gradient-to-br ${getGradientOverlay(data.icon, data.isDayTime)} pointer-events-none`} />
+        <div className={`absolute inset-0 bg-gradient-to-br ${getGradientOverlay(data.icon, data.isDayTime, data.timeOfDay)} pointer-events-none`} />
 
         {/* Noise texture for depth */}
         <div className="absolute inset-0 opacity-[0.03] pointer-events-none"
