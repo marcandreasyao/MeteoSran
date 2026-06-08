@@ -106,7 +106,7 @@ export const translations = {
       sendTestNotification: "Send Test Notification",
       closeSettings: "Close settings",
       campaignTitle: "Release Notes & Notifications",
-      campaignUnread: "What's New in MeteoSran 1.7.2",
+      campaignUnread: "What's New in MeteoSran 1.7",
       openSettings: "Open settings",
       logout: "Log out",
       exportChat: "Export Chat",
@@ -274,8 +274,8 @@ export const translations = {
       back: "Back",
       versions: {
         v1_7: {
-          version: "1.7.2",
-          title: "What's New in MeteoSran 1.7.2",
+          version: "1.7",
+          title: "What's New in MeteoSran 1.7",
           greeting: "Hi there,",
           subtitle: "Future Horizon & Intelligence",
           date: "June 2026",
@@ -445,7 +445,7 @@ export const translations = {
       sendTestNotification: "Envoyer une notification test",
       closeSettings: "Fermer les paramètres",
       campaignTitle: "Notes de version & Notifications",
-      campaignUnread: "Nouveautés de MeteoSran 1.7.2",
+      campaignUnread: "Nouveautés de MeteoSran 1.7",
       openSettings: "Ouvrir les paramètres",
       logout: "Se déconnecter",
       exportChat: "Exporter la discussion",
@@ -613,8 +613,8 @@ export const translations = {
       back: "Retour",
       versions: {
         v1_7: {
-          version: "1.7.2",
-          title: "Nouveautés de MeteoSran 1.7.2",
+          version: "1.7",
+          title: "Nouveautés de MeteoSran 1.7",
           greeting: "Bonjour,",
           subtitle: "Nouvel horizon & Intelligence",
           date: "Juin 2026",
