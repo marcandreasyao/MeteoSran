@@ -375,7 +375,7 @@ export const WeatherCard: React.FC<WeatherCardProps> = ({ data }) => {
       `}</style>
 
       <div
-        className={`relative max-w-md w-full rounded-3xl overflow-hidden backdrop-blur-xl border border-white/15 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.57),0_15px_30px_-15px_rgba(0,0,0,0.35)] dark:shadow-[0_30px_70px_-15px_rgba(0,0,0,1),0_15px_35px_-15px_rgba(0,0,0,0.68)] ${getContainerBg(data.icon, data.timeOfDay)}`}
+        className={`relative max-w-md w-full rounded-3xl overflow-hidden backdrop-blur-xl border border-white/15 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.28),0_15px_30px_-15px_rgba(0,0,0,0.18)] dark:shadow-[0_30px_70px_-15px_rgba(0,0,0,0.5),0_15px_35px_-15px_rgba(0,0,0,0.34)] ${getContainerBg(data.icon, data.timeOfDay)}`}
         style={{ animation: 'wc-card-enter 0.5s cubic-bezier(0.16,1,0.3,1) forwards' }}
       >
         {/* Ambient gradient overlay */}
