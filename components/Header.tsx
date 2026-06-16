@@ -77,7 +77,7 @@ export const Header: React.FC<HeaderProps> = ({
 
   return (
     <header
-      className="p-2 sm:p-4 pt-[calc(0.5rem+env(safe-area-inset-top,0px))] w-full z-20
+      className="p-2 sm:p-4 pt-[calc(0.5rem+env(safe-area-inset-top,0px))] w-full z-50
                  bg-white/30 dark:bg-slate-800/60 backdrop-blur-lg 
                  relative transition-colors duration-300"
       role="banner"
