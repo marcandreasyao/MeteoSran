@@ -98,7 +98,7 @@ export const Header: React.FC<HeaderProps> = ({
                         opacity-50 sm:opacity-70" />
       </div>
       <div className="container mx-auto flex items-center justify-between">
-        <div className="flex items-center space-x-2 sm:space-x-4">
+        <div className="flex items-center gap-1 sm:gap-3">
           {onToggleSidebar && (
             <button
               onClick={onToggleSidebar}
@@ -109,13 +109,13 @@ export const Header: React.FC<HeaderProps> = ({
               <span className="material-symbols-outlined notranslate text-xl sm:text-2xl" translate="no">menu</span>
             </button>
           )}
-          <div className="flex items-center gap-1.5 sm:gap-2">
-            <span className="text-xl sm:text-2xl font-bold tracking-tight text-slate-800 dark:text-slate-100">
+          <div className="flex items-center gap-1 sm:gap-2">
+            <span className="text-lg min-[360px]:text-xl sm:text-2xl font-bold tracking-tight text-slate-800 dark:text-slate-100">
               MeteoSran
             </span>
-            <div className="flex items-center h-7 sm:h-9 px-2 rounded-lg bg-gradient-to-r from-red-500/10 via-emerald-500/10 to-indigo-500/10 dark:from-red-500/20 dark:via-emerald-500/20 dark:to-indigo-500/20 border border-slate-500/20 shadow-sm gap-1 select-none">
+            <div className="flex items-center h-7 sm:h-9 px-1 sm:px-2 rounded-lg bg-gradient-to-r from-red-500/10 via-emerald-500/10 to-indigo-500/10 dark:from-red-500/20 dark:via-emerald-500/20 dark:to-indigo-500/20 border border-slate-500/20 shadow-sm gap-1 select-none">
               <img src="/tournaments_fifa-world-cup-2026.football-logos.cc.svg" alt="FIFA WC 2026 Logo" className="h-5 sm:h-6 w-auto object-contain" />
-              <span className="text-[10px] sm:text-[11px] font-black tracking-tight text-slate-800 dark:text-slate-100">WC26</span>
+              <span className="hidden min-[380px]:inline text-[10px] sm:text-[11px] font-black tracking-tight text-slate-800 dark:text-slate-100">WC26</span>
             </div>
           </div>
 
@@ -124,7 +124,7 @@ export const Header: React.FC<HeaderProps> = ({
             <button
               type="button"
               onClick={() => setIsModeDropdownOpen(!isModeDropdownOpen)}
-              className="p-1.5 sm:p-2 px-2 sm:px-3 rounded-full flex items-center space-x-1 sm:space-x-2
+              className="p-1 sm:p-2 px-1.5 sm:px-3 rounded-full flex items-center gap-1 sm:gap-2
                          hover:bg-black/10 dark:hover:bg-white/10 
                          focus:outline-none focus:ring-2 focus:ring-sky-500 dark:focus:ring-sky-400
                          text-slate-700 dark:text-slate-200 transition-colors text-xs sm:text-sm"
@@ -203,55 +203,53 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
         </div>
 
-        <div className="flex items-center space-x-1 sm:space-x-2">
-          <div className="flex items-center gap-1 sm:gap-2">
-            {isAuthenticated === false ? (
-              <>
-                <AnimatedThemeToggler theme={theme} toggleTheme={toggleTheme} />
+        <div className="flex items-center gap-1 sm:gap-2">
+          {isAuthenticated === false ? (
+            <>
+              <AnimatedThemeToggler theme={theme} toggleTheme={toggleTheme} />
+              <button
+                onClick={onSignIn}
+                className="px-2.5 py-1 sm:px-4 sm:py-1.5 rounded-full bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white text-xs sm:text-sm font-medium transition-all shadow-lg shadow-blue-500/20 active:scale-[0.97]"
+              >
+                {t('common.signIn')}
+              </button>
+            </>
+          ) : (
+            <>
+              <div className="relative">
                 <button
-                  onClick={onSignIn}
-                  className="px-4 py-1.5 rounded-full bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white text-sm font-medium transition-all shadow-lg shadow-blue-500/20 active:scale-[0.97]"
-                >
-                  {t('common.signIn')}
-                </button>
-              </>
-            ) : (
-              <>
-                <div className="relative">
-                  <button
-                    onClick={onOpenNotifications}
-                    className="p-1.5 sm:p-2 rounded-full hover:bg-black/10 dark:hover:bg-white/10 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-sky-500 dark:focus:ring-sky-400 transition-colors"
-                    aria-label={t('header.campaignTitle')}
-                    title={t('header.campaignUnread')}
-                  >
-                    <span className="material-symbols-outlined notranslate text-lg sm:text-xl" translate="no">campaign</span>
-                    {hasUnreadNotifications && (
-                      <span className="absolute top-1.5 right-1.5 sm:top-2 sm:right-2 w-2 h-2 rounded-full bg-red-500 animate-pulse shadow-[0_0_8px_rgba(239,68,68,0.8)] border border-white dark:border-slate-800"></span>
-                    )}
-                  </button>
-                </div>
-                <AnimatedThemeToggler theme={theme} toggleTheme={toggleTheme} />
-                <button
+                  onClick={onOpenNotifications}
                   className="p-1.5 sm:p-2 rounded-full hover:bg-black/10 dark:hover:bg-white/10 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-sky-500 dark:focus:ring-sky-400 transition-colors"
-                  onClick={() => signOut(auth)}
-                  aria-label={t('header.logout')}
-                  title={t('header.logout')}
+                  aria-label={t('header.campaignTitle')}
+                  title={t('header.campaignUnread')}
                 >
-                  <span className="material-symbols-outlined notranslate text-lg sm:text-xl" translate="no">logout</span>
+                  <span className="material-symbols-outlined notranslate text-lg sm:text-xl" translate="no">campaign</span>
+                  {hasUnreadNotifications && (
+                    <span className="absolute top-1.5 right-1.5 sm:top-2 sm:right-2 w-2 h-2 rounded-full bg-red-500 animate-pulse shadow-[0_0_8px_rgba(239,68,68,0.8)] border border-white dark:border-slate-800"></span>
+                  )}
                 </button>
-                <div>
-                  <button
-                    className="p-1.5 sm:p-2 rounded-full hover:bg-black/10 dark:hover:bg-white/10 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-sky-500 dark:focus:ring-sky-400 transition-colors flex items-center justify-center"
-                    onClick={onOpenSettings}
-                    aria-label={t('header.openSettings')}
-                    aria-expanded={showSettings}
-                  >
-                    <span className="material-symbols-outlined notranslate text-lg sm:text-xl" translate="no">settings</span>
-                  </button>
-                </div>
-              </>
-            )}
-          </div>
+              </div>
+              <AnimatedThemeToggler theme={theme} toggleTheme={toggleTheme} />
+              <button
+                className="hidden md:inline-flex p-1.5 sm:p-2 rounded-full hover:bg-black/10 dark:hover:bg-white/10 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-sky-500 dark:focus:ring-sky-400 transition-colors"
+                onClick={() => signOut(auth)}
+                aria-label={t('header.logout')}
+                title={t('header.logout')}
+              >
+                <span className="material-symbols-outlined notranslate text-lg sm:text-xl" translate="no">logout</span>
+              </button>
+              <div className="hidden md:block">
+                <button
+                  className="p-1.5 sm:p-2 rounded-full hover:bg-black/10 dark:hover:bg-white/10 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-sky-500 dark:focus:ring-sky-400 transition-colors flex items-center justify-center"
+                  onClick={onOpenSettings}
+                  aria-label={t('header.openSettings')}
+                  aria-expanded={showSettings}
+                >
+                  <span className="material-symbols-outlined notranslate text-lg sm:text-xl" translate="no">settings</span>
+                </button>
+              </div>
+            </>
+          )}
         </div>
       </div>
     </header>

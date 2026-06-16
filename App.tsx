@@ -993,6 +993,8 @@ const App: React.FC = () => {
           isSearching={isSearching}
           isAuthenticated={!!user}
           onSignIn={() => setShowLoginModal(true)}
+          onOpenSettings={() => setShowSettings(true)}
+          showSettings={showSettings}
         />
 
       <div className={`flex-1 flex flex-col h-full w-full relative overflow-hidden pt-safe`}>

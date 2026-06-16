@@ -1,6 +1,8 @@
 import React, { useMemo, useState, useRef, useEffect } from 'react';
 import { ChatSession, SearchResultSession } from '../src/services/dbService';
 import { useLanguage } from '../src/contexts/LanguageContext';
+import { auth } from '../src/firebase';
+import { signOut } from 'firebase/auth';
 
 // ─── Magic UI: Shimmer Button ─────────────────────────────────────────────────
 const shimmerStyle = `
@@ -93,6 +95,8 @@ interface SidebarProps {
   isSearching: boolean;
   isAuthenticated?: boolean;
   onSignIn?: () => void;
+  onOpenSettings?: () => void;
+  showSettings?: boolean;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -110,7 +114,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
   searchResults,
   isSearching,
   isAuthenticated,
-  onSignIn
+  onSignIn,
+  onOpenSettings,
+  showSettings
 }) => {
   const { t } = useLanguage();
   const [editingChatId, setEditingChatId] = useState<string | null>(null);
@@ -501,38 +507,64 @@ export const Sidebar: React.FC<SidebarProps> = ({
               )}
             </div>
           ) : (
-            <div className="flex-1 overflow-y-auto pr-1 custom-scrollbar flex flex-col">
-              {/* Pinned section */}
-              {pinnedSessions.length > 0 && (
-                <div className="flex flex-col mb-4">
-                  <div className="text-fluid-xs font-semibold text-slate-500 mb-2 ml-1 uppercase tracking-wider flex items-center gap-1.5 select-none">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-3.5 h-3.5 text-amber-500 shrink-0">
-                      <path d="M16 12V4h1v-2H7v2h1v8l-2 2v2h5.2v6h1.6v-6H18v-2l-2-2z"></path>
-                    </svg>
-                    {t('sidebar.pinned')}
-                  </div>
-                  <div className="space-y-0.5">
-                    {pinnedSessions.map((chat) => renderChatRow(chat))}
-                  </div>
-                  <div className="border-t border-slate-800/60 my-3 mx-1" />
-                </div>
-              )}
-
-              {/* Recent section */}
-              <div className="text-fluid-xs font-semibold text-slate-500 mb-2 ml-1 uppercase tracking-wider select-none">
-                {t('sidebar.recent')}
-              </div>
-
-              <div className="space-y-0.5 flex-grow">
-                {recentSessions.map((chat) => renderChatRow(chat))}
-                
-                {recentSessions.length === 0 && pinnedSessions.length === 0 && (
-                  <div className="text-sm text-slate-500 text-center mt-6">
-                    {searchQuery ? t('sidebar.noMatchingChats') : t('sidebar.emptySessions')}
+            <>
+              <div className="flex-1 overflow-y-auto pr-1 custom-scrollbar flex flex-col">
+                {/* Pinned section */}
+                {pinnedSessions.length > 0 && (
+                  <div className="flex flex-col mb-4">
+                    <div className="text-fluid-xs font-semibold text-slate-500 mb-2 ml-1 uppercase tracking-wider flex items-center gap-1.5 select-none">
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-3.5 h-3.5 text-amber-500 shrink-0">
+                        <path d="M16 12V4h1v-2H7v2h1v8l-2 2v2h5.2v6h1.6v-6H18v-2l-2-2z"></path>
+                      </svg>
+                      {t('sidebar.pinned')}
+                    </div>
+                    <div className="space-y-0.5">
+                      {pinnedSessions.map((chat) => renderChatRow(chat))}
+                    </div>
+                    <div className="border-t border-slate-800/60 my-3 mx-1" />
                   </div>
                 )}
+
+                {/* Recent section */}
+                <div className="text-fluid-xs font-semibold text-slate-500 mb-2 ml-1 uppercase tracking-wider select-none">
+                  {t('sidebar.recent')}
+                </div>
+
+                <div className="space-y-0.5 flex-grow">
+                  {recentSessions.map((chat) => renderChatRow(chat))}
+                  
+                  {recentSessions.length === 0 && pinnedSessions.length === 0 && (
+                    <div className="text-sm text-slate-500 text-center mt-6">
+                      {searchQuery ? t('sidebar.noMatchingChats') : t('sidebar.emptySessions')}
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
+
+              {/* Pinned settings & logout at the bottom of the sidebar on mobile/tablet */}
+              <div className="mt-2 pt-2 border-t border-slate-800/60 space-y-1 md:hidden flex-shrink-0">
+                <button
+                  onClick={() => {
+                    onOpenSettings?.();
+                    onClose();
+                  }}
+                  className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800/55 transition-colors text-sm font-medium"
+                >
+                  <span className="material-symbols-outlined notranslate text-[18px]" translate="no">settings</span>
+                  <span>{t('header.openSettings')}</span>
+                </button>
+                <button
+                  onClick={() => {
+                    signOut(auth);
+                    onClose();
+                  }}
+                  className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-rose-400 hover:text-rose-300 hover:bg-rose-950/20 transition-colors text-sm font-medium"
+                >
+                  <span className="material-symbols-outlined notranslate text-[18px]" translate="no">logout</span>
+                  <span>{t('header.logout')}</span>
+                </button>
+              </div>
+            </>
           )}
         </div>
       </div>
