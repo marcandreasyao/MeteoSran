@@ -21,3 +21,20 @@
   height: auto;
   font-family: 'Material Symbols Outlined';
 }
+
+@font-face {
+  font-family: 'JerseyM54';
+  src: url('/fonts/JerseyM54.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+.font-jersey {
+  font-family: 'JerseyM54', 'Poppins', sans-serif;
+}
+
+/* Force material icons with text-white class to render as white, overriding inherit !important */
+.fonts-loaded .material-symbols-outlined.text-white {
+  color: #ffffff !important;
+}

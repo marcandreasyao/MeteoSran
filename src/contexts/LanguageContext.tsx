@@ -273,13 +273,33 @@ export const translations = {
       gotIt: "Got it, thanks!",
       back: "Back",
       versions: {
+        v1_8: {
+          version: "1.8",
+          title: "What's New in MeteoSran 1.8",
+          greeting: "Hi there,",
+          subtitle: "FIFA World Cup 2026 Live Integration",
+          date: "June 2026",
+          badge: "Current",
+          features: {
+            worldCupTitle: "FIFA World Cup 2026 Assistant",
+            worldCupDesc: "MeteoSran is now your ultimate World Cup co-pilot. Combining live match fixtures and real-time weather analytics with advanced RAG vector indexing to deliver game-changing tactical pitch condition insights.",
+            matchPollTitle: "Live Prediction Polls and Voting",
+            matchPollDesc: "Interact directly with match widgets. Predict game outcomes with real-time community voting polls, animated percentage charts, and live countdown timers integrated directly inside chat bubbles and on the home screen.",
+            tickerTitle: "Marquee Upcoming Matches Ticker",
+            tickerDesc: "A sleek, borderless marquee ticker that scrolls upcoming matches at the top of the interface. Easily play, pause, or click any match to trigger an instant weather and tactical forecast.",
+            svgEmblemTitle: "Premium Brand Integration",
+            svgEmblemDesc: "Official vector emblem integrations and logo badges inside the navbar, featured matches, and today's schedule lists for a seamless World Cup branding experience.",
+            geoFixTitle: "Precision Geolocation Intelligence",
+            geoFixDesc: "Completely bypassed user location bias for chat cards. Location requests for stadiums and host cities are resolved accurately without reverting to user IP fallbacks."
+          }
+        },
         v1_7: {
           version: "1.7",
           title: "What's New in MeteoSran 1.7",
           greeting: "Hi there,",
           subtitle: "Future Horizon & Intelligence",
           date: "June 2026",
-          badge: "Current",
+          badge: "Archived",
           features: {
             memoryTitle: "Cross-Session Global Memory",
             memoryDesc: "MeteoSran now understands you. Storing your preferences and cities across all sessions dynamically for seamless, long-term AI recall.",
@@ -612,13 +632,33 @@ export const translations = {
       gotIt: "Compris, merci !",
       back: "Retour",
       versions: {
+        v1_8: {
+          version: "1.8",
+          title: "Nouveautés de MeteoSran 1.8",
+          greeting: "Bonjour,",
+          subtitle: "Intégration Live de la Coupe du Monde 2026",
+          date: "Juin 2026",
+          badge: "Actuelle",
+          features: {
+            worldCupTitle: "Assistant Coupe du Monde de la FIFA 2026",
+            worldCupDesc: "MeteoSran devient votre copilote ultime pour le Mondial. Fusion des calendriers de matchs et des analyses météorologiques en temps réel avec un index vectoriel RAG pour fournir des insights tactiques de pointe.",
+            matchPollTitle: "Sondages de Prédiction et Vote en Direct",
+            matchPollDesc: "Interagissez avec des widgets de match interactifs. Pronostiquez les vainqueurs avec des votes communautaires, des graphiques de pourcentages animés et des comptes à rebours intégrés dans vos conversations et sur l'accueil.",
+            tickerTitle: "Bandeau Défilant des Matchs à Venir",
+            tickerDesc: "Un bandeau de match élégant et sans bordure défile en haut de l'écran. Contrôlez la lecture ou cliquez sur un match pour lancer instantanément une analyse météo et tactique.",
+            svgEmblemTitle: "Intégration Graphique Officielle",
+            svgEmblemDesc: "Intégration des emblèmes vectoriels officiels de la Coupe du Monde 2026 dans le menu de navigation, les affiches majeures et les listes quotidiennes pour une identité visuelle professionnelle.",
+            geoFixTitle: "Précision de Localisation Météo",
+            geoFixDesc: "Résolution définitive des conflits de géolocalisation. Les demandes d'analyse météo pour les stades ou villes hôtes distants affichent désormais les bonnes données sans forcer la position locale de l'utilisateur."
+          }
+        },
         v1_7: {
           version: "1.7",
           title: "Nouveautés de MeteoSran 1.7",
           greeting: "Bonjour,",
           subtitle: "Nouvel horizon & Intelligence",
           date: "Juin 2026",
-          badge: "Actuelle",
+          badge: "Archivée",
           features: {
             memoryTitle: "Mémoire Globale Utilisateur",
             memoryDesc: "MeteoSran te comprend désormais. Retiens tes préférences et tes villes favorites sur toutes tes sessions pour un rappel IA à long terme.",
@@ -630,7 +670,7 @@ export const translations = {
             privacyDesc: "Intégration de documents légaux de conformité et de routage public pour la validation Google, avec des transitions fluides et des bas de page personnalisés.",
             bundleTitle: "Performance & Bundle Splitting",
             bundleDesc: "Optimisation de la taille du build pour des vitesses de chargement ultra-rapides, réduisant le paquet principal de près de 60%.",
-            speechTitle: "🎙️ Dictée Vocale & Détection de Silence",
+            speechTitle: "Dictée Vocale & Détection de Silence",
             speechDesc: "Découvre une dictée fluide inspirée d'Apple Notes. Elle s'étalonne automatiquement sur le bruit ambiant de ta pièce et arrête l'enregistrement après 1,5 seconde de silence."
           }
         },

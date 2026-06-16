@@ -1,6 +1,6 @@
-const CACHE_NAME = 'meteosran-v1.7.2';
-const STATIC_CACHE_NAME = 'meteosran-static-v1.7.2';
-const DYNAMIC_CACHE_NAME = 'meteosran-dynamic-v1.7.2';
+const CACHE_NAME = 'meteosran-v1.8.0';
+const STATIC_CACHE_NAME = 'meteosran-static-v1.8.0';
+const DYNAMIC_CACHE_NAME = 'meteosran-dynamic-v1.8.0';
 
 // Files to cache immediately
 const STATIC_ASSETS = [

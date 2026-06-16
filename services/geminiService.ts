@@ -104,6 +104,73 @@ const isFrenchText = (text: string): boolean => {
   return words.some(word => frenchKeywords.has(word));
 };
 
+const extractLocationFromQuery = (text: string): string | null => {
+  if (!text) return null;
+  const lowerText = text.toLowerCase();
+  
+  // 1. Direct World Cup Match mappings
+  if (lowerText.includes('france') && lowerText.includes('senegal')) return 'East Rutherford';
+  if (lowerText.includes('argentine') || lowerText.includes('algeria') || lowerText.includes('algérie')) return 'Mexico City';
+  if (lowerText.includes('iraq') || lowerText.includes('norway') || lowerText.includes('norvège')) return 'Seattle';
+  if (lowerText.includes('autriche') || lowerText.includes('austria') || lowerText.includes('jordan') || lowerText.includes('jordanie')) return 'Vancouver';
+  if (lowerText.includes('portugal') || lowerText.includes('congo')) return 'Houston';
+  if (lowerText.includes('england') || lowerText.includes('angleterre') || lowerText.includes('croatie') || lowerText.includes('croatia')) return 'Miami';
+  if (lowerText.includes('ghana') || lowerText.includes('panama')) return 'Atlanta';
+  
+  // 2. Specific World Cup stadium/city names
+  const cities = [
+    'east rutherford', 'new jersey', 'metlife',
+    'seattle', 'lumen',
+    'mexico city', 'mexico', 'azteca',
+    'vancouver', 'bc place',
+    'houston', 'nrg',
+    'miami', 'hard rock',
+    'atlanta', 'mercedes-benz',
+    'guadalajara', 'akron',
+    'monterrey', 'bbva',
+    'san skyline', 'levi',
+    'los angeles', 'sofi',
+    'kansas city', 'arrowhead',
+    'dallas', 'att',
+    'toronto', 'bmo',
+    'boston', 'gillette',
+    'philadelphia', 'lincoln',
+    'abidjan', 'yamoussoukro', 'bouake', 'bouaké', 'san pedro', 'san pédro', 'korhogo', 'man', 'daloa', 'gagnoa', 'grand-bassam', 'grand bassam', 'assinie'
+  ];
+
+  for (const city of cities) {
+    if (lowerText.includes(city)) {
+      if (city === 'metlife' || city === 'new jersey') return 'East Rutherford';
+      if (city === 'lumen') return 'Seattle';
+      if (city === 'azteca' || city === 'mexico') return 'Mexico City';
+      if (city === 'bc place') return 'Vancouver';
+      if (city === 'nrg') return 'Houston';
+      if (city === 'hard rock') return 'Miami';
+      if (city === 'mercedes-benz') return 'Atlanta';
+      if (city === 'akron') return 'Guadalajara';
+      if (city === 'bbva') return 'Monterrey';
+      if (city === 'levi') return 'San Francisco';
+      if (city === 'sofi') return 'Los Angeles';
+      if (city === 'arrowhead') return 'Kansas City';
+      if (city === 'att') return 'Dallas';
+      if (city === 'bmo') return 'Toronto';
+      if (city === 'gillette') return 'Boston';
+      if (city === 'lincoln') return 'Philadelphia';
+      return city;
+    }
+  }
+
+  // 3. General French query patterns
+  const matchA = text.match(/(?:météo|temps)\s+à\s+([A-ZÀ-Ÿ][a-zA-Z\s\-]+)/);
+  if (matchA && matchA[1]) return matchA[1].trim();
+
+  // 4. General English query patterns
+  const matchIn = text.match(/weather\s+in\s+([A-Z][a-zA-Z\s\-]+)/i);
+  if (matchIn && matchIn[1]) return matchIn[1].trim();
+
+  return null;
+};
+
 export const getCurrentTimeContext = (): string => {
   const now = new Date();
   const timeString = now.toLocaleTimeString('en-US', {
@@ -295,15 +362,27 @@ ${memorySummary}
 
     if (isWeatherQuery) {
       try {
-        const weatherUrl = (latitude !== null && longitude !== null)
-          ? `/api/weather/current?lat=${latitude}&lon=${longitude}`
-          : '/api/weather/current';
+        const targetCity = extractLocationFromQuery(lastMessage.text);
+        let weatherUrl = '/api/weather/current';
+        
+        if (targetCity) {
+          weatherUrl = `/api/weather/current?city=${encodeURIComponent(targetCity)}`;
+        } else if (latitude !== null && longitude !== null) {
+          weatherUrl = `/api/weather/current?lat=${latitude}&lon=${longitude}`;
+        }
+
         const weatherResponse = await fetch(weatherUrl);
         if (weatherResponse.ok) {
           const weatherData = await weatherResponse.json();
-          invisibleContext += `\n[CURRENT_WEATHER_DATA_FOR_IVORY_COAST]: ${JSON.stringify(weatherData)}`;
-          const lat = latitude ?? 5.30966;
-          const lon = longitude ?? -4.01266;
+          if (targetCity) {
+            invisibleContext += `\n[CURRENT_WEATHER_DATA_FOR_TARGET_LOCATION]: ${JSON.stringify(weatherData)}`;
+            invisibleContext += `\n[SYSTEM NOTE: The user is specifically asking about the weather in "${weatherData.location || targetCity}". Use the weather data from [CURRENT_WEATHER_DATA_FOR_TARGET_LOCATION] to explain conditions at this target location. Do NOT talk about Abidjan or Côte d'Ivoire. Stay focused on "${weatherData.location || targetCity}" and its weather conditions.]`;
+          } else {
+            invisibleContext += `\n[CURRENT_WEATHER_DATA_FOR_IVORY_COAST]: ${JSON.stringify(weatherData)}`;
+          }
+          
+          const lat = weatherData.lat || latitude || 5.30966;
+          const lon = weatherData.lon || longitude || -4.01266;
           const historicalContext = await getClimateNormals(lat, lon);
           invisibleContext += `\n${historicalContext}`;
 

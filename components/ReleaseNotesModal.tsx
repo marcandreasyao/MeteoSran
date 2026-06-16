@@ -23,11 +23,25 @@ const COLOR_MAPS: Record<string, { bg: string, text: string }> = {
 
 const VERSIONS = [
   {
+    id: 'v1_8',
+    icon: 'sports_soccer',
+    iconColor: 'text-sky-500 dark:text-sky-400',
+    iconBg: 'bg-sky-500/10 dark:bg-sky-500/20',
+    badgeColor: 'bg-sky-500/10 dark:bg-sky-500/20 text-sky-600 dark:text-sky-400 border border-sky-500/20',
+    features: [
+      { key: 'worldCup', icon: 'sports_soccer', color: 'emerald' },
+      { key: 'matchPoll', icon: 'ballot', color: 'amber' },
+      { key: 'ticker', icon: 'reorder', color: 'violet' },
+      { key: 'svgEmblem', icon: 'verified', color: 'sky' },
+      { key: 'geoFix', icon: 'my_location', color: 'rose' },
+    ]
+  },
+  {
     id: 'v1_7',
     icon: 'auto_awesome',
     iconColor: 'text-emerald-500 dark:text-emerald-400',
     iconBg: 'bg-emerald-500/10 dark:bg-emerald-500/20',
-    badgeColor: 'bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20',
+    badgeColor: 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200/50 dark:border-slate-700/50',
     features: [
       { key: 'memory', icon: 'psychology', color: 'emerald' },
       { key: 'weather', icon: 'wb_sunny', color: 'amber' },

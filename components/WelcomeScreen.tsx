@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { SparklesText } from './magicui/SparklesText';
 import { useLanguage } from '../src/contexts/LanguageContext';
+import { MatchCardWidget } from './MatchCardWidget';
 
 interface WelcomeScreenProps {
   firstName: string;
@@ -37,8 +38,30 @@ const getRandomQuestions = (count: number) => {
 };
 
 export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ firstName, onSuggestionClick, isKeyboardOpen = false }) => {
-  const { t } = useLanguage();
+  const { language, t } = useLanguage();
   const [subtitleIndex] = useState(() => Math.floor(Math.random() * 11));
+  const [otherMatches, setOtherMatches] = useState<any[]>([]);
+
+  useEffect(() => {
+    const fetchMatches = async () => {
+      try {
+        const response = await fetch('/api/worldcup/matches');
+        if (response.ok) {
+          const data = await response.json();
+          // Filter for matches that kickoff on June 16, 2026 and exclude the featured match
+          const todayStr = "2026-06-16";
+          let filtered = data.filter((m: any) => m.id !== "arg_alg_2026" && m.kickoff.startsWith(todayStr));
+          if (filtered.length === 0) {
+            filtered = data.filter((m: any) => m.id !== "arg_alg_2026");
+          }
+          setOtherMatches(filtered);
+        }
+      } catch (err) {
+        console.error("Error fetching other matches:", err);
+      }
+    };
+    fetchMatches();
+  }, []);
 
   const getGreetingKey = () => {
     const hour = new Date().getHours();
@@ -98,6 +121,92 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ firstName, onSugge
         <p className="text-slate-500 dark:text-slate-400 font-medium mb-8 md:mb-12 text-[clamp(1.25rem,4vw,1.75rem)]" style={{ textShadow: '0 1px 2px rgba(0, 0, 0, 0.12)' }}>
           {t(`welcome.subtitle${subtitleIndex}`)}
         </p>
+        {/* Match à l'affiche / World Cup Featured Match */}
+        <div className="w-full mb-8 flex flex-col items-center sm:items-start z-10">
+          <div className="flex items-center gap-2 mb-3 px-1 text-slate-700 dark:text-slate-300 font-bold text-xs md:text-sm tracking-wider uppercase select-none">
+            <span className="animate-pulse flex h-2 w-2 rounded-full bg-emerald-500"></span>
+            <img src="/tournaments_fifa-world-cup-2026.football-logos.cc.svg" alt="FIFA WC 2026" className="w-5 h-5 object-contain" />
+            <span>Match Vedette Mondial 2026</span>
+          </div>
+          <MatchCardWidget matchId="arg_alg_2026" />
+        </div>
+
+        {/* Autres Matchs du Jour / Other Games of the Day */}
+        {otherMatches.length > 0 && (
+          <div className="w-full mb-8 z-10">
+            <div className="flex items-center gap-2 mb-3 px-1 text-slate-700 dark:text-slate-300 font-bold text-xs md:text-sm tracking-wider uppercase select-none">
+              <img src="/tournaments_fifa-world-cup-2026.football-logos.cc.svg" alt="FIFA WC 2026" className="w-4 h-4 object-contain" />
+              <span>Autres Matchs du Jour</span>
+            </div>
+            
+            <div className="flex gap-4 overflow-x-auto pb-4 w-full hide-scrollbar snap-x snap-mandatory scroll-smooth">
+              {otherMatches.map(match => {
+                const kickoffDate = new Date(match.kickoff);
+                const timeLabel = kickoffDate.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+                
+                return (
+                  <div 
+                    key={match.id} 
+                    className="min-w-[280px] sm:min-w-[320px] rounded-2xl p-5 flex flex-col justify-between transition-all duration-500 bg-white/40 dark:bg-slate-800/40 border border-slate-200/50 dark:border-slate-700/50 shadow-sm hover:shadow-md backdrop-blur-sm hover:border-slate-300 dark:hover:border-slate-600 snap-start"
+                  >
+                    <div>
+                      <div className="flex justify-between items-center text-[10px] text-slate-500 dark:text-slate-400 font-bold mb-4 select-none">
+                        <span className="tracking-wider uppercase opacity-85">{match.group} • {match.round}</span>
+                        <span className="bg-white/60 dark:bg-slate-900/60 text-slate-600 dark:text-slate-300 border border-slate-200/55 dark:border-slate-800/55 px-2.5 py-0.5 rounded-full font-bold shadow-sm">{match.venue.city}</span>
+                      </div>
+                      
+                      <div className="flex items-center justify-between my-2 px-1">
+                        <div className="flex items-center gap-2.5 w-[42%]">
+                          <span className="text-2xl drop-shadow-sm select-none">{match.home.flag}</span>
+                          <span className="font-bold text-xs sm:text-sm text-slate-700 dark:text-slate-200 truncate">{match.home.name}</span>
+                        </div>
+                        <span className="text-slate-400 dark:text-slate-500 text-[10px] font-black tracking-widest bg-white/70 dark:bg-slate-900/50 border border-slate-200/50 dark:border-slate-800/50 px-2 py-0.5 rounded shadow-sm select-none">VS</span>
+                        <div className="flex items-center gap-2.5 justify-end w-[42%] text-right">
+                          <span className="font-bold text-xs sm:text-sm text-slate-700 dark:text-slate-200 truncate">{match.away.name}</span>
+                          <span className="text-2xl drop-shadow-sm select-none">{match.away.flag}</span>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="flex justify-between items-center mt-5 pt-3.5 border-t border-slate-200/40 dark:border-slate-700/40">
+                      {(() => {
+                        if (timeLabel.includes(':')) {
+                          const parts = timeLabel.split(':');
+                          return (
+                            <span className="text-[11px] font-jersey text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-0.5 rounded-md shadow-sm select-none inline-flex items-center">
+                              <span>{parts[0]}</span>
+                              <span className="font-sans text-[10px] text-emerald-600/70 dark:text-emerald-400/70 mx-[0.5px] select-none translate-y-[-1px] font-bold">:</span>
+                              <span>{parts[1]}</span>
+                            </span>
+                          );
+                        }
+                        return (
+                          <span className="text-[11px] font-jersey text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-0.5 rounded-md shadow-sm select-none">
+                            {timeLabel}
+                          </span>
+                        );
+                      })()}
+                      <button 
+                        onClick={() => {
+                          const isFr = language === 'fr';
+                          const dateLabel = kickoffDate.toLocaleDateString(isFr ? 'fr-FR' : 'en-US', { day: 'numeric', month: 'long' });
+                          const question = isFr
+                            ? `Parle-moi du match de Coupe du Monde : ${match.home.name} ${match.home.flag} vs ${match.away.name} ${match.away.flag} le ${dateLabel}. Est-ce que la météo va impacter le jeu à ${match.venue.city} (${match.venue.name}) ?`
+                            : `Tell me about the World Cup match: ${match.home.name} ${match.home.flag} vs ${match.away.name} ${match.away.flag} on ${dateLabel}. Will the weather impact the game in ${match.venue.city} (${match.venue.name})?`;
+                          onSuggestionClick(question);
+                        }}
+                        className="text-xs font-bold text-sky-600 dark:text-sky-400 hover:text-sky-700 dark:hover:text-sky-300 transition-colors flex items-center gap-1 cursor-pointer select-none"
+                      >
+                        <span>Analyse Météo</span>
+                        <span className="material-symbols-outlined text-xs leading-none" style={{ fontSize: '13px' }}>arrow_forward</span>
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {/* Suggestion List wrapped in Fade Mask */}
         {!isKeyboardOpen && (

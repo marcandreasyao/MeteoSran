@@ -469,7 +469,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 {isSearching ? (
                   <div className="w-[16px] h-[16px] border-2 border-slate-500 border-t-sky-400 rounded-full animate-spin shrink-0" />
                 ) : (
-                  <span className="material-symbols-outlined notranslate text-slate-500 text-[17px] shrink-0 select-none" translate="no">search</span>
+                  <span className="material-symbols-outlined notranslate text-white text-[17px] shrink-0 select-none" translate="no">search</span>
                 )}
                 <input
                   type="text"

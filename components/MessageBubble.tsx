@@ -4,6 +4,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { useLanguage } from '../src/contexts/LanguageContext';
 import { WeatherCard, WeatherCardData } from './WeatherCard';
+import { MatchCardWidget } from './MatchCardWidget';
 
 interface MessageBubbleProps {
   message: Message;
@@ -162,6 +163,21 @@ const parseWeatherCard = (text: string): { cleanText: string; cardData: WeatherC
   }
 
   return { cleanText, cardData };
+};
+
+// ── World Cup Match Card Parser ──
+const parseWorldCupMatchCard = (text: string): { cleanText: string; matchId: string | null } => {
+  const matchRegex = /\[WORLD_CUP_MATCH:\s*([a-zA-Z0-9_-]+)\]/i;
+  const match = text.match(matchRegex);
+
+  if (!match) {
+    return { cleanText: text, matchId: null };
+  }
+
+  const cleanText = text.replace(matchRegex, '').trim();
+  const matchId = match[1].trim();
+
+  return { cleanText, matchId };
 };
 
 export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, onRegenerate, onSwitchAlternative, isHighlighted = false }) => {
@@ -398,7 +414,8 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, onRegener
           </div>
 
           {(() => {
-            const { cleanText, cardData } = parseWeatherCard(displayedText);
+            const { cleanText: textAfterWeather, cardData } = parseWeatherCard(displayedText);
+            const { cleanText: finalCleanText, matchId } = parseWorldCupMatchCard(textAfterWeather);
             return (
               <>
                 <div 
@@ -434,7 +451,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, onRegener
                       }
                     }}
                   >
-                    {cleanText}
+                    {finalCleanText}
                   </ReactMarkdown>
                   {isTyping && <AuraCursor />}
                 </div>
@@ -443,6 +460,13 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, onRegener
                 {cardData && !isTyping && (
                   <div className="mt-4">
                     <WeatherCard data={cardData} />
+                  </div>
+                )}
+
+                {/* ── World Cup Match Card Widget ── */}
+                {matchId && !isTyping && (
+                  <div className="mt-4">
+                    <MatchCardWidget matchId={matchId} />
                   </div>
                 )}
               </>

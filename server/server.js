@@ -6,6 +6,8 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { GoogleGenAI } from "@google/genai";
 import { PrismaClient } from '@prisma/client';
+import { retrieveHybrid } from './ragService.js';
+import { getAllMatches, getMatchById, recordVote, getVotePercentages } from './matchService.js';
 
 dotenv.config();
 
@@ -509,32 +511,57 @@ app.get('/api/weather/current', async (req, res) => {
                 lat = 5.3453;
                 lon = -4.0244;
                 locationLabel = "Abidjan, Côte d'Ivoire";
-            } else if (req.query.lat && req.query.lon) {
-                lat = parseFloat(req.query.lat);
-                lon = parseFloat(req.query.lon);
-                locationLabel = `Coordinates: ${lat.toFixed(4)}, ${lon.toFixed(4)}`;
-            } else {
-                const ip = req.get('x-forwarded-for')?.split(',')[0] || req.connection.remoteAddress;
-                if (ip && !isLocalIp(ip)) {
-                    try {
-                        const ipGeoResp = await fetch(`http://ip-api.com/json/${ip}`);
-                        if (ipGeoResp.ok) {
-                            const ipGeoData = await ipGeoResp.json();
-                            if (ipGeoData && ipGeoData.status === 'success') {
-                                lat = ipGeoData.lat;
-                                lon = ipGeoData.lon;
-                                locationLabel = `${ipGeoData.city}, ${ipGeoData.country}`;
-                            }
+            } else if (req.query.city || req.query.q) {
+                const cityName = req.query.city || req.query.q;
+                try {
+                    const geoUrl = `http://api.openweathermap.org/geo/1.0/direct?q=${encodeURIComponent(cityName)}&limit=1&appid=${OPENWEATHER_API_KEY}`;
+                    const geoResp = await fetch(geoUrl);
+                    if (geoResp.ok) {
+                        const geoData = await geoResp.json();
+                        if (geoData && geoData.length > 0) {
+                            lat = geoData[0].lat;
+                            lon = geoData[0].lon;
+                            let countryName = geoData[0].country;
+                            try {
+                                const regionNames = new Intl.DisplayNames(['fr'], {type: 'region'});
+                                countryName = regionNames.of(geoData[0].country) || geoData[0].country;
+                            } catch (intlErr) {}
+                            locationLabel = geoData[0].name + (geoData[0].state ? `, ${geoData[0].state}` : '') + `, ${countryName}`;
                         }
-                    } catch (e) {
-                        console.warn("[MeteoSran Server] IP Geolocation failed, using default Abidjan coordinates.", e.message);
                     }
+                } catch (geoErr) {
+                    console.warn("[MeteoSran Server] Geocoding city parameter failed:", geoErr.message);
                 }
-                
-                if (!lat || !lon) {
-                    lat = 5.3453;
-                    lon = -4.0244;
-                    locationLabel = "Abidjan, Côte d'Ivoire";
+            }
+
+            if (!lat || !lon) {
+                if (req.query.lat && req.query.lon) {
+                    lat = parseFloat(req.query.lat);
+                    lon = parseFloat(req.query.lon);
+                    locationLabel = `Coordinates: ${lat.toFixed(4)}, ${lon.toFixed(4)}`;
+                } else {
+                    const ip = req.get('x-forwarded-for')?.split(',')[0] || req.connection.remoteAddress;
+                    if (ip && !isLocalIp(ip)) {
+                        try {
+                            const ipGeoResp = await fetch(`http://ip-api.com/json/${ip}`);
+                            if (ipGeoResp.ok) {
+                                const ipGeoData = await ipGeoResp.json();
+                                if (ipGeoData && ipGeoData.status === 'success') {
+                                    lat = ipGeoData.lat;
+                                    lon = ipGeoData.lon;
+                                    locationLabel = `${ipGeoData.city}, ${ipGeoData.country}`;
+                                }
+                            }
+                        } catch (e) {
+                            console.warn("[MeteoSran Server] IP Geolocation failed, using default Abidjan coordinates.", e.message);
+                        }
+                    }
+                    
+                    if (!lat || !lon) {
+                        lat = 5.3453;
+                        lon = -4.0244;
+                        locationLabel = "Abidjan, Côte d'Ivoire";
+                    }
                 }
             }
 
@@ -572,6 +599,8 @@ app.get('/api/weather/current', async (req, res) => {
             const fData = await fRes.json();
 
             const mappedData = mapOpenWeather25ToSchema(wData, fData, locationLabel);
+            mappedData.lat = lat;
+            mappedData.lon = lon;
             return res.json(mappedData);
 
         } catch (owError) {
@@ -583,6 +612,8 @@ app.get('/api/weather/current', async (req, res) => {
 
     if (req.query.fixed) {
         query = 'Abidjan';
+    } else if (req.query.city || req.query.q) {
+        query = req.query.city || req.query.q;
     } else if (req.query.lat && req.query.lon) {
         query = `${req.query.lat},${req.query.lon}`;
     } else {
@@ -681,6 +712,26 @@ app.get('/api/weather/current', async (req, res) => {
         if (req.query.fixed) {
             locationKey = ABIDJAN_LOCATION_KEY;
             locationLabel = "Abidjan, Ivory Coast";
+        } else if (req.query.city || req.query.q) {
+            const cityName = req.query.city || req.query.q;
+            try {
+                const isNewKey = ACCUWEATHER_API_KEY.startsWith('zpka_');
+                const authHeader = isNewKey ? { 'Authorization': `Bearer ${ACCUWEATHER_API_KEY}` } : {};
+                const searchUrl = isNewKey
+                    ? `https://dataservice.accuweather.com/locations/v1/cities/search?q=${encodeURIComponent(cityName)}`
+                    : `http://dataservice.accuweather.com/locations/v1/cities/search?apikey=${ACCUWEATHER_API_KEY}&q=${encodeURIComponent(cityName)}`;
+
+                const searchResp = await fetch(searchUrl, { headers: authHeader });
+                if (searchResp.ok) {
+                    const searchData = await searchResp.json();
+                    if (searchData && searchData.length > 0) {
+                        locationKey = searchData[0].Key;
+                        locationLabel = searchData[0].LocalizedName + (searchData[0].AdministrativeArea ? ', ' + searchData[0].AdministrativeArea.LocalizedName : '') + (searchData[0].Country ? ', ' + searchData[0].Country.LocalizedName : '');
+                    }
+                }
+            } catch (e) {
+                console.warn("[MeteoSran Server] AccuWeather city search failed:", e.message);
+            }
         } else {
             if (req.query.lat && req.query.lon) {
                 lat = req.query.lat;
@@ -1022,16 +1073,17 @@ app.post('/api/ai/chat', async (req, res) => {
         const modeKey = mode ? mode.toLowerCase() : 'default';
         const generationTemperature = modeKey === 'funny' ? 0.9 : (modeKey === 'einstein' ? 0.6 : 0.7);
 
+        const lastUserMessage = contents.slice(-1)[0];
+        const lastUserText = lastUserMessage?.parts?.[0]?.text || '';
+
         // Load and hydrate User Global Memory
         let hydratedMemoryBlock = '';
-        if (userId) {
+        if (userId && lastUserText) {
             try {
                 const userMemory = await withRetry(() => prisma.userGlobalMemory.findUnique({
                     where: { userId }
                 }));
                 if (userMemory && userMemory.memory) {
-                    const lastUserMessage = contents.slice(-1)[0];
-                    const lastUserText = lastUserMessage?.parts?.[0]?.text || '';
                     const parsedMemory = typeof userMemory.memory === 'string'
                         ? JSON.parse(userMemory.memory)
                         : userMemory.memory;
@@ -1042,7 +1094,41 @@ app.post('/api/ai/chat', async (req, res) => {
             }
         }
 
-        const finalSystemInstruction = (systemInstruction || "You are MeteoSran.") + hydratedMemoryBlock;
+        let finalSystemInstruction = (systemInstruction || "You are MeteoSran.") + hydratedMemoryBlock;
+
+        // WORLD CUP RAG INTEGRATION
+        if (lastUserText) {
+            const queryLower = lastUserText.toLowerCase();
+            const isWorldCupQuery = queryLower.includes('world cup') || 
+                                   queryLower.includes('mondial') || 
+                                   queryLower.includes('match') || 
+                                   queryLower.includes('football') || 
+                                   queryLower.includes('soccer') ||
+                                   queryLower.includes('fifa') ||
+                                   queryLower.includes('algeria') ||
+                                   queryLower.includes('argentina') ||
+                                   queryLower.includes('france') ||
+                                   queryLower.includes('senegal') ||
+                                   queryLower.includes('cote d') ||
+                                   queryLower.includes('côte d');
+
+            if (isWorldCupQuery) {
+                try {
+                    // Fetch top 3 context chunks via hybrid search (Dense + BM25 RRF)
+                    const activeKey = geminiKeysState.length > 0 ? getNextAvailableKey()?.key || process.env.GEMINI_API_KEY : process.env.GEMINI_API_KEY;
+                    if (activeKey) {
+                        console.log(`[MeteoSran Server] ⚽ World Cup query detected. Fetching Hybrid RAG context for: "${lastUserText}"`);
+                        const contextChunks = await retrieveHybrid(lastUserText, activeKey, 3);
+                        if (contextChunks && contextChunks.length > 0) {
+                            const ragPrompt = `\n\n[WORLD CUP CONTEXT INFORMATION]\nUse the following verified details to enrich your response. Connect these facts with weather impacts or standings as appropriate. Do not repeat verbatim unless necessary:\n${contextChunks.join('\n\n')}\n\nImportant instructions:\n1. If discussing a match, you may output the interactive card tag: [WORLD_CUP_MATCH: match_id] (e.g. [WORLD_CUP_MATCH: arg_alg_2026] for Argentina vs Algeria, [WORLD_CUP_MATCH: fra_sen_2026] for France vs Senegal, [WORLD_CUP_MATCH: irq_nor_2026] for Iraq vs Norway, [WORLD_CUP_MATCH: aut_jor_2026] for Austria vs Jordan, [WORLD_CUP_MATCH: por_cod_2026] for Portugal vs DR Congo, [WORLD_CUP_MATCH: eng_cro_2026] for England vs Croatia, [WORLD_CUP_MATCH: gha_pan_2026] for Ghana vs Panama). Include the tag on its own line.\n2. Apply the weather analysis to the match location (e.g. altitude fatigue in Mexico City, heat/humidity in Miami).`;
+                            finalSystemInstruction += ragPrompt;
+                        }
+                    }
+                } catch (ragErr) {
+                    console.error("[MeteoSran Server] World Cup RAG retrieval failed:", ragErr);
+                }
+            }
+        }
 
         const memoryTools = [{
             functionDeclarations: [
@@ -1737,6 +1823,49 @@ app.get('/sitemap.xml', (req, res) => {
 
     res.type('application/xml');
     res.send(xml);
+});
+
+// WORLD CUP 2026 ENDPOINTS
+app.get('/api/worldcup/matches', (req, res) => {
+    try {
+        const matchesList = getAllMatches();
+        res.json(matchesList);
+    } catch (err) {
+        console.error("Error fetching World Cup matches:", err);
+        res.status(500).json({ error: "Failed to fetch World Cup matches." });
+    }
+});
+
+app.get('/api/worldcup/match/:id', (req, res) => {
+    try {
+        const match = getMatchById(req.params.id);
+        if (!match) {
+            return res.status(404).json({ error: "Match not found" });
+        }
+        const percentages = getVotePercentages(match);
+        res.json({ ...match, percentages });
+    } catch (err) {
+        console.error("Error fetching match details:", err);
+        res.status(500).json({ error: "Failed to fetch match details." });
+    }
+});
+
+app.post('/api/worldcup/match/:id/vote', (req, res) => {
+    try {
+        const { choice } = req.body; // 'home', 'draw', or 'away'
+        if (!['home', 'draw', 'away'].includes(choice)) {
+            return res.status(400).json({ error: "Invalid vote choice. Must be 'home', 'draw', or 'away'" });
+        }
+        const updatedMatch = recordVote(req.params.id, choice);
+        if (!updatedMatch) {
+            return res.status(404).json({ error: "Match not found" });
+        }
+        const percentages = getVotePercentages(updatedMatch);
+        res.json({ ...updatedMatch, percentages });
+    } catch (err) {
+        console.error("Error recording vote:", err);
+        res.status(500).json({ error: "Failed to record vote." });
+    }
 });
 
 // Serve static files from the React app

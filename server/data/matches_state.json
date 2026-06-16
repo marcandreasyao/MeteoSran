@@ -1,0 +1,177 @@
+[
+  {
+    "id": "fra_sen_2026",
+    "group": "Group A",
+    "round": "Round 1",
+    "home": {
+      "name": "France",
+      "flag": "🇫🇷",
+      "code": "FR"
+    },
+    "away": {
+      "name": "Senegal",
+      "flag": "🇸🇳",
+      "code": "SN"
+    },
+    "kickoff": "2026-06-16T19:00:00Z",
+    "venue": {
+      "name": "MetLife Stadium",
+      "city": "East Rutherford"
+    },
+    "votes": {
+      "home": 42000,
+      "draw": 12000,
+      "away": 8000
+    }
+  },
+  {
+    "id": "irq_nor_2026",
+    "group": "Group A",
+    "round": "Round 1",
+    "home": {
+      "name": "Iraq",
+      "flag": "🇮🇶",
+      "code": "IQ"
+    },
+    "away": {
+      "name": "Norway",
+      "flag": "🇳🇴",
+      "code": "NO"
+    },
+    "kickoff": "2026-06-16T22:00:00Z",
+    "venue": {
+      "name": "Lumen Field",
+      "city": "Seattle"
+    },
+    "votes": {
+      "home": 15000,
+      "draw": 22000,
+      "away": 35000
+    }
+  },
+  {
+    "id": "arg_alg_2026",
+    "group": "Group J",
+    "round": "Round 1",
+    "home": {
+      "name": "Argentina",
+      "flag": "🇦🇷",
+      "code": "AR"
+    },
+    "away": {
+      "name": "Algeria",
+      "flag": "🇩🇿",
+      "code": "DZ"
+    },
+    "kickoff": "2026-06-17T01:00:00Z",
+    "venue": {
+      "name": "Estadio Azteca",
+      "city": "Mexico City"
+    },
+    "votes": {
+      "home": 115201,
+      "draw": 11520,
+      "away": 17280
+    }
+  },
+  {
+    "id": "aut_jor_2026",
+    "group": "Group J",
+    "round": "Round 1",
+    "home": {
+      "name": "Austria",
+      "flag": "🇦🇹",
+      "code": "AT"
+    },
+    "away": {
+      "name": "Jordan",
+      "flag": "🇯🇴",
+      "code": "JO"
+    },
+    "kickoff": "2026-06-17T04:00:00Z",
+    "venue": {
+      "name": "BC Place",
+      "city": "Vancouver"
+    },
+    "votes": {
+      "home": 25000,
+      "draw": 15000,
+      "away": 8000
+    }
+  },
+  {
+    "id": "por_cod_2026",
+    "group": "Group C",
+    "round": "Round 1",
+    "home": {
+      "name": "Portugal",
+      "flag": "🇵🇹",
+      "code": "PT"
+    },
+    "away": {
+      "name": "DR Congo",
+      "flag": "🇨🇩",
+      "code": "CD"
+    },
+    "kickoff": "2026-06-17T17:00:00Z",
+    "venue": {
+      "name": "NRG Stadium",
+      "city": "Houston"
+    },
+    "votes": {
+      "home": 85000,
+      "draw": 14000,
+      "away": 21000
+    }
+  },
+  {
+    "id": "eng_cro_2026",
+    "group": "Group D",
+    "round": "Round 1",
+    "home": {
+      "name": "England",
+      "flag": "🏴󠁧󠁢󠁥󠁮󠁧󠁿",
+      "code": "GB-ENG"
+    },
+    "away": {
+      "name": "Croatia",
+      "flag": "🇭🇷",
+      "code": "HR"
+    },
+    "kickoff": "2026-06-17T20:00:00Z",
+    "venue": {
+      "name": "Hard Rock Stadium",
+      "city": "Miami"
+    },
+    "votes": {
+      "home": 64000,
+      "draw": 32000,
+      "away": 24000
+    }
+  },
+  {
+    "id": "gha_pan_2026",
+    "group": "Group E",
+    "round": "Round 1",
+    "home": {
+      "name": "Ghana",
+      "flag": "🇬🇭",
+      "code": "GH"
+    },
+    "away": {
+      "name": "Panama",
+      "flag": "🇵🇦",
+      "code": "PA"
+    },
+    "kickoff": "2026-06-17T23:00:00Z",
+    "venue": {
+      "name": "Mercedes-Benz Stadium",
+      "city": "Atlanta"
+    },
+    "votes": {
+      "home": 45000,
+      "draw": 15000,
+      "away": 12000
+    }
+  }
+]

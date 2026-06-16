@@ -2,7 +2,7 @@ import React from 'react';
 
 export const Footer: React.FC = () => {
   const year = 2026;
-  const version = "1.7.2";
+  const version = "1.8.0";
 
   return (
     <footer

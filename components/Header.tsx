@@ -109,10 +109,15 @@ export const Header: React.FC<HeaderProps> = ({
               <span className="material-symbols-outlined notranslate text-xl sm:text-2xl" translate="no">menu</span>
             </button>
           )}
-          {/* <img src="./Meteosran-logo.png" alt="MeteoSran-Logo" className="h-8 sm:h-10 w-auto mr-1 sm:mr-2" /> */}
-          <span className="text-xl sm:text-2xl font-bold tracking-tight text-slate-800 dark:text-slate-100">
-            MeteoSran
-          </span>
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            <span className="text-xl sm:text-2xl font-bold tracking-tight text-slate-800 dark:text-slate-100">
+              MeteoSran
+            </span>
+            <div className="flex items-center h-7 sm:h-9 px-2 rounded-lg bg-gradient-to-r from-red-500/10 via-emerald-500/10 to-indigo-500/10 dark:from-red-500/20 dark:via-emerald-500/20 dark:to-indigo-500/20 border border-slate-500/20 shadow-sm gap-1 select-none">
+              <img src="/tournaments_fifa-world-cup-2026.football-logos.cc.svg" alt="FIFA WC 2026 Logo" className="h-5 sm:h-6 w-auto object-contain" />
+              <span className="text-[10px] sm:text-[11px] font-black tracking-tight text-slate-800 dark:text-slate-100">WC26</span>
+            </div>
+          </div>
 
           {/* Mode Selector Dropdown */}
           <div className="relative" ref={modeDropdownRef}>

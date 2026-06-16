@@ -19,6 +19,8 @@ import { LiveSessionOverlay } from './components/LiveSessionOverlay';
 import { generateUUID } from './src/utils/uuid';
 import { useLanguage } from './src/contexts/LanguageContext';
 
+import { UpcomingMatchesTicker } from './components/UpcomingMatchesTicker';
+
 // Lazy-loaded components for optimal bundle footprint and faster initial loading
 const LoginScreen = lazy(() => import('./components/LoginScreen').then(m => ({ default: m.LoginScreen })));
 const ReleaseNotesModal = lazy(() => import('./components/ReleaseNotesModal').then(m => ({ default: m.ReleaseNotesModal })));
@@ -149,7 +151,7 @@ const App: React.FC = () => {
   const guestMessagesRef = useRef<Message[]>([]); // Track guest messages for retroactive save
 
   // Release Notes State
-  const CURRENT_VERSION = '1.7.2';
+  const CURRENT_VERSION = '1.8.0';
   const [showReleaseNotes, setShowReleaseNotes] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [hasUnreadNotifications, setHasUnreadNotifications] = useState(false);
@@ -302,15 +304,9 @@ const App: React.FC = () => {
         // Normal login flow: fetch existing chat sessions
         fetchChatSessions(user.uid).then(async sessions => {
           setChatSessions(sessions);
-          if (sessions.length > 0) {
-            const latestChat = sessions[0];
-            setActiveChatId(latestChat.id);
-            const history = await fetchUserMessages(user.uid, latestChat.id);
-            setMessages(history.length > 0 ? history : []);
-          } else {
-            setActiveChatId(null);
-            setMessages([]);
-          }
+          // Focus on the Welcome screen by default instead of auto-loading last conversation
+          setActiveChatId(null);
+          setMessages([]);
         }).catch(err => {
           console.error("Failed to load chat sessions:", err);
         });
@@ -605,12 +601,7 @@ const App: React.FC = () => {
         setChatSessions(prev => prev.filter(c => c.id !== chatId));
         setSearchResults(prev => prev.filter(c => c.id !== chatId));
         if (activeChatId === chatId) {
-          const remainingChats = chatSessions.filter(c => c.id !== chatId);
-          if (remainingChats.length > 0) {
-            handleSelectChat(remainingChats[0].id);
-          } else {
-            handleNewChat();
-          }
+          handleNewChat();
         }
       }
     } catch (err) {
@@ -931,6 +922,22 @@ const App: React.FC = () => {
     }, 0);
   };
 
+  const handleTickerMatchClick = (match: any) => {
+    const dateFormatted = new Date(match.kickoff).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+    const prompt = `Parle-moi du match de Coupe du Monde : ${match.home.name} ${match.home.flag} vs ${match.away.name} ${match.away.flag} le ${dateFormatted}. Est-ce que la météo va impacter le jeu à ${match.venue.city} (${match.venue.name}) ?`;
+    
+    // Clear active conversation to start a new chat with this match's insights
+    handleNewChat();
+    
+    setCurrentInput({ text: prompt, imageFile: null });
+    setTimeout(() => {
+      handleSendMessage(prompt);
+      if (inputRef.current) {
+        inputRef.current.focus();
+      }
+    }, 0);
+  };
+
   const handleModeChange = (mode: ResponseMode) => {
     track('response_mode_changed', {
       from: selectedMode,
@@ -1041,6 +1048,8 @@ const App: React.FC = () => {
           isAuthenticated={!!user}
           onSignIn={() => setShowLoginModal(true)}
         />
+
+        <UpcomingMatchesTicker onMatchClick={handleTickerMatchClick} />
 
         <main className="flex-grow flex flex-col overflow-hidden px-1.5 sm:px-2 md:p-4 relative">
           {error && <ErrorMessage message={error} />}
