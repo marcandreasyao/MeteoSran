@@ -679,7 +679,7 @@ export const translations = {
           title: "Nouveautés de MeteoSran 1.6.6",
           subtitle: "Version corrective de stabilité & d'esthétique",
           date: "Mai 2026",
-          badge: "Archivé",
+          badge: "Archivée",
           features: {
             memoryTitle: "Mémoire Contextuelle Intelligente",
             memoryDesc: "MeteoSran mémorise désormais tes préférences, tes sujets et tes conversations passées de manière transparente entre les sessions pour un véritable rappel de l'IA à long terme.",
