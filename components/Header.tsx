@@ -97,12 +97,12 @@ export const Header: React.FC<HeaderProps> = ({
                         bg-gradient-to-b from-transparent via-sky-400/5 dark:via-sky-400/10 to-transparent 
                         opacity-50 sm:opacity-70" />
       </div>
-      <div className="container mx-auto flex items-center justify-between">
-        <div className="flex items-center gap-1 sm:gap-3">
+      <div className="container mx-auto flex items-center justify-between gap-1 sm:gap-4">
+        <div className="flex items-center gap-0.5 min-[350px]:gap-1 sm:gap-3">
           {onToggleSidebar && (
             <button
               onClick={onToggleSidebar}
-              className="p-1.5 sm:p-2 rounded-full hover:bg-black/10 dark:hover:bg-white/10 text-slate-700 dark:text-slate-200 focus:outline-none transition-colors"
+              className="p-1 sm:p-2 rounded-full hover:bg-black/10 dark:hover:bg-white/10 text-slate-700 dark:text-slate-200 focus:outline-none transition-colors"
               aria-label="Toggle sidebar"
               title="Toggle sidebar"
             >
@@ -110,12 +110,12 @@ export const Header: React.FC<HeaderProps> = ({
             </button>
           )}
           <div className="flex items-center gap-1 sm:gap-2">
-            <span className="text-[15px] min-[375px]:text-base min-[400px]:text-lg sm:text-2xl font-bold tracking-tight text-slate-800 dark:text-slate-100">
+            <span className="text-[13px] min-[350px]:text-[15px] min-[375px]:text-base min-[400px]:text-lg sm:text-2xl font-bold tracking-tight text-slate-800 dark:text-slate-100">
               MeteoSran
             </span>
-            <div className="flex items-center h-7 sm:h-9 px-1 sm:px-2 rounded-lg bg-gradient-to-r from-red-500/10 via-emerald-500/10 to-indigo-500/10 dark:from-red-500/20 dark:via-emerald-500/20 dark:to-indigo-500/20 border border-slate-500/20 shadow-sm gap-1 select-none">
-              <img src="/tournaments_fifa-world-cup-2026.football-logos.cc.svg" alt="FIFA WC 2026 Logo" className="h-5 sm:h-6 w-auto object-contain" />
-              <span className="hidden min-[380px]:inline text-[10px] sm:text-[11px] font-black tracking-tight text-slate-800 dark:text-slate-100">WC26</span>
+            <div className="flex items-center h-6 sm:h-9 px-1 sm:px-2 rounded-md sm:rounded-lg bg-gradient-to-r from-red-500/10 via-emerald-500/10 to-indigo-500/10 dark:from-red-500/20 dark:via-emerald-500/20 dark:to-indigo-500/20 border border-slate-500/20 shadow-sm gap-1 select-none">
+              <img src="/tournaments_fifa-world-cup-2026.football-logos.cc.svg" alt="FIFA WC 2026 Logo" className="h-4 sm:h-6 w-auto object-contain" />
+              <span className="hidden sm:inline text-[10px] sm:text-[11px] font-black tracking-tight text-slate-800 dark:text-slate-100">WC26</span>
             </div>
           </div>
 
@@ -136,7 +136,7 @@ export const Header: React.FC<HeaderProps> = ({
               <span className="text-sm sm:text-base leading-none">{selectedModeDetails.icon}</span>
               <span className="hidden sm:inline">{t('header.modes.' + selectedMode + '.name')}</span>
               <span
-                className={`material-symbols-outlined notranslate transition-transform duration-200 ${isModeDropdownOpen ? 'rotate-180' : ''}`}
+                className={`hidden sm:inline-block material-symbols-outlined notranslate transition-transform duration-200 ${isModeDropdownOpen ? 'rotate-180' : ''}`}
                 style={{ fontSize: '16px' }}
                 translate="no"
               >
@@ -203,7 +203,7 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
         </div>
 
-        <div className="flex items-center gap-1 sm:gap-2">
+        <div className="flex items-center gap-0.5 min-[350px]:gap-1 sm:gap-2">
           {isAuthenticated === false ? (
             <>
               <AnimatedThemeToggler theme={theme} toggleTheme={toggleTheme} />
@@ -219,28 +219,28 @@ export const Header: React.FC<HeaderProps> = ({
               <div className="relative">
                 <button
                   onClick={onOpenNotifications}
-                  className="p-1.5 sm:p-2 rounded-full hover:bg-black/10 dark:hover:bg-white/10 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-sky-500 dark:focus:ring-sky-400 transition-colors"
+                  className="p-1 sm:p-2 rounded-full hover:bg-black/10 dark:hover:bg-white/10 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-sky-500 dark:focus:ring-sky-400 transition-colors"
                   aria-label={t('header.campaignTitle')}
                   title={t('header.campaignUnread')}
                 >
                   <span className="material-symbols-outlined notranslate text-lg sm:text-xl" translate="no">campaign</span>
                   {hasUnreadNotifications && (
-                    <span className="absolute top-1.5 right-1.5 sm:top-2 sm:right-2 w-2 h-2 rounded-full bg-red-500 animate-pulse shadow-[0_0_8px_rgba(239,68,68,0.8)] border border-white dark:border-slate-800"></span>
+                    <span className="absolute top-1 right-1 sm:top-2 sm:right-2 w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse shadow-[0_0_8px_rgba(239,68,68,0.8)] border border-white dark:border-slate-800"></span>
                   )}
                 </button>
               </div>
               <AnimatedThemeToggler theme={theme} toggleTheme={toggleTheme} />
               <button
-                className="hidden md:inline-flex p-1.5 sm:p-2 rounded-full hover:bg-black/10 dark:hover:bg-white/10 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-sky-500 dark:focus:ring-sky-400 transition-colors"
+                className="p-1 sm:p-2 rounded-full hover:bg-black/10 dark:hover:bg-white/10 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-sky-500 dark:focus:ring-sky-400 transition-colors flex items-center justify-center"
                 onClick={() => signOut(auth)}
                 aria-label={t('header.logout')}
                 title={t('header.logout')}
               >
                 <span className="material-symbols-outlined notranslate text-lg sm:text-xl" translate="no">logout</span>
               </button>
-              <div className="hidden md:block">
+              <div>
                 <button
-                  className="p-1.5 sm:p-2 rounded-full hover:bg-black/10 dark:hover:bg-white/10 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-sky-500 dark:focus:ring-sky-400 transition-colors flex items-center justify-center"
+                  className="p-1 sm:p-2 rounded-full hover:bg-black/10 dark:hover:bg-white/10 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-sky-500 dark:focus:ring-sky-400 transition-colors flex items-center justify-center"
                   onClick={onOpenSettings}
                   aria-label={t('header.openSettings')}
                   aria-expanded={showSettings}
