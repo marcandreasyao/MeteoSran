@@ -36,8 +36,8 @@ export const MessageList: React.FC<MessageListProps> = ({
   return (
     <div className="flex-grow p-4 md:p-6 space-y-4 overflow-y-auto"
          style={{
-           WebkitMaskImage: 'linear-gradient(to bottom, black 0%, black calc(100% - 40px), transparent 100%)',
-           maskImage: 'linear-gradient(to bottom, black 0%, black calc(100% - 40px), transparent 100%)'
+           WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, black 24px, black calc(100% - 40px), transparent 100%)',
+           maskImage: 'linear-gradient(to bottom, transparent 0%, black 24px, black calc(100% - 40px), transparent 100%)'
          }}>
       {messages.map((msg) => (
         <div key={msg.id} id={`msg-${msg.id}`} className="w-full">

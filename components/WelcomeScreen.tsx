@@ -106,7 +106,13 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ firstName, onSugge
   }, []);
 
   return (
-    <div className={`flex flex-col flex-1 overflow-y-auto px-4 sm:px-8 h-full custom-scrollbar ${isKeyboardOpen ? 'pt-2 pb-2' : 'pt-8 sm:pt-16 pb-32'}`}>
+    <div 
+      className={`flex flex-col flex-1 overflow-y-auto px-4 sm:px-8 h-full custom-scrollbar ${isKeyboardOpen ? 'pt-2 pb-2' : 'pt-8 sm:pt-16 pb-32'}`}
+      style={{
+        WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, black 24px, black 100%)',
+        maskImage: 'linear-gradient(to bottom, transparent 0%, black 24px, black 100%)'
+      }}
+    >
       <div className="max-w-4xl mx-auto w-full flex flex-col items-center sm:items-start text-center sm:text-left">
 
         {/* Header Greetings */}
