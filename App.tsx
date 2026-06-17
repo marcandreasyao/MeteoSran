@@ -995,6 +995,10 @@ const App: React.FC = () => {
           onSignIn={() => setShowLoginModal(true)}
           onOpenSettings={() => setShowSettings(true)}
           showSettings={showSettings}
+          selectedMode={selectedMode}
+          onModeChange={handleModeChange}
+          hasUnreadNotifications={hasUnreadNotifications}
+          onOpenNotifications={() => setShowReleaseNotes(true)}
         />
 
       <div className={`flex-1 flex flex-col h-full w-full relative overflow-hidden pt-safe`}>

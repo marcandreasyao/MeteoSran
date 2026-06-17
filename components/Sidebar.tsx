@@ -3,6 +3,16 @@ import { ChatSession, SearchResultSession } from '../src/services/dbService';
 import { useLanguage } from '../src/contexts/LanguageContext';
 import { auth } from '../src/firebase';
 import { signOut } from 'firebase/auth';
+import { ResponseMode } from '../types';
+
+const ResponseModeDetails = {
+  [ResponseMode.DEFAULT]: { icon: "🌤️" },
+  [ResponseMode.CONCISE]: { icon: "📝" },
+  [ResponseMode.SHORT]: { icon: "⚡" },
+  [ResponseMode.STRAIGHT]: { icon: "🎯" },
+  [ResponseMode.FUNNY]: { icon: "😄" },
+  [ResponseMode.EINSTEIN]: { icon: "🧠" }
+};
 
 // ─── Magic UI: Shimmer Button ─────────────────────────────────────────────────
 const shimmerStyle = `
@@ -97,6 +107,10 @@ interface SidebarProps {
   onSignIn?: () => void;
   onOpenSettings?: () => void;
   showSettings?: boolean;
+  selectedMode: ResponseMode;
+  onModeChange: (mode: ResponseMode) => void;
+  hasUnreadNotifications?: boolean;
+  onOpenNotifications?: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -116,7 +130,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
   isAuthenticated,
   onSignIn,
   onOpenSettings,
-  showSettings
+  showSettings,
+  selectedMode,
+  onModeChange,
+  hasUnreadNotifications,
+  onOpenNotifications
 }) => {
   const { t } = useLanguage();
   const [editingChatId, setEditingChatId] = useState<string | null>(null);
@@ -125,6 +143,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const editInputRef = useRef<HTMLInputElement>(null);
   const [activeMenuChatId, setActiveMenuChatId] = useState<string | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
+  const [isSidebarModeOpen, setIsSidebarModeOpen] = useState(false);
 
   // Close menu on click outside
   useEffect(() => {
@@ -541,8 +560,71 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 </div>
               </div>
 
-              {/* Pinned settings & logout at the bottom of the sidebar on mobile/tablet */}
-              <div className="mt-2 pt-2 border-t border-slate-800/60 space-y-1 md:hidden flex-shrink-0">
+              {/* Pinned settings & tools at the bottom of the sidebar on mobile/tablet */}
+              <div className="mt-2 pt-2 border-t border-slate-800/60 space-y-1.5 md:hidden flex-shrink-0">
+                {/* 1. Response Mode Accordion */}
+                <div className="space-y-1">
+                  <button
+                    onClick={() => setIsSidebarModeOpen(!isSidebarModeOpen)}
+                    className="w-full flex items-center justify-between px-3 py-2 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800/55 transition-colors text-sm font-medium"
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="text-[18px] w-[18px] text-center leading-none">{ResponseModeDetails[selectedMode].icon}</span>
+                      <span>{t('header.modes.' + selectedMode + '.name')}</span>
+                    </div>
+                    <span className={`material-symbols-outlined notranslate text-[18px] transition-transform duration-200 ${isSidebarModeOpen ? 'rotate-180' : ''}`} translate="no">
+                      arrow_drop_down
+                    </span>
+                  </button>
+
+                  {isSidebarModeOpen && (
+                    <div className="pl-4 pr-1 py-1 space-y-1 bg-slate-950/25 rounded-lg border border-slate-800/50">
+                      {Object.values(ResponseMode).map((modeKey) => {
+                        const modeDetails = ResponseModeDetails[modeKey as ResponseMode];
+                        const isSelected = selectedMode === modeKey;
+                        const isGated = isAuthenticated === false && modeKey !== ResponseMode.CONCISE;
+                        return (
+                          <button
+                            key={modeKey}
+                            disabled={isGated}
+                            onClick={() => {
+                              if (isGated) return;
+                              onModeChange(modeKey as ResponseMode);
+                            }}
+                            className={`w-full flex items-center justify-between p-2 rounded-lg text-left text-xs transition-colors
+                                        ${isGated ? 'opacity-40 cursor-not-allowed' : 'hover:bg-slate-800/40'}
+                                        ${isSelected ? 'text-sky-400 font-semibold' : 'text-slate-400'}`}
+                          >
+                            <div className="flex items-center gap-2">
+                              <span>{modeDetails.icon}</span>
+                              <span className="truncate">{t('header.modes.' + modeKey + '.name')}</span>
+                            </div>
+                            {isSelected && <span className="material-symbols-outlined notranslate text-sky-400" translate="no" style={{fontSize: '16px'}}>check</span>}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+
+                {/* 2. Notifications/Campaign Button */}
+                <button
+                  onClick={() => {
+                    onOpenNotifications?.();
+                    onClose();
+                  }}
+                  className="w-full flex items-center justify-between px-3 py-2 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800/55 transition-colors text-sm font-medium"
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="material-symbols-outlined notranslate text-[18px]" translate="no">campaign</span>
+                    <span>{t('header.campaignTitle') || 'Updates'}</span>
+                  </div>
+                  {hasUnreadNotifications && (
+                    <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse shadow-[0_0_8px_rgba(239,68,68,0.8)] border border-white dark:border-slate-800 mr-1"></span>
+                  )}
+                </button>
+
+                {/* 3. Settings Button */}
                 <button
                   onClick={() => {
                     onOpenSettings?.();
@@ -553,6 +635,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   <span className="material-symbols-outlined notranslate text-[18px]" translate="no">settings</span>
                   <span>{t('header.openSettings')}</span>
                 </button>
+
+                {/* 4. Logout Button */}
                 <button
                   onClick={() => {
                     signOut(auth);
