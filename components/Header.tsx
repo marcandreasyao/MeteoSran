@@ -146,11 +146,11 @@ export const Header: React.FC<HeaderProps> = ({
 
             {isModeDropdownOpen && (
               <div
-                className="absolute left-0 sm:right-0 mt-2 w-[250px] sm:w-[280px] md:w-[320px] lg:w-[360px] origin-top-left sm:origin-top-right rounded-xl 
+                className="fixed left-1/2 -translate-x-1/2 sm:absolute sm:left-0 sm:translate-x-0 mt-2 w-[calc(100vw-1.5rem)] sm:w-[280px] md:w-[320px] lg:w-[360px] max-w-[340px] sm:max-w-none origin-top sm:origin-top-left rounded-xl 
                            bg-white/95 dark:bg-slate-800/95 backdrop-blur-xl 
                            shadow-2xl border border-white/30 dark:border-slate-700/40
-                           ring-1 ring-black ring-opacity-5 focus:outline-none z-30 overflow-hidden
-                           max-h-[80vh] overflow-y-auto max-w-[calc(100vw-1rem)]"
+                           ring-1 ring-black ring-opacity-5 focus:outline-none z-50 overflow-hidden
+                           max-h-[80vh] overflow-y-auto top-[calc(env(safe-area-inset-top,0px)+3.5rem)] sm:top-auto"
                 role="listbox"
                 aria-orientation="vertical"
                 aria-labelledby="mode-selector-button"
