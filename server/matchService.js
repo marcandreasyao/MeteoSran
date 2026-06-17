@@ -93,15 +93,15 @@ const DEFAULT_MATCHES = [
         venue: { name: "Levi's Stadium", city: "Santa Clara" },
         votes: { home: 25000, draw: 15000, away: 8000 },
         status: "finished",
-        score: { home: 0, away: 0 },
+        score: { home: 3, away: 1 },
         elapsed: 90,
         stats: {
-            possession: { home: 53, away: 47 },
-            shots: { home: 11, away: 9 },
-            shotsOnTarget: { home: 4, away: 3 },
-            fouls: { home: 13, away: 12 },
-            yellowCards: { home: 2, away: 2 },
-            corners: { home: 5, away: 4 }
+            possession: { home: 60, away: 40 },
+            shots: { home: 18, away: 10 },
+            shotsOnTarget: { home: 7, away: 4 },
+            fouls: { home: 11, away: 14 },
+            yellowCards: { home: 1, away: 3 },
+            corners: { home: 7, away: 3 }
         }
     },
     {
@@ -113,10 +113,17 @@ const DEFAULT_MATCHES = [
         kickoff: "2026-06-17T17:00:00Z",
         venue: { name: "NRG Stadium", city: "Houston" },
         votes: { home: 85000, draw: 14000, away: 21000 },
-        status: "scheduled",
-        score: { home: 0, away: 0 },
-        elapsed: null,
-        stats: { ...ZEROED_STATS }
+        status: "finished",
+        score: { home: 1, away: 1 },
+        elapsed: 90,
+        stats: {
+            possession: { home: 62, away: 38 },
+            shots: { home: 19, away: 8 },
+            shotsOnTarget: { home: 5, away: 3 },
+            fouls: { home: 10, away: 16 },
+            yellowCards: { home: 2, away: 4 },
+            corners: { home: 8, away: 2 }
+        }
     },
     {
         id: "eng_cro_2026",
@@ -127,10 +134,17 @@ const DEFAULT_MATCHES = [
         kickoff: "2026-06-17T20:00:00Z",
         venue: { name: "AT&T Stadium", city: "Arlington" },
         votes: { home: 64000, draw: 32000, away: 24000 },
-        status: "scheduled",
-        score: { home: 0, away: 0 },
-        elapsed: null,
-        stats: { ...ZEROED_STATS }
+        status: "finished",
+        score: { home: 4, away: 2 },
+        elapsed: 90,
+        stats: {
+            possession: { home: 57, away: 43 },
+            shots: { home: 21, away: 12 },
+            shotsOnTarget: { home: 9, away: 5 },
+            fouls: { home: 9, away: 13 },
+            yellowCards: { home: 1, away: 2 },
+            corners: { home: 9, away: 4 }
+        }
     },
     {
         id: "gha_pan_2026",
