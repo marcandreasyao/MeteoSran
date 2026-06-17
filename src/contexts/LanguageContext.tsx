@@ -658,7 +658,7 @@ export const translations = {
           features: {
             liveScoresTitle: "Affichage des Scores en Direct",
             liveScoresDesc: "Les résultats et scores en direct sont désormais affichés directement dans les cartes de prédiction et le bandeau défilant. Les matchs terminés affichent le score final, tandis que les matchs en cours montrent le score en temps réel avec un indicateur animé et le compteur de minutes écoulées.",
-            matchStatsTitle: "Statistiques de Match Interactives",
+            matchStatsTitle: "Statistiques de Match Interactifs",
             matchStatsDesc: "Chaque carte de match inclut désormais un panneau de statistiques dépliable avec des barres de comparaison détaillées pour la possession, les tirs, les tirs cadrés, les fautes, les cartons jaunes et les corners. Toutes les données se mettent à jour en temps réel pendant les matchs en cours.",
             graphRAGTitle: "Moteur d'Intelligence Graph RAG",
             graphRAGDesc: "Un nouveau graphe de connaissances structuré alimente la compréhension du tournoi par MeteoSran. Posez des questions sur les scores, les classements, les performances des équipes ou les groupes et recevez des réponses précises et contextualisées, fusionnant intelligence de match en direct et analyse météo-tactique."
