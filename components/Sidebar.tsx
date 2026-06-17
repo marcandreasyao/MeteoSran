@@ -613,14 +613,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     onOpenNotifications?.();
                     onClose();
                   }}
-                  className="w-full flex items-center justify-between px-3 py-2 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800/55 transition-colors text-sm font-medium"
+                  className="w-full flex items-center justify-between px-3 py-2 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800/55 transition-colors text-sm font-medium text-left"
                 >
-                  <div className="flex items-center gap-3">
-                    <span className="material-symbols-outlined notranslate text-[18px]" translate="no">campaign</span>
-                    <span>{t('header.campaignTitle') || 'Updates'}</span>
+                  <div className="flex items-center gap-3 text-left">
+                    <span className="material-symbols-outlined notranslate text-[18px] shrink-0" translate="no">campaign</span>
+                    <span className="text-left leading-tight">{t('header.campaignTitle') || 'Updates'}</span>
                   </div>
                   {hasUnreadNotifications && (
-                    <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse shadow-[0_0_8px_rgba(239,68,68,0.8)] border border-white dark:border-slate-800 mr-1"></span>
+                    <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse shadow-[0_0_8px_rgba(239,68,68,0.8)] border border-white dark:border-slate-800 mr-1 shrink-0"></span>
                   )}
                 </button>
 
@@ -630,10 +630,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     onOpenSettings?.();
                     onClose();
                   }}
-                  className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800/55 transition-colors text-sm font-medium"
+                  className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800/55 transition-colors text-sm font-medium text-left"
                 >
-                  <span className="material-symbols-outlined notranslate text-[18px]" translate="no">settings</span>
-                  <span>{t('header.openSettings')}</span>
+                  <span className="material-symbols-outlined notranslate text-[18px] shrink-0" translate="no">settings</span>
+                  <span className="text-left leading-tight">{t('header.openSettings')}</span>
                 </button>
 
                 {/* 4. Logout Button */}
@@ -642,10 +642,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     signOut(auth);
                     onClose();
                   }}
-                  className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-rose-400 hover:text-rose-300 hover:bg-rose-950/20 transition-colors text-sm font-medium"
+                  className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-rose-400 hover:text-rose-300 hover:bg-rose-950/20 transition-colors text-sm font-medium text-left"
                 >
-                  <span className="material-symbols-outlined notranslate text-[18px]" translate="no">logout</span>
-                  <span>{t('header.logout')}</span>
+                  <span className="material-symbols-outlined notranslate text-[18px] shrink-0" translate="no">logout</span>
+                  <span className="text-left leading-tight">{t('header.logout')}</span>
                 </button>
               </div>
             </>
