@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { SparklesText } from './magicui/SparklesText';
 import { useLanguage } from '../src/contexts/LanguageContext';
 import { MatchCardWidget } from './MatchCardWidget';
@@ -138,6 +139,18 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ firstName, onSugge
     return () => clearInterval(interval);
   }, []);
 
+  // Lock body scroll when history modal is open
+  useEffect(() => {
+    if (showHistoryModal) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [showHistoryModal]);
+
   return (
     <div 
       className={`flex flex-col flex-1 overflow-y-auto px-4 sm:px-8 h-full custom-scrollbar ${isKeyboardOpen ? 'pt-2 pb-2' : 'pt-8 sm:pt-16 pb-32'}`}
@@ -180,7 +193,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ firstName, onSugge
               </div>
               <button 
                 onClick={() => setShowHistoryModal(true)}
-                className="text-[11px] md:text-xs font-bold text-white bg-gradient-to-r from-red-600 via-emerald-600 to-indigo-600 hover:brightness-110 active:scale-95 transition-all flex items-center gap-1.5 cursor-pointer select-none px-3.5 py-1.5 rounded-full border border-white/10 shadow-sm"
+                className="text-[11px] md:text-xs font-bold text-white bg-gradient-to-br from-red-600 via-emerald-600 to-indigo-600 hover:brightness-110 active:scale-95 transition-all flex items-center gap-1.5 cursor-pointer select-none px-3.5 py-1.5 rounded-full border border-white/10 shadow-sm"
               >
                 <span className="material-symbols-outlined text-xs leading-none" style={{ fontSize: '14px' }}>history</span>
                 <span>{language === 'fr' ? 'Matchs Précédents' : 'Previous Matches'}</span>
@@ -308,12 +321,19 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ firstName, onSugge
       <style>{`
         .hide-scrollbar::-webkit-scrollbar {
             display: none;
-        }
       `}</style>
 
       {/* Previous Games Modal */}
-      {showHistoryModal && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-fade-in">
+      {showHistoryModal && createPortal(
+        <div 
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setShowHistoryModal(false);
+              setExpandedMatchId(null);
+            }
+          }}
+          className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-fade-in"
+        >
           <div className="w-full max-w-2xl bg-slate-900 border border-slate-800 text-white rounded-3xl shadow-2xl flex flex-col max-h-[80vh] overflow-hidden animate-scale-up">
             
             {/* Modal Header */}
@@ -465,7 +485,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ firstName, onSugge
                                 setShowHistoryModal(false);
                                 onSuggestionClick(question);
                               }}
-                              className="text-xs font-bold text-sky-400 hover:text-sky-300 transition-colors flex items-center gap-1 cursor-pointer select-none"
+                              className="text-xs font-bold text-sky-400 hover:text-sky-305 transition-colors flex items-center gap-1 cursor-pointer select-none"
                             >
                               <span>{language === 'fr' ? 'Analyse Tactique & Météo' : 'Tactical & Weather Analysis'}</span>
                               <span className="material-symbols-outlined text-xs leading-none" style={{ fontSize: '13px' }}>arrow_forward</span>
@@ -494,7 +514,8 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ firstName, onSugge
             </div>
 
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
