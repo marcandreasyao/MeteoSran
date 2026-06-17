@@ -41,6 +41,10 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ firstName, onSugge
   const { language, t } = useLanguage();
   const [subtitleIndex] = useState(() => Math.floor(Math.random() * 11));
   const [otherMatches, setOtherMatches] = useState<any[]>([]);
+  const [featuredMatchId, setFeaturedMatchId] = useState<string>("arg_alg_2026");
+  const [showHistoryModal, setShowHistoryModal] = useState(false);
+  const [allMatches, setAllMatches] = useState<any[]>([]);
+  const [expandedMatchId, setExpandedMatchId] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchMatches = async () => {
@@ -48,13 +52,42 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ firstName, onSugge
         const response = await fetch('/api/worldcup/matches');
         if (response.ok) {
           const data = await response.json();
-          // Filter for matches that kickoff today and exclude the featured match
+          setAllMatches(data);
+          
+          // Determine the featured match of the day dynamically
           const todayStr = new Date().toISOString().split('T')[0];
-          let filtered = data.filter((m: any) => m.id !== "arg_alg_2026" && m.kickoff.startsWith(todayStr));
-          if (filtered.length === 0) {
-            filtered = data.filter((m: any) => m.id !== "arg_alg_2026");
+          const todayMatches = data.filter((m: any) => m.kickoff.startsWith(todayStr));
+          
+          let featured = null;
+          if (todayMatches.length > 0) {
+            // 1. Look for live match first
+            featured = todayMatches.find((m: any) => m.status === 'live');
+            // 2. Look for scheduled match next
+            if (!featured) {
+              featured = todayMatches.find((m: any) => m.status === 'scheduled');
+            }
+            // 3. Fallback to finished match today
+            if (!featured) {
+              featured = todayMatches[0];
+            }
           }
-          setOtherMatches(filtered);
+          
+          // If no matches today, find the first scheduled match overall
+          if (!featured) {
+            featured = data.find((m: any) => m.status === 'scheduled');
+          }
+          
+          // Fallback to first match overall
+          if (!featured && data.length > 0) {
+            featured = data[0];
+          }
+          
+          const finalFeaturedId = featured ? featured.id : "arg_alg_2026";
+          setFeaturedMatchId(finalFeaturedId);
+          
+          // Other matches of the day are today's matches except the featured one
+          const otherGames = data.filter((m: any) => m.id !== finalFeaturedId && m.kickoff.startsWith(todayStr));
+          setOtherMatches(otherGames);
         }
       } catch (err) {
         console.error("Error fetching other matches:", err);
@@ -134,15 +167,24 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ firstName, onSugge
             <img src="/tournaments_fifa-world-cup-2026.football-logos.cc.svg" alt="FIFA WC 2026" className="w-5 h-5 object-contain" />
             <span>Match Vedette Mondial 2026</span>
           </div>
-          <MatchCardWidget matchId="arg_alg_2026" />
+          <MatchCardWidget matchId={featuredMatchId} />
         </div>
 
         {/* Autres Matchs du Jour / Other Games of the Day */}
         {otherMatches.length > 0 && (
           <div className="w-full mb-8 z-10">
-            <div className="flex items-center gap-2 mb-3 px-1 text-slate-700 dark:text-slate-300 font-bold text-xs md:text-sm tracking-wider uppercase select-none">
-              <img src="/tournaments_fifa-world-cup-2026.football-logos.cc.svg" alt="FIFA WC 2026" className="w-4 h-4 object-contain" />
-              <span>Autres Matchs du Jour</span>
+            <div className="flex items-center justify-between w-full mb-3 px-1">
+              <div className="flex items-center gap-2 text-slate-700 dark:text-slate-300 font-bold text-xs md:text-sm tracking-wider uppercase select-none">
+                <img src="/tournaments_fifa-world-cup-2026.football-logos.cc.svg" alt="FIFA WC 2026" className="w-4 h-4 object-contain" />
+                <span>Autres Matchs du Jour</span>
+              </div>
+              <button 
+                onClick={() => setShowHistoryModal(true)}
+                className="text-[11px] md:text-xs font-bold text-white bg-gradient-to-r from-red-600 via-emerald-600 to-indigo-600 hover:brightness-110 active:scale-95 transition-all flex items-center gap-1.5 cursor-pointer select-none px-3.5 py-1.5 rounded-full border border-white/10 shadow-sm"
+              >
+                <span className="material-symbols-outlined text-xs leading-none" style={{ fontSize: '14px' }}>history</span>
+                <span>{language === 'fr' ? 'Matchs Précédents' : 'Previous Matches'}</span>
+              </button>
             </div>
             
             <div className="w-[calc(100%+2rem)] -ml-4 sm:w-[calc(100%+4rem)] sm:-ml-8 relative"
@@ -267,11 +309,193 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ firstName, onSugge
         .hide-scrollbar::-webkit-scrollbar {
             display: none;
         }
-        .hide-scrollbar {
-            -ms-overflow-style: none;
-            scrollbar-width: none;
-        }
       `}</style>
+
+      {/* Previous Games Modal */}
+      {showHistoryModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-fade-in">
+          <div className="w-full max-w-2xl bg-slate-900 border border-slate-800 text-white rounded-3xl shadow-2xl flex flex-col max-h-[80vh] overflow-hidden animate-scale-up">
+            
+            {/* Modal Header */}
+            <div className="px-6 py-4 bg-gradient-to-r from-slate-900 to-slate-950 border-b border-slate-800 flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-bold text-white tracking-tight">
+                  {language === 'fr' ? 'Matchs Précédents' : 'Previous Matches'}
+                </h3>
+                <p className="text-[11px] text-slate-400">
+                  {language === 'fr' ? 'Historique et statistiques des rencontres terminées' : 'History and statistics of completed fixtures'}
+                </p>
+              </div>
+              <button 
+                onClick={() => {
+                  setShowHistoryModal(false);
+                  setExpandedMatchId(null);
+                }}
+                className="w-8 h-8 flex items-center justify-center rounded-full bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors cursor-pointer"
+                aria-label="Close"
+              >
+                <span className="material-symbols-outlined notranslate text-lg" translate="no">close</span>
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="flex-1 overflow-y-auto p-6 space-y-4 custom-scrollbar">
+              {(() => {
+                const finishedMatches = allMatches.filter((m: any) => m.status === 'finished');
+                if (finishedMatches.length === 0) {
+                  return (
+                    <div className="text-center py-12 text-slate-400 text-sm">
+                      {language === 'fr' ? 'Aucun match précédent enregistré.' : 'No previous matches recorded.'}
+                    </div>
+                  );
+                }
+
+                return finishedMatches.map((match: any) => {
+                  const isExpanded = expandedMatchId === match.id;
+                  const kickoffDate = new Date(match.kickoff);
+                  const dateLabel = kickoffDate.toLocaleDateString(language === 'fr' ? 'fr-FR' : 'en-US', { day: 'numeric', month: 'short' });
+                  
+                  return (
+                    <div 
+                      key={match.id}
+                      className="rounded-2xl border border-slate-800/60 bg-slate-950/40 overflow-hidden transition-all duration-300 hover:border-slate-700/60"
+                    >
+                      {/* Match row */}
+                      <div 
+                        onClick={() => setExpandedMatchId(isExpanded ? null : match.id)}
+                        className="p-4 flex items-center justify-between cursor-pointer hover:bg-white/5 transition-colors select-none"
+                      >
+                        <div className="flex flex-col gap-0.5">
+                          <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">
+                            {match.group} • {match.round}
+                          </span>
+                          <span className="text-[10px] text-slate-400 font-medium bg-slate-850 border border-slate-800/80 px-2.5 py-0.5 rounded-md w-fit">
+                            {dateLabel} • {match.venue.city}
+                          </span>
+                        </div>
+
+                        {/* Center Teams and Score */}
+                        <div className="flex items-center gap-4 flex-1 justify-center px-4">
+                          <div className="flex items-center gap-2 w-28 justify-end">
+                            <span className="font-bold text-xs truncate max-w-[90px] text-slate-200">{match.home.name}</span>
+                            <span className="text-xl select-none">{match.home.flag}</span>
+                          </div>
+                          
+                          <div className="px-3 py-1 rounded-xl bg-slate-950/90 border border-slate-850/80 flex items-center justify-center font-jersey text-base min-w-[50px] shadow-inner select-none text-emerald-400">
+                            <span>{match.score.home}</span>
+                            <span className="font-sans text-[10px] text-slate-500 mx-1.5 font-bold">-</span>
+                            <span>{match.score.away}</span>
+                          </div>
+
+                          <div className="flex items-center gap-2 w-28 justify-start">
+                            <span className="text-xl select-none">{match.away.flag}</span>
+                            <span className="font-bold text-xs truncate max-w-[90px] text-slate-200">{match.away.name}</span>
+                          </div>
+                        </div>
+
+                        <span className="material-symbols-outlined text-slate-500 text-sm select-none transition-transform duration-300" style={{ transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}>
+                          expand_more
+                        </span>
+                      </div>
+
+                      {/* Expandable Stats drawer */}
+                      {isExpanded && match.stats && (
+                        <div className="px-6 pb-5 pt-2 border-t border-slate-800/50 bg-slate-950/60 animate-slide-down">
+                          
+                          {/* Stats Comparison Header */}
+                          <div className="flex justify-between items-center text-[10px] font-bold text-slate-400 mb-4 uppercase tracking-wider select-none">
+                            <span className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />{match.home.name}</span>
+                            <span>Statistiques</span>
+                            <span className="flex items-center gap-1.5 text-right"><span className="w-1.5 h-1.5 rounded-full bg-sky-500" />{match.away.name}</span>
+                          </div>
+
+                          {/* Stats rows */}
+                          <div className="space-y-3">
+                            {(() => {
+                              const statsList = [
+                                { key: 'possession', label: language === 'fr' ? 'Possession' : 'Possession', unit: '%' },
+                                { key: 'shots', label: language === 'fr' ? 'Tirs' : 'Shots', unit: '' },
+                                { key: 'shotsOnTarget', label: language === 'fr' ? 'Tirs cadrés' : 'Shots on target', unit: '' },
+                                { key: 'fouls', label: language === 'fr' ? 'Fautes' : 'Fouls', unit: '' },
+                                { key: 'yellowCards', label: language === 'fr' ? 'Cartons jaunes' : 'Yellow cards', unit: '' },
+                                { key: 'corners', label: language === 'fr' ? 'Corners' : 'Corners', unit: '' }
+                              ];
+
+                              return statsList.map(st => {
+                                const homeVal = match.stats[st.key]?.home ?? 0;
+                                const awayVal = match.stats[st.key]?.away ?? 0;
+                                const totalVal = homeVal + awayVal === 0 ? 1 : homeVal + awayVal;
+                                const homePct = Math.round((homeVal / totalVal) * 100);
+                                const awayPct = 100 - homePct;
+
+                                return (
+                                  <div key={st.key} className="space-y-1">
+                                    <div className="flex justify-between text-xs select-none">
+                                      <span className="font-jersey text-emerald-400">{homeVal}{st.unit}</span>
+                                      <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">{st.label}</span>
+                                      <span className="font-jersey text-sky-400">{awayVal}{st.unit}</span>
+                                    </div>
+                                    
+                                    {/* Progress track */}
+                                    <div className="h-1.5 w-full bg-slate-800 rounded-full overflow-hidden flex">
+                                      <div 
+                                        className="h-full bg-emerald-500 rounded-l-full transition-all duration-500" 
+                                        style={{ width: `${homePct}%` }}
+                                      />
+                                      <div 
+                                        className="h-full bg-sky-500 rounded-r-full transition-all duration-500" 
+                                        style={{ width: `${awayPct}%` }}
+                                      />
+                                    </div>
+                                  </div>
+                                );
+                              });
+                            })()}
+                          </div>
+
+                          {/* Quick weather analysis inside modal */}
+                          <div className="mt-5 pt-3.5 border-t border-slate-800/40 flex justify-end">
+                            <button
+                              onClick={() => {
+                                const isFr = language === 'fr';
+                                const fullDateStr = kickoffDate.toLocaleDateString(isFr ? 'fr-FR' : 'en-US', { day: 'numeric', month: 'long' });
+                                const question = isFr
+                                  ? `Parle-moi du match de Coupe du Monde : ${match.home.name} ${match.home.flag} vs ${match.away.name} ${match.away.flag} le ${fullDateStr}. Est-ce que la météo va impacter le jeu à ${match.venue.city} (${match.venue.name}) ?`
+                                  : `Tell me about the World Cup match: ${match.home.name} ${match.home.flag} vs ${match.away.name} ${match.away.flag} on ${fullDateStr}. Will the weather impact the game in ${match.venue.city} (${match.venue.name})?`;
+                                setShowHistoryModal(false);
+                                onSuggestionClick(question);
+                              }}
+                              className="text-xs font-bold text-sky-400 hover:text-sky-300 transition-colors flex items-center gap-1 cursor-pointer select-none"
+                            >
+                              <span>{language === 'fr' ? 'Analyse Tactique & Météo' : 'Tactical & Weather Analysis'}</span>
+                              <span className="material-symbols-outlined text-xs leading-none" style={{ fontSize: '13px' }}>arrow_forward</span>
+                            </button>
+                          </div>
+
+                        </div>
+                      )}
+                    </div>
+                  );
+                });
+              })()}
+            </div>
+            
+            {/* Modal Footer */}
+            <div className="px-6 py-4 border-t border-slate-800 flex justify-end bg-slate-950/40">
+              <button 
+                onClick={() => {
+                  setShowHistoryModal(false);
+                  setExpandedMatchId(null);
+                }}
+                className="px-4 py-2 text-xs font-bold rounded-xl bg-slate-850 hover:bg-slate-800 text-slate-300 hover:text-white transition-colors cursor-pointer border border-slate-800"
+              >
+                {language === 'fr' ? 'Fermer' : 'Close'}
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
     </div>
   );
 };
