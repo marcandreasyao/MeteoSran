@@ -7,7 +7,7 @@ import { fileURLToPath } from 'url';
 import { GoogleGenAI } from "@google/genai";
 import { PrismaClient } from '@prisma/client';
 import { retrieveHybrid } from './ragService.js';
-import { getAllMatches, getMatchById, recordVote, getVotePercentages } from './matchService.js';
+import { getAllMatches, getMatchById, recordVote, getVotePercentages, startSmartPoller } from './matchService.js';
 import { retrieveGraphContext } from './graphService.js';
 
 dotenv.config();
@@ -1924,7 +1924,12 @@ const startServer = (port) => {
 
         // Recurring ping to keep it alive
         const neonKeepAlive = setInterval(pingNeon, NEON_PING_INTERVAL_MS);
-        console.log(`[MeteoSran Server] 💓 Neon keep-alive scheduled every ${NEON_PING_INTERVAL_MS / 60000} minutes.`);
+        console.log(`[MeteoSran Server] Neon keep-alive scheduled every ${NEON_PING_INTERVAL_MS / 60000} minutes.`);
+
+        // ─────────────────────────────────────────────────────────────
+        // MATCH SYNC: Smart background poller for live score updates
+        // ─────────────────────────────────────────────────────────────
+        startSmartPoller();
 
         // ─────────────────────────────────────────────────────────────
         // GRACEFUL SHUTDOWN: Clean up on process termination

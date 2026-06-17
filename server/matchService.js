@@ -164,6 +164,172 @@ const DEFAULT_MATCHES = [
 
 let matches = [...DEFAULT_MATCHES];
 
+// Tracks the last time we successfully called the external API (ms epoch)
+let lastApiSyncMs = 0;
+// Minimum gap between two API calls (2 minutes)
+const API_SYNC_MIN_INTERVAL_MS = 2 * 60 * 1000;
+
+// Football-Data.org API key (populated from .env at runtime)
+const FOOTBALL_DATA_TOKEN = process.env.FOOTBALL_DATA_TOKEN || '';
+
+// Map Football-Data.org status strings to our internal status strings
+const FD_STATUS_MAP = {
+    SCHEDULED: 'scheduled',
+    TIMED: 'scheduled',
+    IN_PLAY: 'live',
+    PAUSED: 'live',
+    FINISHED: 'finished',
+    AWARDED: 'finished',
+    POSTPONED: 'scheduled',
+    CANCELLED: 'scheduled',
+    SUSPENDED: 'live',
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Layer 1 — Time-based auto-correction (zero API calls, always runs)
+// ─────────────────────────────────────────────────────────────────────────────
+function autoCorrectStatuses() {
+    const now = Date.now();
+    let changed = false;
+
+    for (const m of matches) {
+        const kickoffMs = new Date(m.kickoff).getTime();
+        const elapsedSinceKickoffMs = now - kickoffMs;
+
+        if (m.status === 'scheduled' && elapsedSinceKickoffMs >= 0) {
+            // Kickoff time has passed — mark as live
+            m.status = 'live';
+            m.elapsed = Math.min(90, Math.floor(elapsedSinceKickoffMs / 60000));
+            changed = true;
+            console.log(`[MatchSync] Auto-started: ${m.home.name} vs ${m.away.name} (${m.elapsed}')`);
+        } else if (m.status === 'live' && elapsedSinceKickoffMs >= 120 * 60 * 1000) {
+            // More than 120 minutes after kickoff — safe to mark as finished
+            m.status = 'finished';
+            m.elapsed = 90;
+            changed = true;
+            console.log(`[MatchSync] Auto-finished (120min safety): ${m.home.name} vs ${m.away.name}`);
+        } else if (m.status === 'live') {
+            // Update elapsed for live matches
+            m.elapsed = Math.min(90, Math.floor(elapsedSinceKickoffMs / 60000));
+        }
+    }
+
+    if (changed) saveState();
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Layer 2 — Football-Data.org API sync (only during active match windows)
+// ─────────────────────────────────────────────────────────────────────────────
+async function syncFromAPI() {
+    if (!FOOTBALL_DATA_TOKEN) {
+        console.warn('[MatchSync] No FOOTBALL_DATA_TOKEN set — skipping API sync.');
+        return;
+    }
+
+    const now = Date.now();
+    if (now - lastApiSyncMs < API_SYNC_MIN_INTERVAL_MS) {
+        // Throttle: don't call more than once every 2 minutes
+        return;
+    }
+
+    try {
+        const url = 'https://api.football-data.org/v4/competitions/WC/matches?season=2026&status=IN_PLAY,PAUSED,FINISHED';
+        const res = await fetch(url, {
+            headers: { 'X-Auth-Token': FOOTBALL_DATA_TOKEN },
+            signal: AbortSignal.timeout(8000) // 8s timeout
+        });
+
+        if (!res.ok) {
+            console.warn(`[MatchSync] Football-Data.org returned ${res.status} — skipping sync.`);
+            return;
+        }
+
+        const json = await res.json();
+        lastApiSyncMs = now;
+
+        const apiMatches = json.matches || [];
+        let syncCount = 0;
+
+        for (const apiMatch of apiMatches) {
+            // Match our local match by home+away team name (partial, case-insensitive)
+            const homeNameApi = (apiMatch.homeTeam?.shortName || apiMatch.homeTeam?.name || '').toLowerCase();
+            const awayNameApi = (apiMatch.awayTeam?.shortName || apiMatch.awayTeam?.name || '').toLowerCase();
+
+            const local = matches.find(m => {
+                const h = m.home.name.toLowerCase();
+                const a = m.away.name.toLowerCase();
+                // Accept if either the full name or the code matches
+                return (homeNameApi.includes(h) || h.includes(homeNameApi) || m.home.code.toLowerCase() === (apiMatch.homeTeam?.tla || '').toLowerCase())
+                    && (awayNameApi.includes(a) || a.includes(awayNameApi) || m.away.code.toLowerCase() === (apiMatch.awayTeam?.tla || '').toLowerCase());
+            });
+
+            if (!local) continue;
+
+            const newStatus = FD_STATUS_MAP[apiMatch.status] || local.status;
+            const fullTime = apiMatch.score?.fullTime;
+            const regularTime = apiMatch.score?.regularTime;
+            const scoreData = fullTime || regularTime;
+
+            if (newStatus !== local.status) {
+                console.log(`[MatchSync] ${local.home.name} vs ${local.away.name}: ${local.status} -> ${newStatus}`);
+                local.status = newStatus;
+            }
+
+            if (scoreData && scoreData.home != null && scoreData.away != null) {
+                local.score = { home: scoreData.home, away: scoreData.away };
+            }
+
+            if (apiMatch.minute != null) {
+                local.elapsed = apiMatch.minute;
+            } else if (newStatus === 'finished') {
+                local.elapsed = 90;
+            }
+
+            syncCount++;
+        }
+
+        if (syncCount > 0) {
+            saveState();
+            console.log(`[MatchSync] Synced ${syncCount} match(es) from Football-Data.org.`);
+        } else {
+            console.log('[MatchSync] API sync: no relevant matches found in response.');
+        }
+
+    } catch (err) {
+        console.warn('[MatchSync] API sync failed (will retry next cycle):', err.message);
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Smart poller — runs every 60s, only calls the API when needed
+// ─────────────────────────────────────────────────────────────────────────────
+export function startSmartPoller() {
+    console.log('[MatchSync] Smart match poller started (60s tick).');
+
+    setInterval(async () => {
+        // Layer 1 always runs (zero cost)
+        autoCorrectStatuses();
+
+        const now = Date.now();
+
+        // Check if any match is currently live
+        const hasLive = matches.some(m => m.status === 'live');
+
+        // Check if any match finished within the last 30 minutes
+        const hasRecentlyFinished = matches.some(m => {
+            if (m.status !== 'finished') return false;
+            const kickoffMs = new Date(m.kickoff).getTime();
+            const finishMs = kickoffMs + 105 * 60 * 1000; // ~105 min after kickoff
+            return (now - finishMs) < 30 * 60 * 1000;
+        });
+
+        if (hasLive || hasRecentlyFinished) {
+            await syncFromAPI();
+        }
+        // Otherwise: completely silent — no API calls, no logs
+    }, 60 * 1000); // every 60 seconds
+}
+
 function loadState() {
     try {
         if (!fs.existsSync(DATA_DIR)) {
@@ -191,11 +357,13 @@ function saveState() {
 
 export function getAllMatches() {
     loadState();
+    autoCorrectStatuses();
     return matches;
 }
 
 export function getMatchById(id) {
     loadState();
+    autoCorrectStatuses();
     return matches.find(m => m.id === id) || null;
 }
 
@@ -211,6 +379,7 @@ export function recordVote(id, teamChoice) {
     saveState();
     return match;
 }
+
 
 export function getVotePercentages(match) {
     const total = match.votes.home + match.votes.draw + match.votes.away;

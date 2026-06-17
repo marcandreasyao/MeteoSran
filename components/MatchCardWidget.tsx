@@ -41,16 +41,18 @@ export const MatchCardWidget: React.FC<MatchCardWidgetProps> = ({ matchId, onVot
     const [votedChoice, setVotedChoice] = useState<string | null>(null);
     const [showStats, setShowStats] = useState(false);
 
-    // Fetch match details on load
+    // Fetch match details on load, then refresh every 60s for live score updates
     useEffect(() => {
-        const fetchMatch = async () => {
+        let isMounted = true;
+
+        const fetchMatch = async (showLoading = false) => {
             try {
-                setLoading(true);
+                if (showLoading) setLoading(true);
                 const response = await fetch(`/api/worldcup/match/${matchId}`);
-                if (response.ok) {
+                if (response.ok && isMounted) {
                     const data = await response.json();
                     setMatch(data);
-                    
+
                     // Check if already voted in localStorage
                     const voted = localStorage.getItem(`voted_${matchId}`);
                     if (voted) {
@@ -60,16 +62,30 @@ export const MatchCardWidget: React.FC<MatchCardWidgetProps> = ({ matchId, onVot
             } catch (err) {
                 console.error("Error fetching match details:", err);
             } finally {
-                setLoading(false);
+                if (showLoading && isMounted) setLoading(false);
             }
         };
 
-        fetchMatch();
+        fetchMatch(true);
+
+        // Background refresh every 60 seconds — no loading flash
+        const refreshInterval = setInterval(() => fetchMatch(false), 60 * 1000);
+
+        return () => {
+            isMounted = false;
+            clearInterval(refreshInterval);
+        };
     }, [matchId]);
 
-    // Countdown effect
+    // Countdown effect — respects the live match.status from the server
     useEffect(() => {
         if (!match) return;
+
+        // If the server already says finished, no countdown needed
+        if (match.status === 'finished') {
+            setCountdown('');
+            return;
+        }
 
         const updateCountdown = () => {
             const kickoffTime = new Date(match.kickoff).getTime();
@@ -77,7 +93,10 @@ export const MatchCardWidget: React.FC<MatchCardWidgetProps> = ({ matchId, onVot
             const difference = kickoffTime - now;
 
             if (difference <= 0) {
-                setCountdown("LIVE / EN COURS");
+                // Past kickoff — the server will eventually flip to 'finished'
+                // Show live elapsed from server data
+                const elapsed = match.elapsed ?? Math.floor((now - kickoffTime) / 60000);
+                setCountdown(`${Math.min(elapsed, 90)}'`);
                 return;
             }
 

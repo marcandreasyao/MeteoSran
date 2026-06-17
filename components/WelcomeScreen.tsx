@@ -95,6 +95,10 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ firstName, onSugge
       }
     };
     fetchMatches();
+
+    // Re-fetch every 60 seconds so the UI stays current after server syncs
+    const refreshInterval = setInterval(fetchMatches, 60 * 1000);
+    return () => clearInterval(refreshInterval);
   }, []);
 
   const getGreetingKey = () => {

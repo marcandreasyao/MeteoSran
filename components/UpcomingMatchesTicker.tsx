@@ -40,6 +40,10 @@ export const UpcomingMatchesTicker: React.FC<UpcomingMatchesTickerProps> = ({ on
             }
         };
         fetchMatches();
+
+        // Re-fetch every 60 seconds to reflect server-side status and score updates
+        const refreshInterval = setInterval(fetchMatches, 60 * 1000);
+        return () => clearInterval(refreshInterval);
     }, []);
 
     if (matches.length === 0) return null;
