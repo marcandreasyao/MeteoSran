@@ -110,7 +110,7 @@ export const Header: React.FC<HeaderProps> = ({
             </button>
           )}
           <div className="flex items-center gap-1 sm:gap-2">
-            <span className="text-lg min-[360px]:text-xl sm:text-2xl font-bold tracking-tight text-slate-800 dark:text-slate-100">
+            <span className="text-[15px] min-[375px]:text-base min-[400px]:text-lg sm:text-2xl font-bold tracking-tight text-slate-800 dark:text-slate-100">
               MeteoSran
             </span>
             <div className="flex items-center h-7 sm:h-9 px-1 sm:px-2 rounded-lg bg-gradient-to-r from-red-500/10 via-emerald-500/10 to-indigo-500/10 dark:from-red-500/20 dark:via-emerald-500/20 dark:to-indigo-500/20 border border-slate-500/20 shadow-sm gap-1 select-none">
@@ -209,7 +209,7 @@ export const Header: React.FC<HeaderProps> = ({
               <AnimatedThemeToggler theme={theme} toggleTheme={toggleTheme} />
               <button
                 onClick={onSignIn}
-                className="px-2.5 py-1 sm:px-4 sm:py-1.5 rounded-full bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white text-xs sm:text-sm font-medium transition-all shadow-lg shadow-blue-500/20 active:scale-[0.97]"
+                className="px-2 py-0.5 sm:px-4 sm:py-1.5 rounded-full bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white text-[10px] min-[360px]:text-xs sm:text-sm font-medium transition-all shadow-lg shadow-blue-500/20 active:scale-[0.97] whitespace-nowrap"
               >
                 {t('common.signIn')}
               </button>
