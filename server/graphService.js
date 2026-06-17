@@ -122,7 +122,7 @@ export async function retrieveGraphContext(queryText) {
     if (!queryText) return '';
 
     const queryLower = queryText.toLowerCase();
-    const allMatches = getAllMatches();
+    const allMatches = await getAllMatches();
 
     // Extract mentioned teams
     const mentionedTeams = new Set();
@@ -209,7 +209,7 @@ export async function retrieveGraphContext(queryText) {
     if (wantsStandings || mentionedGroups.size > 0) {
         const groupsToShow = mentionedGroups.size > 0 ? mentionedGroups : new Set(allGroups);
         for (const g of groupsToShow) {
-            const standings = getGroupStandings(g);
+            const standings = await getGroupStandings(g);
             if (standings.length > 0) {
                 contextParts.push(formatStandingsTable(g, standings));
             }

@@ -7,7 +7,7 @@ import { fileURLToPath } from 'url';
 import { GoogleGenAI } from "@google/genai";
 import { PrismaClient } from '@prisma/client';
 import { retrieveHybrid } from './ragService.js';
-import { getAllMatches, getMatchById, recordVote, getVotePercentages, startSmartPoller } from './matchService.js';
+import { getAllMatches, getMatchById, recordVote, getVotePercentages, startSmartPoller, seedFromAPI } from './matchService.js';
 import { retrieveGraphContext } from './graphService.js';
 
 dotenv.config();
@@ -1848,9 +1848,9 @@ app.get('/sitemap.xml', (req, res) => {
 });
 
 // WORLD CUP 2026 ENDPOINTS
-app.get('/api/worldcup/matches', (req, res) => {
+app.get('/api/worldcup/matches', async (req, res) => {
     try {
-        const matchesList = getAllMatches();
+        const matchesList = await getAllMatches();
         res.json(matchesList);
     } catch (err) {
         console.error("Error fetching World Cup matches:", err);
@@ -1858,9 +1858,9 @@ app.get('/api/worldcup/matches', (req, res) => {
     }
 });
 
-app.get('/api/worldcup/match/:id', (req, res) => {
+app.get('/api/worldcup/match/:id', async (req, res) => {
     try {
-        const match = getMatchById(req.params.id);
+        const match = await getMatchById(req.params.id);
         if (!match) {
             return res.status(404).json({ error: "Match not found" });
         }
@@ -1872,13 +1872,13 @@ app.get('/api/worldcup/match/:id', (req, res) => {
     }
 });
 
-app.post('/api/worldcup/match/:id/vote', (req, res) => {
+app.post('/api/worldcup/match/:id/vote', async (req, res) => {
     try {
         const { choice } = req.body; // 'home', 'draw', or 'away'
         if (!['home', 'draw', 'away'].includes(choice)) {
             return res.status(400).json({ error: "Invalid vote choice. Must be 'home', 'draw', or 'away'" });
         }
-        const updatedMatch = recordVote(req.params.id, choice);
+        const updatedMatch = await recordVote(req.params.id, choice);
         if (!updatedMatch) {
             return res.status(404).json({ error: "Match not found" });
         }
@@ -1927,9 +1927,14 @@ const startServer = (port) => {
         console.log(`[MeteoSran Server] Neon keep-alive scheduled every ${NEON_PING_INTERVAL_MS / 60000} minutes.`);
 
         // ─────────────────────────────────────────────────────────────
-        // MATCH SYNC: Smart background poller for live score updates
+        // MATCH SYNC: Seed from API then start smart background poller
         // ─────────────────────────────────────────────────────────────
-        startSmartPoller();
+        seedFromAPI().then(() => {
+            startSmartPoller();
+        }).catch(err => {
+            console.warn('[MeteoSran Server] Seed failed, starting poller anyway:', err.message);
+            startSmartPoller();
+        });
 
         // ─────────────────────────────────────────────────────────────
         // GRACEFUL SHUTDOWN: Clean up on process termination

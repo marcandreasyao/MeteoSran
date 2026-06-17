@@ -46,3 +46,34 @@ model UserGlobalMemory {
   memory    Json     // Store preferences, sensitivities, locations, routines, etc.
   updatedAt DateTime @updatedAt
 }
+
+model WorldCupMatch {
+  id            String   @id                    // e.g. "por_cod_2026" or API fixture ID
+  fdApiId       Int?     @unique                // Football-Data.org fixture ID for mapping
+  group         String                          // e.g. "Group K"
+  round         String   @default("Round 1")    // e.g. "Round 1"
+  homeName      String
+  homeCode      String                          // ISO country code e.g. "PT"
+  awayName      String
+  awayCode      String                          // ISO country code e.g. "CD"
+  kickoff       DateTime
+  venueName     String?
+  venueCity     String?
+  status        String   @default("scheduled")  // scheduled | live | finished
+  scoreHome     Int      @default(0)
+  scoreAway     Int      @default(0)
+  htScoreHome   Int?                            // Half-time score
+  htScoreAway   Int?
+  elapsed       Int?
+  votesHome     Int      @default(0)
+  votesDraw     Int      @default(0)
+  votesAway     Int      @default(0)
+  stats         Json?                           // { possession, shots, ... }
+  lastSyncedAt  DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([status])
+  @@index([kickoff])
+  @@index([group])
+}
