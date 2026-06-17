@@ -48,8 +48,8 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ firstName, onSugge
         const response = await fetch('/api/worldcup/matches');
         if (response.ok) {
           const data = await response.json();
-          // Filter for matches that kickoff on June 16, 2026 and exclude the featured match
-          const todayStr = "2026-06-16";
+          // Filter for matches that kickoff today and exclude the featured match
+          const todayStr = new Date().toISOString().split('T')[0];
           let filtered = data.filter((m: any) => m.id !== "arg_alg_2026" && m.kickoff.startsWith(todayStr));
           if (filtered.length === 0) {
             filtered = data.filter((m: any) => m.id !== "arg_alg_2026");

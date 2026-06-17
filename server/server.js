@@ -8,6 +8,7 @@ import { GoogleGenAI } from "@google/genai";
 import { PrismaClient } from '@prisma/client';
 import { retrieveHybrid } from './ragService.js';
 import { getAllMatches, getMatchById, recordVote, getVotePercentages } from './matchService.js';
+import { retrieveGraphContext } from './graphService.js';
 
 dotenv.config();
 
@@ -1099,18 +1100,29 @@ app.post('/api/ai/chat', async (req, res) => {
         // WORLD CUP RAG INTEGRATION
         if (lastUserText) {
             const queryLower = lastUserText.toLowerCase();
-            const isWorldCupQuery = queryLower.includes('world cup') || 
-                                   queryLower.includes('mondial') || 
-                                   queryLower.includes('match') || 
-                                   queryLower.includes('football') || 
-                                   queryLower.includes('soccer') ||
-                                   queryLower.includes('fifa') ||
-                                   queryLower.includes('algeria') ||
-                                   queryLower.includes('argentina') ||
-                                   queryLower.includes('france') ||
-                                   queryLower.includes('senegal') ||
-                                   queryLower.includes('cote d') ||
-                                   queryLower.includes('côte d');
+            const worldCupKeywords = [
+                'world cup', 'coupe du monde', 'mondial',
+                'match', 'football', 'soccer', 'fifa',
+                'score', 'résultat', 'resultat', 'statistique', 'stat', 'stats',
+                'classement', 'standing', 'groupe', 'group',
+                'gagné', 'gagne', 'perdu', 'victoire', 'défaite', 'defaite',
+                'nul', 'draw', 'goal', 'but', 'tir', 'shot', 'possession', 'carton',
+                'prochain', 'next', 'today', 'aujourd',
+                'live', 'en cours', 'terminé', 'termine',
+                'stade', 'stadium', 'terrain',
+                'équipe', 'equipe', 'team',
+                'algeria', 'algérie', 'algerie',
+                'argentina', 'argentine',
+                'france', 'senegal', 'sénégal',
+                'cote d', 'côte d',
+                'portugal', 'england', 'angleterre', 'croatia', 'croatie',
+                'ghana', 'panama',
+                'iraq', 'irak', 'norway', 'norvège', 'norvege',
+                'austria', 'autriche', 'jordan', 'jordanie',
+                'usa', 'united states', 'états-unis', 'etats-unis',
+                'congo', 'dr congo', 'rd congo'
+            ];
+            const isWorldCupQuery = worldCupKeywords.some(kw => queryLower.includes(kw));
 
             if (isWorldCupQuery) {
                 try {
@@ -1123,6 +1135,16 @@ app.post('/api/ai/chat', async (req, res) => {
                             const ragPrompt = `\n\n[WORLD CUP CONTEXT INFORMATION]\nUse the following verified details to enrich your response. Connect these facts with weather impacts or standings as appropriate. Do not repeat verbatim unless necessary:\n${contextChunks.join('\n\n')}\n\nImportant instructions:\n1. If discussing a match, you may output the interactive card tag: [WORLD_CUP_MATCH: match_id] (e.g. [WORLD_CUP_MATCH: arg_alg_2026] for Argentina vs Algeria, [WORLD_CUP_MATCH: fra_sen_2026] for France vs Senegal, [WORLD_CUP_MATCH: irq_nor_2026] for Iraq vs Norway, [WORLD_CUP_MATCH: aut_jor_2026] for Austria vs Jordan, [WORLD_CUP_MATCH: por_cod_2026] for Portugal vs DR Congo, [WORLD_CUP_MATCH: eng_cro_2026] for England vs Croatia, [WORLD_CUP_MATCH: gha_pan_2026] for Ghana vs Panama). Include the tag on its own line.\n2. Apply the weather analysis to the match location (e.g. altitude fatigue in Mexico City, heat/humidity in Miami).`;
                             finalSystemInstruction += ragPrompt;
                         }
+                    }
+
+                    // GRAPH RAG: Live match scores, stats, and standings
+                    try {
+                        const graphContext = await retrieveGraphContext(lastUserText);
+                        if (graphContext && graphContext.length > 0) {
+                            finalSystemInstruction += `\n\n[LIVE MATCH INTELLIGENCE]\nThe following is real-time match data from the FIFA World Cup 2026. Use this to answer questions about scores, results, statistics, standings, and upcoming fixtures accurately:\n${graphContext}`;
+                        }
+                    } catch (graphErr) {
+                        console.error('[MeteoSran Server] Graph RAG retrieval failed:', graphErr);
                     }
                 } catch (ragErr) {
                     console.error("[MeteoSran Server] World Cup RAG retrieval failed:", ragErr);

@@ -16,6 +16,17 @@ interface Match {
     venue: { name: string; city: string };
     votes: { home: number; draw: number; away: number };
     percentages?: { home: number; draw: number; away: number; total: number };
+    status?: 'scheduled' | 'live' | 'finished';
+    score?: { home: number; away: number };
+    elapsed?: number | null;
+    stats?: {
+        possession: { home: number; away: number };
+        shots: { home: number; away: number };
+        shotsOnTarget: { home: number; away: number };
+        fouls: { home: number; away: number };
+        yellowCards: { home: number; away: number };
+        corners: { home: number; away: number };
+    };
 }
 
 interface MatchCardWidgetProps {
@@ -28,6 +39,7 @@ export const MatchCardWidget: React.FC<MatchCardWidgetProps> = ({ matchId, onVot
     const [loading, setLoading] = useState(true);
     const [countdown, setCountdown] = useState("");
     const [votedChoice, setVotedChoice] = useState<string | null>(null);
+    const [showStats, setShowStats] = useState(false);
 
     // Fetch match details on load
     useEffect(() => {
@@ -220,28 +232,53 @@ export const MatchCardWidget: React.FC<MatchCardWidgetProps> = ({ matchId, onVot
 
                     {/* Middle Score/Time */}
                     <div className="flex flex-col items-center flex-1">
-                        {renderKickoffTime()}
-                        
-                        {/* Monospace Countdown */}
-                        <div className="px-3.5 py-1.5 rounded-xl bg-slate-950/80 border border-slate-800 text-fluid-lg font-jersey tracking-widest text-emerald-400 shadow-inner flex items-center justify-center min-h-[38px]">
-                            {countdown.includes(':') ? (
-                                (() => {
-                                    const parts = countdown.split(':');
-                                    return (
-                                        <div className="flex items-center justify-center gap-0.5 select-none">
-                                            <span className="font-jersey">{parts[0]}</span>
-                                            <span className="font-sans text-sm text-emerald-500/85 mx-0.5 select-none translate-y-[-2px] font-bold">:</span>
-                                            <span className="font-jersey">{parts[1]}</span>
-                                            <span className="font-sans text-sm text-emerald-500/85 mx-0.5 select-none translate-y-[-2px] font-bold">:</span>
-                                            <span className="font-jersey">{parts[2]}</span>
-                                        </div>
-                                    );
-                                })()
-                            ) : (
-                                <span className="font-sans text-xs uppercase tracking-wider">{countdown}</span>
-                            )}
-                        </div>
-                        <span className="text-[9px] text-slate-500 font-semibold mt-1 uppercase tracking-wider">{match.venue.city}</span>
+                        {(match.status === 'live' || match.status === 'finished') && match.score ? (
+                            <>
+                                {/* Score Display */}
+                                <div className="px-3.5 py-1.5 rounded-xl bg-slate-950/80 border border-slate-800 shadow-inner flex items-center justify-center min-h-[38px]">
+                                    <div className="flex items-center justify-center select-none">
+                                        <span className="text-3xl font-jersey text-white">{match.score.home}</span>
+                                        <span className="font-sans text-slate-500 mx-2">-</span>
+                                        <span className="text-3xl font-jersey text-white">{match.score.away}</span>
+                                    </div>
+                                </div>
+                                {/* Status Badge */}
+                                {match.status === 'live' ? (
+                                    <span className="flex items-center gap-1.5 mt-1.5">
+                                        <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                                        <span className="text-[10px] text-emerald-400 uppercase tracking-wider font-semibold">
+                                            EN DIRECT <span className="font-jersey text-xs">{match.elapsed != null ? match.elapsed : ''}</span>{match.elapsed != null && <span className="font-sans text-[9px]">&apos;</span>}
+                                        </span>
+                                    </span>
+                                ) : (
+                                    <span className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold mt-1.5">TERMINÉ</span>
+                                )}
+                            </>
+                        ) : (
+                            <>
+                                {renderKickoffTime()}
+                                {/* Monospace Countdown */}
+                                <div className="px-3.5 py-1.5 rounded-xl bg-slate-950/80 border border-slate-800 text-fluid-lg font-jersey tracking-widest text-emerald-400 shadow-inner flex items-center justify-center min-h-[38px]">
+                                    {countdown.includes(':') ? (
+                                        (() => {
+                                            const parts = countdown.split(':');
+                                            return (
+                                                <div className="flex items-center justify-center gap-0.5 select-none">
+                                                    <span className="font-jersey">{parts[0]}</span>
+                                                    <span className="font-sans text-sm text-emerald-500/85 mx-0.5 select-none translate-y-[-2px] font-bold">:</span>
+                                                    <span className="font-jersey">{parts[1]}</span>
+                                                    <span className="font-sans text-sm text-emerald-500/85 mx-0.5 select-none translate-y-[-2px] font-bold">:</span>
+                                                    <span className="font-jersey">{parts[2]}</span>
+                                                </div>
+                                            );
+                                        })()
+                                    ) : (
+                                        <span className="font-sans text-xs uppercase tracking-wider">{countdown}</span>
+                                    )}
+                                </div>
+                                <span className="text-[9px] text-slate-500 font-semibold mt-1 uppercase tracking-wider">{match.venue.city}</span>
+                            </>
+                        )}
                     </div>
 
                     {/* Away Team */}
@@ -360,6 +397,63 @@ export const MatchCardWidget: React.FC<MatchCardWidgetProps> = ({ matchId, onVot
                     </button>
                 </div>
             </div>
+
+            {/* Collapsible Stats Section */}
+            {match.stats && (match.status === 'live' || match.status === 'finished') && (
+                <div className="border-t border-slate-800/80">
+                    <button
+                        onClick={() => setShowStats(!showStats)}
+                        className="w-full flex items-center justify-center gap-1.5 py-2.5 text-xs font-semibold text-slate-400 uppercase tracking-wider hover:text-slate-300 transition-colors cursor-pointer"
+                    >
+                        <span>Statistiques</span>
+                        <span className="material-symbols-outlined text-sm" translate="no">
+                            {showStats ? 'expand_less' : 'expand_more'}
+                        </span>
+                    </button>
+                    <div
+                        className="transition-all duration-300 ease-in-out overflow-hidden"
+                        style={{ maxHeight: showStats ? '500px' : '0px' }}
+                    >
+                        <div className="px-5 pb-4 flex flex-col gap-3">
+                            {([
+                                { label: 'Possession', home: match.stats.possession.home, away: match.stats.possession.away, suffix: '%' },
+                                { label: 'Tirs', home: match.stats.shots.home, away: match.stats.shots.away },
+                                { label: 'Tirs cadrés', home: match.stats.shotsOnTarget.home, away: match.stats.shotsOnTarget.away },
+                                { label: 'Fautes', home: match.stats.fouls.home, away: match.stats.fouls.away },
+                                { label: 'Cartons jaunes', home: match.stats.yellowCards.home, away: match.stats.yellowCards.away },
+                                { label: 'Corners', home: match.stats.corners.home, away: match.stats.corners.away },
+                            ] as const).map((stat) => {
+                                const total = stat.home + stat.away || 1;
+                                const homePct = (stat.home / total) * 100;
+                                const awayPct = (stat.away / total) * 100;
+                                return (
+                                    <div key={stat.label} className="flex flex-col gap-1">
+                                        <div className="flex items-center justify-between text-xs">
+                                            <span className="font-jersey text-sm text-white w-8 text-left">
+                                                {stat.home}{'suffix' in stat && stat.suffix ? <span className="font-sans text-[10px] text-slate-500 font-bold">{stat.suffix}</span> : null}
+                                            </span>
+                                            <span className="text-slate-400 font-semibold text-[10px] uppercase tracking-wider flex-1 text-center">{stat.label}</span>
+                                            <span className="font-jersey text-sm text-white w-8 text-right">
+                                                {stat.away}{'suffix' in stat && stat.suffix ? <span className="font-sans text-[10px] text-slate-500 font-bold">{stat.suffix}</span> : null}
+                                            </span>
+                                        </div>
+                                        <div className="flex h-1.5 rounded-full overflow-hidden bg-slate-800">
+                                            <div
+                                                className="bg-emerald-500 transition-all duration-500 rounded-l-full"
+                                                style={{ width: `${homePct}%` }}
+                                            />
+                                            <div
+                                                className="bg-sky-500 transition-all duration-500 rounded-r-full"
+                                                style={{ width: `${awayPct}%` }}
+                                            />
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

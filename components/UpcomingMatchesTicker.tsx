@@ -14,6 +14,9 @@ interface Match {
     away: Team;
     kickoff: string;
     venue: { name: string; city: string };
+    status?: 'scheduled' | 'live' | 'finished';
+    score?: { home: number; away: number };
+    elapsed?: number | null;
 }
 
 interface UpcomingMatchesTickerProps {
@@ -84,6 +87,26 @@ export const UpcomingMatchesTicker: React.FC<UpcomingMatchesTickerProps> = ({ on
                             className="inline-flex items-center gap-2.5 px-3 py-1.5 rounded-xl bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/15 active:scale-95 transition-all text-left text-xs md:text-sm font-bold text-slate-800 dark:text-slate-100 focus:outline-none cursor-pointer"
                         >
                             {(() => {
+                                if (match.status === 'live' && match.score) {
+                                    return (
+                                        <span className="text-[10px] md:text-[11px] font-jersey text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md select-none inline-flex items-center gap-1.5">
+                                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                                            <span>{match.score.home}</span>
+                                            <span className="font-sans text-[10px] text-emerald-600/70 dark:text-emerald-400/70 mx-[0.5px] select-none font-bold">-</span>
+                                            <span>{match.score.away}</span>
+                                        </span>
+                                    );
+                                }
+                                if (match.status === 'finished' && match.score) {
+                                    return (
+                                        <span className="text-[10px] md:text-[11px] font-jersey text-slate-500 dark:text-slate-400 bg-slate-500/10 px-2 py-0.5 rounded-md select-none inline-flex items-center gap-1.5">
+                                            <span>{match.score.home}</span>
+                                            <span className="font-sans text-[10px] text-slate-500/70 dark:text-slate-400/70 mx-[0.5px] select-none font-bold">-</span>
+                                            <span>{match.score.away}</span>
+                                            <span className="font-sans text-[8px] uppercase tracking-wider font-bold text-slate-500 ml-0.5">FIN</span>
+                                        </span>
+                                    );
+                                }
                                 const timeStr = formatTime(match.kickoff);
                                 if (timeStr.includes(':')) {
                                     const parts = timeStr.split(':');

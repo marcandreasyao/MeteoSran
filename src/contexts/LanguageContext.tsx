@@ -273,13 +273,29 @@ export const translations = {
       gotIt: "Got it, thanks!",
       back: "Back",
       versions: {
+        v1_8_1: {
+          version: "1.8.1",
+          title: "What's New in MeteoSran 1.8.1",
+          greeting: "Hi there,",
+          subtitle: "Live Score Intelligence and Match Statistics",
+          date: "June 2026",
+          badge: "Current",
+          features: {
+            liveScoresTitle: "Live Score Display",
+            liveScoresDesc: "Match results and live scores are now displayed directly inside the prediction cards and the scrolling ticker. Finished matches show final scores, while live matches display real-time scores with an animated status indicator and elapsed minute counter.",
+            matchStatsTitle: "Interactive Match Statistics",
+            matchStatsDesc: "Each match card now includes a collapsible statistics panel with detailed head-to-head comparison bars for possession, shots, shots on target, fouls, yellow cards, and corners. All data updates in real time during live fixtures.",
+            graphRAGTitle: "Graph RAG Intelligence Engine",
+            graphRAGDesc: "A new structured knowledge graph powers MeteoSran's understanding of the tournament. Ask about scores, standings, team performance, or group rankings and receive accurate, data-grounded answers drawn from live match intelligence fused with weather-tactical context."
+          }
+        },
         v1_8: {
           version: "1.8",
           title: "What's New in MeteoSran 1.8",
           greeting: "Hi there,",
           subtitle: "FIFA World Cup 2026 Live Integration",
           date: "June 2026",
-          badge: "Current",
+          badge: "Previous",
           features: {
             worldCupTitle: "FIFA World Cup 2026 Assistant",
             worldCupDesc: "MeteoSran is now your ultimate World Cup co-pilot. Combining live match fixtures and real-time weather analytics with advanced RAG vector indexing to deliver game-changing tactical pitch condition insights.",
@@ -632,13 +648,29 @@ export const translations = {
       gotIt: "Compris, merci !",
       back: "Retour",
       versions: {
+        v1_8_1: {
+          version: "1.8.1",
+          title: "Nouveautés de MeteoSran 1.8.1",
+          greeting: "Bonjour,",
+          subtitle: "Scores en Direct et Statistiques de Match",
+          date: "Juin 2026",
+          badge: "Actuelle",
+          features: {
+            liveScoresTitle: "Affichage des Scores en Direct",
+            liveScoresDesc: "Les résultats et scores en direct sont désormais affichés directement dans les cartes de prédiction et le bandeau défilant. Les matchs terminés affichent le score final, tandis que les matchs en cours montrent le score en temps réel avec un indicateur animé et le compteur de minutes écoulées.",
+            matchStatsTitle: "Statistiques de Match Interactives",
+            matchStatsDesc: "Chaque carte de match inclut désormais un panneau de statistiques dépliable avec des barres de comparaison détaillées pour la possession, les tirs, les tirs cadrés, les fautes, les cartons jaunes et les corners. Toutes les données se mettent à jour en temps réel pendant les matchs en cours.",
+            graphRAGTitle: "Moteur d'Intelligence Graph RAG",
+            graphRAGDesc: "Un nouveau graphe de connaissances structuré alimente la compréhension du tournoi par MeteoSran. Posez des questions sur les scores, les classements, les performances des équipes ou les groupes et recevez des réponses précises et contextualisées, fusionnant intelligence de match en direct et analyse météo-tactique."
+          }
+        },
         v1_8: {
           version: "1.8",
           title: "Nouveautés de MeteoSran 1.8",
           greeting: "Bonjour,",
           subtitle: "Intégration Live de la Coupe du Monde 2026",
           date: "Juin 2026",
-          badge: "Actuelle",
+          badge: "Précédente",
           features: {
             worldCupTitle: "Assistant Coupe du Monde de la FIFA 2026",
             worldCupDesc: "MeteoSran devient votre copilote ultime pour le Mondial. Fusion des calendriers de matchs et des analyses météorologiques en temps réel avec un index vectoriel RAG pour fournir des insights tactiques de pointe.",

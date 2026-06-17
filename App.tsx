@@ -151,7 +151,7 @@ const App: React.FC = () => {
   const guestMessagesRef = useRef<Message[]>([]); // Track guest messages for retroactive save
 
   // Release Notes State
-  const CURRENT_VERSION = '1.8.0';
+  const CURRENT_VERSION = '1.8.1';
   const [showReleaseNotes, setShowReleaseNotes] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [hasUnreadNotifications, setHasUnreadNotifications] = useState(false);
