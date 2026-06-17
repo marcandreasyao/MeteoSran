@@ -224,8 +224,12 @@ export const MatchCardWidget: React.FC<MatchCardWidgetProps> = ({ matchId, onVot
                 <div className="w-full flex items-center justify-between gap-2 px-2">
                     {/* Home Team */}
                     <div className="flex flex-col items-center w-28 text-center">
-                        <div className="w-14 h-14 rounded-full bg-slate-800 border-2 border-slate-700 shadow-md flex items-center justify-center text-3xl mb-2 hover:scale-105 transition-transform">
-                            {match.home.flag}
+                        <div className="w-14 h-14 rounded-full bg-slate-800 border-2 border-slate-700 shadow-md flex items-center justify-center overflow-hidden mb-2 hover:scale-105 transition-transform">
+                            <img 
+                                src={`https://flagcdn.com/${match.home.code.toLowerCase()}.svg`} 
+                                alt={match.home.name} 
+                                className="w-full h-full object-cover scale-[1.05]" 
+                            />
                         </div>
                         <span className="font-bold text-xs md:text-sm text-slate-100 truncate w-full">{match.home.name}</span>
                     </div>
@@ -283,8 +287,12 @@ export const MatchCardWidget: React.FC<MatchCardWidgetProps> = ({ matchId, onVot
 
                     {/* Away Team */}
                     <div className="flex flex-col items-center w-28 text-center">
-                        <div className="w-14 h-14 rounded-full bg-slate-800 border-2 border-slate-700 shadow-md flex items-center justify-center text-3xl mb-2 hover:scale-105 transition-transform">
-                            {match.away.flag}
+                        <div className="w-14 h-14 rounded-full bg-slate-800 border-2 border-slate-700 shadow-md flex items-center justify-center overflow-hidden mb-2 hover:scale-105 transition-transform">
+                            <img 
+                                src={`https://flagcdn.com/${match.away.code.toLowerCase()}.svg`} 
+                                alt={match.away.name} 
+                                className="w-full h-full object-cover scale-[1.05]" 
+                            />
                         </div>
                         <span className="font-bold text-xs md:text-sm text-slate-100 truncate w-full">{match.away.name}</span>
                     </div>
@@ -323,7 +331,11 @@ export const MatchCardWidget: React.FC<MatchCardWidgetProps> = ({ matchId, onVot
                             />
                         )}
                         <span className="relative flex items-center gap-2">
-                            <span>{match.home.flag}</span>
+                            <img 
+                                src={`https://flagcdn.com/${match.home.code.toLowerCase()}.svg`} 
+                                alt={match.home.name} 
+                                className="w-5 h-3.5 object-cover rounded-[2px] border border-slate-700/30 shadow-sm" 
+                            />
                             <span className={votedChoice === 'home' ? 'text-emerald-400 font-bold' : ''}>
                                 {match.home.name}
                             </span>
@@ -383,7 +395,11 @@ export const MatchCardWidget: React.FC<MatchCardWidgetProps> = ({ matchId, onVot
                             />
                         )}
                         <span className="relative flex items-center gap-2">
-                            <span>{match.away.flag}</span>
+                            <img 
+                                src={`https://flagcdn.com/${match.away.code.toLowerCase()}.svg`} 
+                                alt={match.away.name} 
+                                className="w-5 h-3.5 object-cover rounded-[2px] border border-slate-700/30 shadow-sm" 
+                            />
                             <span className={votedChoice === 'away' ? 'text-emerald-400 font-bold' : ''}>
                                 {match.away.name}
                             </span>

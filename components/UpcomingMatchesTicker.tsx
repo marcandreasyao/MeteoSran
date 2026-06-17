@@ -125,9 +125,17 @@ export const UpcomingMatchesTicker: React.FC<UpcomingMatchesTickerProps> = ({ on
                                 );
                             })()}
                             <span className="flex items-center gap-1.5">
-                                <span className="text-sm md:text-base drop-shadow-sm select-none">{match.home.flag}</span>
+                                <img 
+                                    src={`https://flagcdn.com/${match.home.code.toLowerCase()}.svg`} 
+                                    alt={match.home.name} 
+                                    className="w-5 h-3.5 object-cover rounded-[2px] border border-slate-300/20 dark:border-slate-700/20 shadow-sm" 
+                                />
                                 <span className="text-[10px] md:text-xs text-slate-400 dark:text-slate-500 font-black tracking-wider uppercase">vs</span>
-                                <span className="text-sm md:text-base drop-shadow-sm select-none">{match.away.flag}</span>
+                                <img 
+                                    src={`https://flagcdn.com/${match.away.code.toLowerCase()}.svg`} 
+                                    alt={match.away.name} 
+                                    className="w-5 h-3.5 object-cover rounded-[2px] border border-slate-300/20 dark:border-slate-700/20 shadow-sm" 
+                                />
                             </span>
                             <span className="text-[10px] md:text-[11px] text-slate-600 dark:text-slate-300 font-bold truncate max-w-[150px] hidden sm:inline">
                                 {match.home.name} - {match.away.name}

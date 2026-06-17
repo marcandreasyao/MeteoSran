@@ -223,13 +223,25 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ firstName, onSugge
                         
                         <div className="flex items-center justify-between my-2 px-1">
                           <div className="flex items-center gap-2.5 w-[42%]">
-                            <span className="text-2xl drop-shadow-sm select-none">{match.home.flag}</span>
+                            <div className="w-7 h-7 rounded-full overflow-hidden border border-slate-200/10 dark:border-slate-800/10 flex-shrink-0 flex items-center justify-center">
+                              <img
+                                src={`https://flagcdn.com/${match.home.code.toLowerCase()}.svg`}
+                                alt={match.home.name}
+                                className="w-full h-full object-cover scale-[1.05]"
+                              />
+                            </div>
                             <span className="font-bold text-xs sm:text-sm text-slate-700 dark:text-slate-200 truncate">{match.home.name}</span>
                           </div>
                           <span className="text-slate-400 dark:text-slate-500 text-[10px] font-black tracking-widest bg-white/70 dark:bg-slate-900/50 border border-slate-200/50 dark:border-slate-800/50 px-2 py-0.5 rounded shadow-sm select-none">VS</span>
                           <div className="flex items-center gap-2.5 justify-end w-[42%] text-right">
                             <span className="font-bold text-xs sm:text-sm text-slate-700 dark:text-slate-200 truncate">{match.away.name}</span>
-                            <span className="text-2xl drop-shadow-sm select-none">{match.away.flag}</span>
+                            <div className="w-7 h-7 rounded-full overflow-hidden border border-slate-200/10 dark:border-slate-800/10 flex-shrink-0 flex items-center justify-center">
+                              <img
+                                src={`https://flagcdn.com/${match.away.code.toLowerCase()}.svg`}
+                                alt={match.away.name}
+                                className="w-full h-full object-cover scale-[1.05]"
+                              />
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -257,8 +269,8 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ firstName, onSugge
                             const isFr = language === 'fr';
                             const dateLabel = kickoffDate.toLocaleDateString(isFr ? 'fr-FR' : 'en-US', { day: 'numeric', month: 'long' });
                             const question = isFr
-                              ? `Parle-moi du match de Coupe du Monde : ${match.home.name} ${match.home.flag} vs ${match.away.name} ${match.away.flag} le ${dateLabel}. Est-ce que la météo va impacter le jeu à ${match.venue.city} (${match.venue.name}) ?`
-                              : `Tell me about the World Cup match: ${match.home.name} ${match.home.flag} vs ${match.away.name} ${match.away.flag} on ${dateLabel}. Will the weather impact the game in ${match.venue.city} (${match.venue.name})?`;
+                              ? `Parle-moi du match de Coupe du Monde : ${match.home.name} vs ${match.away.name} le ${dateLabel}. Est-ce que la météo va impacter le jeu à ${match.venue.city} (${match.venue.name}) ?`
+                              : `Tell me about the World Cup match: ${match.home.name} vs ${match.away.name} on ${dateLabel}. Will the weather impact the game in ${match.venue.city} (${match.venue.name})?`;
                             onSuggestionClick(question);
                           }}
                           className="text-xs font-bold text-sky-600 dark:text-sky-400 hover:text-sky-700 dark:hover:text-sky-300 transition-colors flex items-center gap-1 cursor-pointer select-none"
@@ -398,7 +410,13 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ firstName, onSugge
                         <div className="flex items-center gap-4 flex-1 justify-center px-4">
                           <div className="flex items-center gap-2 w-28 justify-end">
                             <span className="font-bold text-xs truncate max-w-[90px] text-slate-200">{match.home.name}</span>
-                            <span className="text-xl select-none">{match.home.flag}</span>
+                            <div className="w-6 h-6 rounded-full overflow-hidden border border-slate-800 flex-shrink-0 flex items-center justify-center">
+                              <img
+                                src={`https://flagcdn.com/${match.home.code.toLowerCase()}.svg`}
+                                alt={match.home.name}
+                                className="w-full h-full object-cover scale-[1.05]"
+                              />
+                            </div>
                           </div>
                           
                           <div className="px-3 py-1 rounded-xl bg-slate-950/90 border border-slate-850/80 flex items-center justify-center font-jersey text-base min-w-[50px] shadow-inner select-none text-emerald-400">
@@ -408,7 +426,13 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ firstName, onSugge
                           </div>
 
                           <div className="flex items-center gap-2 w-28 justify-start">
-                            <span className="text-xl select-none">{match.away.flag}</span>
+                            <div className="w-6 h-6 rounded-full overflow-hidden border border-slate-800 flex-shrink-0 flex items-center justify-center">
+                              <img
+                                src={`https://flagcdn.com/${match.away.code.toLowerCase()}.svg`}
+                                alt={match.away.name}
+                                className="w-full h-full object-cover scale-[1.05]"
+                              />
+                            </div>
                             <span className="font-bold text-xs truncate max-w-[90px] text-slate-200">{match.away.name}</span>
                           </div>
                         </div>
@@ -480,8 +504,8 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ firstName, onSugge
                                 const isFr = language === 'fr';
                                 const fullDateStr = kickoffDate.toLocaleDateString(isFr ? 'fr-FR' : 'en-US', { day: 'numeric', month: 'long' });
                                 const question = isFr
-                                  ? `Parle-moi du match de Coupe du Monde : ${match.home.name} ${match.home.flag} vs ${match.away.name} ${match.away.flag} le ${fullDateStr}. Est-ce que la météo va impacter le jeu à ${match.venue.city} (${match.venue.name}) ?`
-                                  : `Tell me about the World Cup match: ${match.home.name} ${match.home.flag} vs ${match.away.name} ${match.away.flag} on ${fullDateStr}. Will the weather impact the game in ${match.venue.city} (${match.venue.name})?`;
+                                  ? `Parle-moi du match de Coupe du Monde : ${match.home.name} vs ${match.away.name} le ${fullDateStr}. Est-ce que la météo va impacter le jeu à ${match.venue.city} (${match.venue.name}) ?`
+                                  : `Tell me about the World Cup match: ${match.home.name} vs ${match.away.name} on ${fullDateStr}. Will the weather impact the game in ${match.venue.city} (${match.venue.name})?`;
                                 setShowHistoryModal(false);
                                 onSuggestionClick(question);
                               }}

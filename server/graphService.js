@@ -82,12 +82,12 @@ function statusLabel(status) {
 function formatMatchLine(m) {
     const s = m.score || { home: 0, away: 0 };
     if (m.status === 'finished') {
-        return `${m.home.flag} ${m.home.name} ${s.home} - ${s.away} ${m.away.name} ${m.away.flag} (${statusLabel(m.status)}, ${m.venue.name}, ${m.venue.city})`;
+        return `${m.home.name} ${s.home} - ${s.away} ${m.away.name} (${statusLabel(m.status)}, ${m.venue.name}, ${m.venue.city})`;
     }
     if (m.status === 'live') {
-        return `${m.home.flag} ${m.home.name} ${s.home} - ${s.away} ${m.away.name} ${m.away.flag} (${statusLabel(m.status)}, ${m.elapsed}', ${m.venue.name}, ${m.venue.city})`;
+        return `${m.home.name} ${s.home} - ${s.away} ${m.away.name} (${statusLabel(m.status)}, ${m.elapsed}', ${m.venue.name}, ${m.venue.city})`;
     }
-    return `${m.home.flag} ${m.home.name} vs ${m.away.name} ${m.away.flag} (${statusLabel(m.status)}, ${m.kickoff}, ${m.venue.name}, ${m.venue.city})`;
+    return `${m.home.name} vs ${m.away.name} (${statusLabel(m.status)}, ${m.kickoff}, ${m.venue.name}, ${m.venue.city})`;
 }
 
 function formatStats(m) {

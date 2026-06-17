@@ -924,7 +924,7 @@ const App: React.FC = () => {
 
   const handleTickerMatchClick = (match: any) => {
     const dateFormatted = new Date(match.kickoff).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
-    const prompt = `Parle-moi du match de Coupe du Monde : ${match.home.name} ${match.home.flag} vs ${match.away.name} ${match.away.flag} le ${dateFormatted}. Est-ce que la météo va impacter le jeu à ${match.venue.city} (${match.venue.name}) ?`;
+    const prompt = `Parle-moi du match de Coupe du Monde : ${match.home.name} vs ${match.away.name} le ${dateFormatted}. Est-ce que la météo va impacter le jeu à ${match.venue.city} (${match.venue.name}) ?`;
     
     // Clear active conversation to start a new chat with this match's insights
     handleNewChat();
