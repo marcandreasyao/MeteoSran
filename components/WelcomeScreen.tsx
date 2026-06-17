@@ -395,22 +395,24 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ firstName, onSugge
                       {/* Match row */}
                       <div 
                         onClick={() => setExpandedMatchId(isExpanded ? null : match.id)}
-                        className="p-4 flex items-center justify-between cursor-pointer hover:bg-white/5 transition-colors select-none"
+                        className="p-4 cursor-pointer hover:bg-white/5 transition-colors select-none"
                       >
-                        <div className="flex flex-col gap-0.5">
-                          <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">
+                        {/* Top meta: group/round + date/city */}
+                        <div className="flex items-center justify-between mb-3">
+                          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
                             {match.group} • {match.round}
                           </span>
-                          <span className="text-[10px] text-slate-400 font-medium bg-slate-850 border border-slate-800/80 px-2.5 py-0.5 rounded-md w-fit">
-                            {dateLabel} • {match.venue.city}
+                          <span className="text-[10px] text-slate-400 font-medium bg-slate-800/60 border border-slate-700/50 px-2 py-0.5 rounded-md">
+                            {dateLabel} · {match.venue.city}
                           </span>
                         </div>
 
-                        {/* Center Teams and Score */}
-                        <div className="flex items-center gap-4 flex-1 justify-center px-4">
-                          <div className="flex items-center gap-2 w-28 justify-end">
-                            <span className="font-bold text-xs truncate max-w-[90px] text-slate-200">{match.home.name}</span>
-                            <div className="w-6 h-6 rounded-full overflow-hidden border border-slate-800 flex-shrink-0 flex items-center justify-center">
+                        {/* Teams + Score row */}
+                        <div className="flex items-center justify-between gap-2">
+                          {/* Home */}
+                          <div className="flex items-center gap-2 flex-1 justify-end">
+                            <span className="font-bold text-sm text-slate-100 text-right leading-tight">{match.home.name}</span>
+                            <div className="w-8 h-8 rounded-full overflow-hidden border border-slate-700 flex-shrink-0">
                               <img
                                 src={`https://flagcdn.com/${match.home.code.toLowerCase()}.svg`}
                                 alt={match.home.name}
@@ -418,29 +420,33 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ firstName, onSugge
                               />
                             </div>
                           </div>
-                          
-                          <div className="px-3 py-1 rounded-xl bg-slate-950/90 border border-slate-850/80 flex items-center justify-center font-jersey text-base min-w-[50px] shadow-inner select-none text-emerald-400">
+
+                          {/* Score */}
+                          <div className="px-3 py-1.5 rounded-xl bg-slate-950/90 border border-slate-800 flex items-center justify-center font-jersey text-lg min-w-[56px] shadow-inner select-none text-emerald-400 flex-shrink-0">
                             <span>{match.score.home}</span>
-                            <span className="font-sans text-[10px] text-slate-500 mx-1.5 font-bold">-</span>
+                            <span className="font-sans text-[11px] text-slate-500 mx-1.5 font-bold">-</span>
                             <span>{match.score.away}</span>
                           </div>
 
-                          <div className="flex items-center gap-2 w-28 justify-start">
-                            <div className="w-6 h-6 rounded-full overflow-hidden border border-slate-800 flex-shrink-0 flex items-center justify-center">
+                          {/* Away */}
+                          <div className="flex items-center gap-2 flex-1 justify-start">
+                            <div className="w-8 h-8 rounded-full overflow-hidden border border-slate-700 flex-shrink-0">
                               <img
                                 src={`https://flagcdn.com/${match.away.code.toLowerCase()}.svg`}
                                 alt={match.away.name}
                                 className="w-full h-full object-cover scale-[1.05]"
                               />
                             </div>
-                            <span className="font-bold text-xs truncate max-w-[90px] text-slate-200">{match.away.name}</span>
+                            <span className="font-bold text-sm text-slate-100 leading-tight">{match.away.name}</span>
                           </div>
-                        </div>
 
-                        <span className="material-symbols-outlined text-slate-500 text-sm select-none transition-transform duration-300" style={{ transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}>
-                          expand_more
-                        </span>
+                          {/* Expand chevron */}
+                          <span className="material-symbols-outlined text-slate-500 text-lg select-none transition-transform duration-300 flex-shrink-0" style={{ transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}>
+                            expand_more
+                          </span>
+                        </div>
                       </div>
+
 
                       {/* Expandable Stats drawer */}
                       {isExpanded && match.stats && (
