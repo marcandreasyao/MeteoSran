@@ -23,32 +23,32 @@ interface HeaderProps {
 const ResponseModeDetails = {
   [ResponseMode.DEFAULT]: {
     name: "Default",
-    icon: "🌤️",
+    icon: "forum",
     description: "Balanced, friendly, and informative responses"
   },
   [ResponseMode.CONCISE]: {
     name: "Concise",
-    icon: "📝",
+    icon: "edit_note",
     description: "Brief, to-the-point explanations"
   },
   [ResponseMode.SHORT]: {
     name: "Short",
-    icon: "⚡",
+    icon: "bolt",
     description: "Very brief responses with essential information"
   },
   [ResponseMode.STRAIGHT]: {
     name: "Straight",
-    icon: "🎯",
+    icon: "track_changes",
     description: "Direct, no-nonsense answers"
   },
   [ResponseMode.FUNNY]: {
     name: "Funny",
-    icon: "😄",
+    icon: "mood",
     description: "Humorous explanations with weather-related jokes"
   },
   [ResponseMode.EINSTEIN]: {
     name: "Einstein",
-    icon: "🧠",
+    icon: "psychology",
     description: "Complex, detailed scientific explanations"
   }
 };
@@ -133,7 +133,7 @@ export const Header: React.FC<HeaderProps> = ({
               aria-label={`Current response style: ${t('header.modes.' + selectedMode + '.name')}. Click to change style.`}
               title={`${t('header.responseStyle')}: ${t('header.modes.' + selectedMode + '.name')}`}
             >
-              <span className="text-sm sm:text-base leading-none">{selectedModeDetails.icon}</span>
+              <span className="material-symbols-outlined notranslate text-lg sm:text-xl shrink-0" translate="no">{selectedModeDetails.icon}</span>
               <span className="hidden sm:inline">{t('header.modes.' + selectedMode + '.name')}</span>
               <span
                 className={`material-symbols-outlined notranslate transition-transform duration-200 ${isModeDropdownOpen ? 'rotate-180' : ''}`}
@@ -178,7 +178,7 @@ export const Header: React.FC<HeaderProps> = ({
                         role="option"
                         aria-selected={isSelected}
                       >
-                        <span className="text-base sm:text-lg md:text-xl mr-1.5 sm:mr-2 md:mr-3 flex-shrink-0 mt-0.5">{modeDetails.icon}</span>
+                        <span className="material-symbols-outlined notranslate text-lg sm:text-xl md:text-2xl mr-1.5 sm:mr-2 md:mr-3 flex-shrink-0 mt-0.5" translate="no">{modeDetails.icon}</span>
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center justify-between">
                             <p className={`font-medium text-xs sm:text-sm ${isSelected ? 'text-sky-700 dark:text-sky-300' : ''} truncate`}>

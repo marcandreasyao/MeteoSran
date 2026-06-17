@@ -6,12 +6,12 @@ import { signOut } from 'firebase/auth';
 import { ResponseMode } from '../types';
 
 const ResponseModeDetails = {
-  [ResponseMode.DEFAULT]: { icon: "🌤️" },
-  [ResponseMode.CONCISE]: { icon: "📝" },
-  [ResponseMode.SHORT]: { icon: "⚡" },
-  [ResponseMode.STRAIGHT]: { icon: "🎯" },
-  [ResponseMode.FUNNY]: { icon: "😄" },
-  [ResponseMode.EINSTEIN]: { icon: "🧠" }
+  [ResponseMode.DEFAULT]: { icon: "forum" },
+  [ResponseMode.CONCISE]: { icon: "edit_note" },
+  [ResponseMode.SHORT]: { icon: "bolt" },
+  [ResponseMode.STRAIGHT]: { icon: "track_changes" },
+  [ResponseMode.FUNNY]: { icon: "mood" },
+  [ResponseMode.EINSTEIN]: { icon: "psychology" }
 };
 
 // ─── Magic UI: Shimmer Button ─────────────────────────────────────────────────
@@ -569,7 +569,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     className="w-full flex items-center justify-between px-3 py-2 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800/55 transition-colors text-sm font-medium"
                   >
                     <div className="flex items-center gap-3">
-                      <span className="text-[18px] w-[18px] text-center leading-none">{ResponseModeDetails[selectedMode].icon}</span>
+                      <span className="material-symbols-outlined notranslate text-[18px] w-[18px] text-center shrink-0" translate="no">{ResponseModeDetails[selectedMode].icon}</span>
                       <span>{t('header.modes.' + selectedMode + '.name')}</span>
                     </div>
                     <span className={`material-symbols-outlined notranslate text-[18px] transition-transform duration-200 ${isSidebarModeOpen ? 'rotate-180' : ''}`} translate="no">
@@ -596,7 +596,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                                         ${isSelected ? 'text-sky-400 font-semibold' : 'text-slate-400'}`}
                           >
                             <div className="flex items-center gap-2">
-                              <span>{modeDetails.icon}</span>
+                              <span className="material-symbols-outlined notranslate text-[18px] shrink-0" translate="no">{modeDetails.icon}</span>
                               <span className="truncate">{t('header.modes.' + modeKey + '.name')}</span>
                             </div>
                             {isSelected && <span className="material-symbols-outlined notranslate text-sky-400" translate="no" style={{fontSize: '16px'}}>check</span>}
