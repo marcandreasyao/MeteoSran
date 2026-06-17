@@ -562,51 +562,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
               {/* Pinned settings & tools at the bottom of the sidebar on mobile/tablet */}
               <div className="mt-2 pt-2 border-t border-slate-800/60 space-y-1.5 md:hidden flex-shrink-0">
-                {/* 1. Response Mode Accordion */}
-                <div className="space-y-1">
-                  <button
-                    onClick={() => setIsSidebarModeOpen(!isSidebarModeOpen)}
-                    className="w-full flex items-center justify-between px-3 py-2 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800/55 transition-colors text-sm font-medium"
-                  >
-                    <div className="flex items-center gap-3">
-                      <span className="material-symbols-outlined notranslate text-[18px] w-[18px] text-center shrink-0" translate="no">{ResponseModeDetails[selectedMode].icon}</span>
-                      <span>{t('header.modes.' + selectedMode + '.name')}</span>
-                    </div>
-                    <span className={`material-symbols-outlined notranslate text-[18px] transition-transform duration-200 ${isSidebarModeOpen ? 'rotate-180' : ''}`} translate="no">
-                      arrow_drop_down
-                    </span>
-                  </button>
-
-                  {isSidebarModeOpen && (
-                    <div className="pl-4 pr-1 py-1 space-y-1 bg-slate-950/25 rounded-lg border border-slate-800/50">
-                      {Object.values(ResponseMode).map((modeKey) => {
-                        const modeDetails = ResponseModeDetails[modeKey as ResponseMode];
-                        const isSelected = selectedMode === modeKey;
-                        const isGated = isAuthenticated === false && modeKey !== ResponseMode.CONCISE;
-                        return (
-                          <button
-                            key={modeKey}
-                            disabled={isGated}
-                            onClick={() => {
-                              if (isGated) return;
-                              onModeChange(modeKey as ResponseMode);
-                            }}
-                            className={`w-full flex items-center justify-between p-2 rounded-lg text-left text-xs transition-colors
-                                        ${isGated ? 'opacity-40 cursor-not-allowed' : 'hover:bg-slate-800/40'}
-                                        ${isSelected ? 'text-sky-400 font-semibold' : 'text-slate-400'}`}
-                          >
-                            <div className="flex items-center gap-2">
-                              <span className="material-symbols-outlined notranslate text-[18px] shrink-0" translate="no">{modeDetails.icon}</span>
-                              <span className="truncate">{t('header.modes.' + modeKey + '.name')}</span>
-                            </div>
-                            {isSelected && <span className="material-symbols-outlined notranslate text-sky-400" translate="no" style={{fontSize: '16px'}}>check</span>}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-
                 {/* 2. Notifications/Campaign Button */}
                 <button
                   onClick={() => {

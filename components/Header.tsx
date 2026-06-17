@@ -120,11 +120,11 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
 
           {/* Mode Selector Dropdown */}
-          <div className="hidden md:block relative" ref={modeDropdownRef}>
+          <div className="relative" ref={modeDropdownRef}>
             <button
               type="button"
               onClick={() => setIsModeDropdownOpen(!isModeDropdownOpen)}
-              className="p-1.5 sm:p-2 px-2 sm:px-3 rounded-full flex items-center space-x-1 sm:space-x-2
+              className="p-1.5 sm:p-2 px-1.5 sm:px-3 rounded-full flex items-center gap-1 sm:gap-2
                          hover:bg-black/10 dark:hover:bg-white/10 
                          focus:outline-none focus:ring-2 focus:ring-sky-500 dark:focus:ring-sky-400
                          text-slate-700 dark:text-slate-200 transition-colors text-xs sm:text-sm"
@@ -136,7 +136,7 @@ export const Header: React.FC<HeaderProps> = ({
               <span className="material-symbols-outlined notranslate text-lg sm:text-xl shrink-0" translate="no">{selectedModeDetails.icon}</span>
               <span className="hidden sm:inline">{t('header.modes.' + selectedMode + '.name')}</span>
               <span
-                className={`material-symbols-outlined notranslate transition-transform duration-200 ${isModeDropdownOpen ? 'rotate-180' : ''}`}
+                className={`hidden sm:inline-block material-symbols-outlined notranslate transition-transform duration-200 ${isModeDropdownOpen ? 'rotate-180' : ''}`}
                 style={{ fontSize: '16px' }}
                 translate="no"
               >
