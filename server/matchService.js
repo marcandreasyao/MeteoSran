@@ -22,6 +22,33 @@ const FD_STATUS_MAP = {
     SUSPENDED: 'live',
 };
 
+const STADIUMS = [
+    { name: "BC Place", city: "Vancouver" },
+    { name: "Lumen Field", city: "Seattle" },
+    { name: "Levi's Stadium", city: "Santa Clara" },
+    { name: "SoFi Stadium", city: "Inglewood" },
+    { name: "Estadio Akron", city: "Guadalajara" },
+    { name: "Estadio Azteca", city: "Mexico City" },
+    { name: "Estadio BBVA", city: "Monterrey" },
+    { name: "NRG Stadium", city: "Houston" },
+    { name: "AT&T Stadium", city: "Arlington" },
+    { name: "Arrowhead Stadium", city: "Kansas City" },
+    { name: "Mercedes-Benz Stadium", city: "Atlanta" },
+    { name: "Hard Rock Stadium", city: "Miami" },
+    { name: "Gillette Stadium", city: "Foxborough" },
+    { name: "MetLife Stadium", city: "East Rutherford" },
+    { name: "Lincoln Financial Field", city: "Philadelphia" },
+    { name: "BMO Field", city: "Toronto" }
+];
+
+function getDeterministicVenue(matchId) {
+    let sum = 0;
+    for (let i = 0; i < matchId.length; i++) {
+        sum += matchId.charCodeAt(i);
+    }
+    return STADIUMS[sum % STADIUMS.length];
+}
+
 // Map Football-Data.org group strings to our display format
 function mapGroup(apiGroup) {
     if (!apiGroup) return 'Group Stage';
@@ -170,8 +197,8 @@ export async function seedFromAPI() {
                     awayName: am.awayTeam.shortName || am.awayTeam.name,
                     awayCode,
                     kickoff: new Date(am.utcDate),
-                    venueName: am.venue || null,
-                    venueCity: null,
+                    venueName: am.venue || getDeterministicVenue(matchId).name,
+                    venueCity: getDeterministicVenue(matchId).city,
                     status,
                     scoreHome: fullTime?.home ?? 0,
                     scoreAway: fullTime?.away ?? 0,
