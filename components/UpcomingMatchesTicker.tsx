@@ -174,7 +174,7 @@ export const UpcomingMatchesTicker: React.FC<UpcomingMatchesTickerProps> = ({ on
                                     className="w-5 h-3.5 object-cover rounded-[2px] border border-slate-300/20 dark:border-slate-700/20 shadow-sm" 
                                 />
                             </span>
-                            <span className="text-[10px] md:text-[11px] text-slate-600 dark:text-slate-300 font-bold truncate max-w-[150px] hidden sm:inline">
+                            <span className="text-[10px] md:text-[11px] text-slate-600 dark:text-slate-300 font-bold truncate max-w-[150px] hidden sm:block">
                                 {match.home.name} - {match.away.name}
                             </span>
                         </button>
@@ -228,6 +228,9 @@ export const UpcomingMatchesTicker: React.FC<UpcomingMatchesTickerProps> = ({ on
                 }
                 .animate-marquee {
                     animation: marquee linear infinite;
+                    will-change: transform;
+                    transform: translateZ(0);
+                    backface-visibility: hidden;
                 }
             `}</style>
         </div>
