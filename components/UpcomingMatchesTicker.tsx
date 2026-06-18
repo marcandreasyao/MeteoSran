@@ -51,6 +51,21 @@ export const UpcomingMatchesTicker: React.FC<UpcomingMatchesTickerProps> = ({ on
     // Helper to format date label
     const formatDate = (dateStr: string) => {
         const date = new Date(dateStr);
+        const today = new Date();
+        const yesterdayDate = new Date(today);
+        yesterdayDate.setDate(today.getDate() - 1);
+        const tomorrowDate = new Date(today);
+        tomorrowDate.setDate(today.getDate() + 1);
+
+        const isSameDay = (d1: Date, d2: Date) => 
+            d1.getDate() === d2.getDate() &&
+            d1.getMonth() === d2.getMonth() &&
+            d1.getFullYear() === d2.getFullYear();
+
+        if (isSameDay(date, today)) return "Aujourd'hui";
+        if (isSameDay(date, yesterdayDate)) return "Hier";
+        if (isSameDay(date, tomorrowDate)) return "Demain";
+
         return date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
     };
 
@@ -62,7 +77,23 @@ export const UpcomingMatchesTicker: React.FC<UpcomingMatchesTickerProps> = ({ on
 
     // Group matches by date for display
     const matchesByDate: { [key: string]: Match[] } = {};
-    matches.forEach(m => {
+    
+    // Filter matches: from yesterday up to 10 days in the future
+    const now = new Date();
+    const startOfYesterday = new Date(now);
+    startOfYesterday.setDate(now.getDate() - 1);
+    startOfYesterday.setHours(0, 0, 0, 0);
+
+    const endOfTenDays = new Date(now);
+    endOfTenDays.setDate(now.getDate() + 10);
+    endOfTenDays.setHours(23, 59, 59, 999);
+
+    const filteredMatches = matches.filter(m => {
+        const matchDate = new Date(m.kickoff);
+        return matchDate >= startOfYesterday && matchDate <= endOfTenDays;
+    });
+
+    filteredMatches.forEach(m => {
         const dateKey = formatDate(m.kickoff);
         if (!matchesByDate[dateKey]) {
             matchesByDate[dateKey] = [];
@@ -74,7 +105,7 @@ export const UpcomingMatchesTicker: React.FC<UpcomingMatchesTickerProps> = ({ on
     const dateKeys = Object.keys(matchesByDate);
 
     const renderMarqueeContent = () => (
-        <div className="flex items-center gap-6 whitespace-nowrap py-1">
+        <div className="flex items-center gap-6 whitespace-nowrap py-1 pr-6">
             {dateKeys.map(dateKey => (
                 <React.Fragment key={dateKey}>
                     {/* Date separator */}
@@ -163,10 +194,10 @@ export const UpcomingMatchesTicker: React.FC<UpcomingMatchesTickerProps> = ({ on
             {/* Marquee Scroller */}
             <div className="flex-1 overflow-hidden relative w-full h-full flex items-center">
                 <div 
-                    className="flex whitespace-nowrap animate-marquee gap-6 items-center"
+                    className="flex whitespace-nowrap animate-marquee items-center"
                     style={{ 
                         animationPlayState: isPlaying ? 'running' : 'paused',
-                        animationDuration: '25s',
+                        animationDuration: '60s',
                         animationTimingFunction: 'linear',
                         animationIterationCount: 'infinite'
                     }}

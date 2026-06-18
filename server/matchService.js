@@ -39,13 +39,13 @@ function generateMatchId(homeCode, awayCode) {
 // Country code mapping: Football-Data.org TLA -> ISO 2-letter code
 const TLA_TO_ISO = {
     MEX: 'MX', RSA: 'ZA', KOR: 'KR', CZE: 'CZ',
-    CAN: 'CA', QAT: 'QA', BOS: 'BA', SUI: 'CH',
+    CAN: 'CA', QAT: 'QA', BIH: 'BA', SUI: 'CH',
     BRA: 'BR', MAR: 'MA', HAI: 'HT', SCO: 'GB-SCT',
     USA: 'US', PAR: 'PY', AUS: 'AU', TUR: 'TR',
-    GER: 'DE', CUR: 'CW', NED: 'NL', JPN: 'JP',
+    GER: 'DE', CUW: 'CW', NED: 'NL', JPN: 'JP',
     CIV: 'CI', ECU: 'EC', SWE: 'SE', TUN: 'TN',
     BEL: 'BE', EGY: 'EG', IRN: 'IR', NZL: 'NZ',
-    ESP: 'ES', CPV: 'CV', KSA: 'SA', URU: 'UY',
+    ESP: 'ES', CPV: 'CV', KSA: 'SA', URY: 'UY',
     FRA: 'FR', SEN: 'SN', IRQ: 'IQ', NOR: 'NO',
     ARG: 'AR', ALG: 'DZ', AUT: 'AT', JOR: 'JO',
     POR: 'PT', COD: 'CD', ENG: 'GB-ENG', CRO: 'HR',
