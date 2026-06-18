@@ -217,10 +217,11 @@ export async function seedFromAPI() {
                     awayCode,
                     kickoff: new Date(am.utcDate),
                     status,
-                    scoreHome: fullTime?.home ?? 0,
-                    scoreAway: fullTime?.away ?? 0,
-                    htScoreHome: halfTime?.home ?? null,
-                    htScoreAway: halfTime?.away ?? null,
+                    // Only update scores if the API actually provides them — never overwrite with 0
+                    ...(fullTime?.home != null && { scoreHome: fullTime.home }),
+                    ...(fullTime?.away != null && { scoreAway: fullTime.away }),
+                    ...(halfTime?.home != null && { htScoreHome: halfTime.home }),
+                    ...(halfTime?.away != null && { htScoreAway: halfTime.away }),
                     elapsed: status === 'finished' ? 90 : (status === 'live' ? (am.minute || 0) : null),
                     lastSyncedAt: new Date(),
                 },
@@ -295,7 +296,8 @@ async function syncFromAPI() {
     if (now - lastApiSyncMs < API_SYNC_MIN_INTERVAL_MS) return;
 
     try {
-        const url = 'https://api.football-data.org/v4/competitions/WC/matches?season=2026&status=IN_PLAY,PAUSED,FINISHED';
+        // Fetch all non-scheduled matches for today window — catches live, paused, and finished
+        const url = 'https://api.football-data.org/v4/competitions/WC/matches?season=2026&status=IN_PLAY,PAUSED,FINISHED,AWARDED';
         const res = await fetch(url, {
             headers: { 'X-Auth-Token': FOOTBALL_DATA_TOKEN },
             signal: AbortSignal.timeout(8000),
@@ -390,26 +392,33 @@ export function startSmartPoller() {
 
             // Check if API sync is warranted
             const now = new Date();
-            const thirtyMinAgo = new Date(now.getTime() - 30 * 60 * 1000);
 
+            // Any live match → always sync
             const liveCount = await prisma.worldCupMatch.count({
                 where: { status: 'live' },
             });
 
-            // Also check recently-finished: finished AND kickoff was < 2.5 hours ago
-            const twoHoursAgo = new Date(now.getTime() - 150 * 60 * 1000);
-            const recentlyFinishedCount = await prisma.worldCupMatch.count({
+            // Any finished match whose kickoff was today (within last 24h) → sync
+            // 24h window ensures same-day matches always get correct final scores
+            const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+            const todayFinishedCount = await prisma.worldCupMatch.count({
                 where: {
                     status: 'finished',
-                    kickoff: { gte: twoHoursAgo },
-                    OR: [
-                        { lastSyncedAt: null },
-                        { lastSyncedAt: { lt: thirtyMinAgo } },
-                    ],
+                    kickoff: { gte: oneDayAgo },
                 },
             });
 
-            if (liveCount > 0 || recentlyFinishedCount > 0) {
+            // Also sync if any match kicked off in the last 3 hours and is still showing scheduled
+            // (catches cases where autoCorrect moved it to live but API hasn't confirmed yet)
+            const threeHoursAgo = new Date(now.getTime() - 3 * 60 * 60 * 1000);
+            const recentScheduledCount = await prisma.worldCupMatch.count({
+                where: {
+                    status: 'scheduled',
+                    kickoff: { gte: threeHoursAgo, lte: now },
+                },
+            });
+
+            if (liveCount > 0 || todayFinishedCount > 0 || recentScheduledCount > 0) {
                 await syncFromAPI();
             }
         } catch (err) {
