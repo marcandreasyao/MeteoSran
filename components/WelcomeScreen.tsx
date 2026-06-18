@@ -377,7 +377,9 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ firstName, onSugge
             {/* Modal Body */}
             <div className="flex-1 overflow-y-auto p-6 space-y-4 custom-scrollbar">
               {(() => {
-                const finishedMatches = allMatches.filter((m: any) => m.status === 'finished');
+                const finishedMatches = allMatches
+                  .filter((m: any) => m.status === 'finished')
+                  .sort((a: any, b: any) => new Date(b.kickoff).getTime() - new Date(a.kickoff).getTime());
                 if (finishedMatches.length === 0) {
                   return (
                     <div className="text-center py-12 text-slate-400 text-sm">
