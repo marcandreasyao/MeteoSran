@@ -273,13 +273,28 @@ export const translations = {
       gotIt: "Got it, thanks!",
       back: "Back",
       versions: {
+        v1_8_2: {
+          version: "1.8.2",
+          title: "What's New in MeteoSran 1.8.2",
+          greeting: "Hi there,",
+          subtitle: "Dynamic FIFA World Cup 2026 Special Integration",
+          date: "June 2026",
+          badge: "Current",
+          features: {
+            smartSyncTitle: "Smart API Syncing",
+            smartSyncDesc: "Database synchronization has been optimized to smartly fetch only live or recently finished matches, ensuring real-time data integrity while avoiding API limits.",
+            uiuxTitle: "Refined User Experience",
+            uiuxDesc: "The matches ticker now seamlessly loops and intelligently focuses on a 10-day window. It fully translates relative dates (Today, Yesterday) and fixes missing SVG flags for complete visual fidelity.",
+            venueTitle: "Venue Intelligence",
+            venueDesc: "Integrated deterministic stadium mappings assign the 16 official host venues to their respective matches, bringing stadiums and cities to life on the Match Cards."
+          }
+        },
         v1_8_1: {
           version: "1.8.1",
           title: "What's New in MeteoSran 1.8.1",
           greeting: "Hi there,",
           subtitle: "Live Score Intelligence and Match Statistics",
           date: "June 2026",
-          badge: "Current",
           features: {
             liveScoresTitle: "Live Score Display",
             liveScoresDesc: "Match results and live scores are now displayed directly inside the prediction cards and the scrolling ticker. Finished matches show final scores, while live matches display real-time scores with an animated status indicator and elapsed minute counter.",
@@ -648,13 +663,28 @@ export const translations = {
       gotIt: "Compris, merci !",
       back: "Retour",
       versions: {
+        v1_8_2: {
+          version: "1.8.2",
+          title: "Nouveautés de MeteoSran 1.8.2",
+          greeting: "Bonjour,",
+          subtitle: "Intégration Dynamique de la Coupe du Monde de la FIFA 2026",
+          date: "Juin 2026",
+          badge: "Actuelle",
+          features: {
+            smartSyncTitle: "Synchronisation Intelligente",
+            smartSyncDesc: "La synchronisation de la base de données a été optimisée pour récupérer uniquement les matchs en direct ou récemment terminés, garantissant des données en temps réel tout en évitant les limites de l'API.",
+            uiuxTitle: "Expérience Utilisateur Améliorée",
+            uiuxDesc: "Le bandeau des matchs défile désormais de manière fluide en boucle et se concentre sur une fenêtre de 10 jours. Il traduit les dates relatives (Aujourd'hui, Hier) et corrige les drapeaux SVG manquants.",
+            venueTitle: "Données sur les Stades",
+            venueDesc: "Une cartographie déterministe attribue les 16 stades officiels à leurs matchs respectifs, donnant vie aux villes et aux stades sur les cartes de prédiction."
+          }
+        },
         v1_8_1: {
           version: "1.8.1",
           title: "Nouveautés de MeteoSran 1.8.1",
           greeting: "Bonjour,",
           subtitle: "Scores en Direct et Statistiques de Match",
           date: "Juin 2026",
-          badge: "Actuelle",
           features: {
             liveScoresTitle: "Affichage des Scores en Direct",
             liveScoresDesc: "Les résultats et scores en direct sont désormais affichés directement dans les cartes de prédiction et le bandeau défilant. Les matchs terminés affichent le score final, tandis que les matchs en cours montrent le score en temps réel avec un indicateur animé et le compteur de minutes écoulées.",

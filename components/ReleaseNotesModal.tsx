@@ -23,11 +23,23 @@ const COLOR_MAPS: Record<string, { bg: string, text: string }> = {
 
 const VERSIONS = [
   {
+    id: 'v1_8_2',
+    icon: 'stadium',
+    iconColor: 'text-amber-500 dark:text-amber-400',
+    iconBg: 'bg-amber-500/10 dark:bg-amber-500/20',
+    badgeColor: 'bg-amber-500/10 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/20',
+    features: [
+      { key: 'smartSync', icon: 'sync', color: 'emerald' },
+      { key: 'uiux', icon: 'animation', color: 'violet' },
+      { key: 'venue', icon: 'stadium', color: 'sky' },
+    ]
+  },
+  {
     id: 'v1_8_1',
     icon: 'scoreboard',
     iconColor: 'text-emerald-500 dark:text-emerald-400',
     iconBg: 'bg-emerald-500/10 dark:bg-emerald-500/20',
-    badgeColor: 'bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20',
+    badgeColor: 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200/50 dark:border-slate-700/50',
     features: [
       { key: 'liveScores', icon: 'scoreboard', color: 'emerald' },
       { key: 'matchStats', icon: 'bar_chart', color: 'violet' },

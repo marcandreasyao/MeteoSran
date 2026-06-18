@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useLanguage } from '../src/contexts/LanguageContext';
 
 interface Team {
     name: string;
@@ -24,6 +25,7 @@ interface UpcomingMatchesTickerProps {
 }
 
 export const UpcomingMatchesTicker: React.FC<UpcomingMatchesTickerProps> = ({ onMatchClick }) => {
+    const { language } = useLanguage();
     const [matches, setMatches] = useState<Match[]>([]);
     const [isPlaying, setIsPlaying] = useState(true);
 
@@ -62,11 +64,11 @@ export const UpcomingMatchesTicker: React.FC<UpcomingMatchesTickerProps> = ({ on
             d1.getMonth() === d2.getMonth() &&
             d1.getFullYear() === d2.getFullYear();
 
-        if (isSameDay(date, today)) return "Aujourd'hui";
-        if (isSameDay(date, yesterdayDate)) return "Hier";
-        if (isSameDay(date, tomorrowDate)) return "Demain";
+        if (isSameDay(date, today)) return language === 'fr' ? "Aujourd'hui" : "Today";
+        if (isSameDay(date, yesterdayDate)) return language === 'fr' ? "Hier" : "Yesterday";
+        if (isSameDay(date, tomorrowDate)) return language === 'fr' ? "Demain" : "Tomorrow";
 
-        return date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+        return date.toLocaleDateString(language === 'fr' ? 'fr-FR' : 'en-US', { day: 'numeric', month: 'short' });
     };
 
     // Helper to format time label
