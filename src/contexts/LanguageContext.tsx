@@ -281,8 +281,8 @@ export const translations = {
           date: "June 2026",
           badge: "Current",
           features: {
-            smartSyncTitle: "Smart API Syncing",
-            smartSyncDesc: "Database synchronization has been optimized to smartly fetch only live or recently finished matches, ensuring real-time data integrity while avoiding API limits.",
+            smartSyncTitle: "Smart Data Syncing",
+            smartSyncDesc: "Database synchronization has been optimized to smartly fetch only live or recently finished matches, ensuring real-time data integrity while optimizing performance.",
             uiuxTitle: "Refined User Experience",
             uiuxDesc: "The matches ticker now seamlessly loops and intelligently focuses on a 10-day window. It fully translates relative dates (Today, Yesterday) and fixes missing SVG flags for complete visual fidelity.",
             venueTitle: "Venue Intelligence",
@@ -672,8 +672,8 @@ export const translations = {
           date: "Juin 2026",
           badge: "Actuelle",
           features: {
-            smartSyncTitle: "Synchronisation Intelligente",
-            smartSyncDesc: "La synchronisation de la base de données a été optimisée pour récupérer uniquement les matchs en direct ou récemment terminés, garantissant des données en temps réel tout en évitant les limites de l'API.",
+            smartSyncTitle: "Synchronisation Intelligente des Données",
+            smartSyncDesc: "La synchronisation de la base de données a été optimisée pour récupérer uniquement les matchs en direct ou récemment terminés, garantissant des données en temps réel tout en optimisant les performances.",
             uiuxTitle: "Expérience Utilisateur Améliorée",
             uiuxDesc: "Le bandeau des matchs défile désormais de manière fluide en boucle et se concentre sur une fenêtre de 10 jours. Il traduit les dates relatives (Aujourd'hui, Hier) et corrige les drapeaux SVG manquants.",
             venueTitle: "Données sur les Stades",
