@@ -207,9 +207,18 @@ export const ReleaseNotesModal: React.FC<ReleaseNotesModalProps> = ({ onClose })
                         <h4 className="text-sm font-semibold text-slate-800 dark:text-slate-200">
                           {t(`releaseNotes.versions.${v.id}.title`)}
                         </h4>
-                        <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold uppercase tracking-wider ${v.badgeColor}`}>
-                          {t(`releaseNotes.versions.${v.id}.badge`)}
-                        </span>
+                        {(() => {
+                          const badgeKey = `releaseNotes.versions.${v.id}.badge`;
+                          const badgeText = t(badgeKey);
+                          if (badgeText && badgeText !== badgeKey) {
+                            return (
+                              <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold uppercase tracking-wider ${v.badgeColor}`}>
+                                {badgeText}
+                              </span>
+                            );
+                          }
+                          return null;
+                        })()}
                       </div>
                       <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-1">
                         {t(`releaseNotes.versions.${v.id}.subtitle`)}

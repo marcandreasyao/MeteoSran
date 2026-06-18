@@ -295,6 +295,7 @@ export const translations = {
           greeting: "Hi there,",
           subtitle: "Live Score Intelligence and Match Statistics",
           date: "June 2026",
+          badge: "Previous",
           features: {
             liveScoresTitle: "Live Score Display",
             liveScoresDesc: "Match results and live scores are now displayed directly inside the prediction cards and the scrolling ticker. Finished matches show final scores, while live matches display real-time scores with an animated status indicator and elapsed minute counter.",
@@ -685,6 +686,7 @@ export const translations = {
           greeting: "Bonjour,",
           subtitle: "Scores en Direct et Statistiques de Match",
           date: "Juin 2026",
+          badge: "Précédente",
           features: {
             liveScoresTitle: "Affichage des Scores en Direct",
             liveScoresDesc: "Les résultats et scores en direct sont désormais affichés directement dans les cartes de prédiction et le bandeau défilant. Les matchs terminés affichent le score final, tandis que les matchs en cours montrent le score en temps réel avec un indicateur animé et le compteur de minutes écoulées.",
