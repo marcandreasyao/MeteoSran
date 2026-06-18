@@ -199,7 +199,7 @@ export const UpcomingMatchesTicker: React.FC<UpcomingMatchesTickerProps> = ({ on
                     className="flex whitespace-nowrap animate-marquee items-center"
                     style={{ 
                         animationPlayState: isPlaying ? 'running' : 'paused',
-                        animationDuration: '90s',
+                        animationDuration: '180s',
                         animationTimingFunction: 'linear',
                         animationIterationCount: 'infinite'
                     }}
