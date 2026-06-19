@@ -273,13 +273,29 @@ export const translations = {
       gotIt: "Got it, thanks!",
       back: "Back",
       versions: {
+        v1_8_3: {
+          version: "1.8.3",
+          title: "What's New in MeteoSran 1.8.3",
+          greeting: "Hi there,",
+          subtitle: "Interactive Bracket, Standings & Premium Visuals",
+          date: "June 2026",
+          badge: "Current",
+          features: {
+            worldCupHubTitle: "Standings & Bracket Hub",
+            worldCupHubDesc: "Access a dedicated World Cup hub with live-calculated standings and an interactive bracket from the Round of 32. Features a smart prediction engine: qualified teams are seeded dynamically from the group stage (including best third-placed), winners propagate up the tree, and downstream paths auto-clear if early choices change. Includes local storage autosave.",
+            premiumVisualsTitle: "Premium Logo & Animations",
+            premiumVisualsDesc: "Replaced the AI Opinion avatar with the official MeteoSran logo wrapped in a 60fps GPU-accelerated morphing gradient circle. Enjoy a dynamic navigation tab bar that auto-calculates sizes and glides smoothly behind active tabs.",
+            robustBackendTitle: "Robust Backend Syncing",
+            robustBackendDesc: "Resolved Football-Data.org API filter errors, database seeding unique constraint crashes, Composer startup conflicts, and React portal rendering crashes for complete platform stability."
+          }
+        },
         v1_8_2: {
           version: "1.8.2",
           title: "What's New in MeteoSran 1.8.2",
           greeting: "Hi there,",
           subtitle: "Dynamic FIFA World Cup 2026 Special Integration",
           date: "June 2026",
-          badge: "Current",
+          badge: "Previous",
           features: {
             smartSyncTitle: "Smart Data Syncing",
             smartSyncDesc: "Database synchronization has been optimized to smartly fetch only live or recently finished matches, ensuring real-time data integrity while optimizing performance.",
@@ -664,13 +680,29 @@ export const translations = {
       gotIt: "Compris, merci !",
       back: "Retour",
       versions: {
+        v1_8_3: {
+          version: "1.8.3",
+          title: "Nouveautés de MeteoSran 1.8.3",
+          greeting: "Bonjour,",
+          subtitle: "Bracket Interactif, Classements & Design Premium",
+          date: "Juin 2026",
+          badge: "Actuelle",
+          features: {
+            worldCupHubTitle: "Espace Classements & Bracket",
+            worldCupHubDesc: "Hub Coupe du Monde avec classements en direct et bracket de phase finale interactif (16es). Intègre un algorithme de prédiction intelligent : qualification dynamique des meilleurs 3es, propagation automatique des vainqueurs et nettoyage récursif des choix obsolètes si un pronostic amont est modifié. Sauvegarde locale incluse.",
+            premiumVisualsTitle: "Logo Animé & Transitions Fluides",
+            premiumVisualsDesc: "Le logo officiel remplace l'avatar de l'avis de l'IA, entouré d'un dégradé mouvant fluide à 60fps. Profitez d'une barre d'onglets dynamique qui calcule automatiquement les dimensions et glisse sans effort.",
+            robustBackendTitle: "Stabilité du Serveur & Correctifs",
+            robustBackendDesc: "Résolution des erreurs de filtrage Football-Data.org, des crashs d'initialisation de base de données (Prisma seed), des conflits de ports, et des bugs d'affichage de portails React."
+          }
+        },
         v1_8_2: {
           version: "1.8.2",
           title: "Nouveautés de MeteoSran 1.8.2",
           greeting: "Bonjour,",
           subtitle: "Intégration Dynamique de la Coupe du Monde de la FIFA 2026",
           date: "Juin 2026",
-          badge: "Actuelle",
+          badge: "Précédente",
           features: {
             smartSyncTitle: "Synchronisation Intelligente des Données",
             smartSyncDesc: "La synchronisation de la base de données a été optimisée pour récupérer uniquement les matchs en direct ou récemment terminés, garantissant des données en temps réel tout en optimisant les performances.",

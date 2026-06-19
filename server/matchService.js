@@ -185,47 +185,64 @@ export async function seedFromAPI() {
             const fullTime = am.score?.fullTime;
             const halfTime = am.score?.halfTime;
 
-            await prisma.worldCupMatch.upsert({
-                where: { id: matchId },
-                create: {
-                    id: matchId,
-                    fdApiId: am.id,
-                    group: mapGroup(am.group),
-                    round: `Round ${am.matchday || 1}`,
-                    homeName: am.homeTeam.shortName || am.homeTeam.name,
-                    homeCode,
-                    awayName: am.awayTeam.shortName || am.awayTeam.name,
-                    awayCode,
-                    kickoff: new Date(am.utcDate),
-                    venueName: am.venue || getDeterministicVenue(matchId).name,
-                    venueCity: getDeterministicVenue(matchId).city,
-                    status,
-                    scoreHome: fullTime?.home ?? 0,
-                    scoreAway: fullTime?.away ?? 0,
-                    htScoreHome: halfTime?.home ?? null,
-                    htScoreAway: halfTime?.away ?? null,
-                    elapsed: status === 'finished' ? 90 : (status === 'live' ? (am.minute || 0) : null),
-                    lastSyncedAt: new Date(),
-                },
-                update: {
-                    fdApiId: am.id,
-                    group: mapGroup(am.group),
-                    round: `Round ${am.matchday || 1}`,
-                    homeName: am.homeTeam.shortName || am.homeTeam.name,
-                    homeCode,
-                    awayName: am.awayTeam.shortName || am.awayTeam.name,
-                    awayCode,
-                    kickoff: new Date(am.utcDate),
-                    status,
-                    // Only update scores if the API actually provides them — never overwrite with 0
-                    ...(fullTime?.home != null && { scoreHome: fullTime.home }),
-                    ...(fullTime?.away != null && { scoreAway: fullTime.away }),
-                    ...(halfTime?.home != null && { htScoreHome: halfTime.home }),
-                    ...(halfTime?.away != null && { htScoreAway: halfTime.away }),
-                    elapsed: status === 'finished' ? 90 : (status === 'live' ? (am.minute || 0) : null),
-                    lastSyncedAt: new Date(),
-                },
+            const updateFields = {
+                group: mapGroup(am.group),
+                round: `Round ${am.matchday || 1}`,
+                homeName: am.homeTeam.shortName || am.homeTeam.name,
+                homeCode,
+                awayName: am.awayTeam.shortName || am.awayTeam.name,
+                awayCode,
+                kickoff: new Date(am.utcDate),
+                status,
+                ...(fullTime?.home != null && { scoreHome: fullTime.home }),
+                ...(fullTime?.away != null && { scoreAway: fullTime.away }),
+                ...(halfTime?.home != null && { htScoreHome: halfTime.home }),
+                ...(halfTime?.away != null && { htScoreAway: halfTime.away }),
+                elapsed: status === 'finished' ? 90 : (status === 'live' ? (am.minute || 0) : null),
+                lastSyncedAt: new Date(),
+            };
+
+            // 1. Try to find by fdApiId
+            const matchByApiId = await prisma.worldCupMatch.findUnique({
+                where: { fdApiId: am.id }
             });
+
+            if (matchByApiId) {
+                // Update existing record
+                await prisma.worldCupMatch.update({
+                    where: { id: matchByApiId.id },
+                    data: updateFields
+                });
+            } else {
+                // 2. Try to find by matchId
+                const matchById = await prisma.worldCupMatch.findUnique({
+                    where: { id: matchId }
+                });
+
+                if (matchById) {
+                    // Update existing record and link fdApiId
+                    await prisma.worldCupMatch.update({
+                        where: { id: matchId },
+                        data: {
+                            fdApiId: am.id,
+                            ...updateFields
+                        }
+                    });
+                } else {
+                    // 3. Create new record
+                    await prisma.worldCupMatch.create({
+                        data: {
+                            id: matchId,
+                            fdApiId: am.id,
+                            venueName: am.venue || getDeterministicVenue(matchId).name,
+                            venueCity: getDeterministicVenue(matchId).city,
+                            ...updateFields,
+                            scoreHome: fullTime?.home ?? 0,
+                            scoreAway: fullTime?.away ?? 0,
+                        }
+                    });
+                }
+            }
             upsertCount++;
         }
 
@@ -234,6 +251,22 @@ export async function seedFromAPI() {
     } catch (err) {
         console.warn('[MatchSync] Seed failed:', err.message);
     }
+}
+
+// Helper to calculate realistic match minute considering a 15-minute half-time
+function calculateElapsedMin(kickoffTime) {
+    const diff = Date.now() - kickoffTime.getTime();
+    if (diff <= 0) return 0;
+    
+    const rawElapsed = Math.floor(diff / 60000);
+    // First Half: 0 to 45
+    if (rawElapsed <= 45) return rawElapsed;
+    // Half Time break: 45 to 60. Keep elapsed at 45.
+    if (rawElapsed <= 60) return 45;
+    // Second Half: 60+ (subtract the 15m break)
+    const secondHalfMin = rawElapsed - 15;
+    // Cap at 120 max just for safety
+    return Math.min(secondHalfMin, 120);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -247,8 +280,10 @@ async function autoCorrectStatuses() {
         where: { status: 'scheduled', kickoff: { lte: now } },
     });
     for (const m of startedMatches) {
-        const elapsedMin = Math.floor((now.getTime() - m.kickoff.getTime()) / 60000);
-        if (elapsedMin >= 120) {
+        const rawElapsed = Math.floor((now.getTime() - m.kickoff.getTime()) / 60000);
+        const trueElapsed = calculateElapsedMin(m.kickoff);
+        
+        if (rawElapsed >= 120) {
             // Safety: should be finished
             await prisma.worldCupMatch.update({
                 where: { id: m.id },
@@ -258,9 +293,9 @@ async function autoCorrectStatuses() {
         } else {
             await prisma.worldCupMatch.update({
                 where: { id: m.id },
-                data: { status: 'live', elapsed: Math.min(90, elapsedMin) },
+                data: { status: 'live', elapsed: trueElapsed },
             });
-            console.log(`[MatchSync] Auto-started: ${m.homeName} vs ${m.awayName} (${Math.min(90, elapsedMin)}')`);
+            console.log(`[MatchSync] Auto-started: ${m.homeName} vs ${m.awayName} (${trueElapsed}')`);
         }
     }
 
@@ -269,8 +304,10 @@ async function autoCorrectStatuses() {
         where: { status: 'live' },
     });
     for (const m of staleLive) {
-        const elapsedMin = Math.floor((now.getTime() - m.kickoff.getTime()) / 60000);
-        if (elapsedMin >= 120) {
+        const rawElapsed = Math.floor((now.getTime() - m.kickoff.getTime()) / 60000);
+        const trueElapsed = calculateElapsedMin(m.kickoff);
+        
+        if (rawElapsed >= 120) {
             await prisma.worldCupMatch.update({
                 where: { id: m.id },
                 data: { status: 'finished', elapsed: 90 },
@@ -280,7 +317,7 @@ async function autoCorrectStatuses() {
             // Just update elapsed minute
             await prisma.worldCupMatch.update({
                 where: { id: m.id },
-                data: { elapsed: Math.min(90, elapsedMin) },
+                data: { elapsed: trueElapsed },
             });
         }
     }
@@ -296,8 +333,8 @@ async function syncFromAPI() {
     if (now - lastApiSyncMs < API_SYNC_MIN_INTERVAL_MS) return;
 
     try {
-        // Fetch all non-scheduled matches for today window — catches live, paused, and finished
-        const url = 'https://api.football-data.org/v4/competitions/WC/matches?season=2026&status=IN_PLAY,PAUSED,FINISHED,AWARDED';
+        // Fetch all matches for the season and filter locally to avoid unsupported comma-separated status filters
+        const url = 'https://api.football-data.org/v4/competitions/WC/matches?season=2026';
         const res = await fetch(url, {
             headers: { 'X-Auth-Token': FOOTBALL_DATA_TOKEN },
             signal: AbortSignal.timeout(8000),
@@ -312,7 +349,9 @@ async function syncFromAPI() {
         lastApiSyncMs = now;
 
         const apiMatches = (json.matches || []).filter(m =>
-            m.stage === 'GROUP_STAGE' && m.homeTeam?.name
+            m.stage === 'GROUP_STAGE' && 
+            m.homeTeam?.name && 
+            ['IN_PLAY', 'PAUSED', 'FINISHED', 'AWARDED', 'SUSPENDED'].includes(m.status)
         );
         let syncCount = 0;
 

@@ -1890,6 +1890,250 @@ app.post('/api/worldcup/match/:id/vote', async (req, res) => {
     }
 });
 
+// WORLD CUP STANDINGS FOR ALL GROUPS
+app.get('/api/worldcup/standings', async (req, res) => {
+    try {
+        const matches = await getAllMatches();
+        
+        // Group matches by group
+        const groups = {};
+        for (const m of matches) {
+            const grp = m.group || 'Unknown';
+            if (!groups[grp]) groups[grp] = [];
+            groups[grp].push(m);
+        }
+        
+        const standings = {};
+        for (const [groupName, groupMatches] of Object.entries(groups)) {
+            const teams = {};
+            const ensureTeam = (name, code) => {
+                if (!teams[name]) {
+                    teams[name] = {
+                        team: name,
+                        code: code,
+                        played: 0, won: 0, drawn: 0, lost: 0,
+                        goalsFor: 0, goalsAgainst: 0, goalDifference: 0, points: 0,
+                    };
+                }
+            };
+            
+            for (const m of groupMatches) {
+                ensureTeam(m.home.name, m.home.code);
+                ensureTeam(m.away.name, m.away.code);
+                
+                if (m.status === 'finished' || m.status === 'live') {
+                    teams[m.home.name].played += 1;
+                    teams[m.away.name].played += 1;
+                    teams[m.home.name].goalsFor += m.score.home;
+                    teams[m.home.name].goalsAgainst += m.score.away;
+                    teams[m.away.name].goalsFor += m.score.away;
+                    teams[m.away.name].goalsAgainst += m.score.home;
+                    
+                    if (m.score.home > m.score.away) {
+                        teams[m.home.name].won += 1;
+                        teams[m.home.name].points += 3;
+                        teams[m.away.name].lost += 1;
+                    } else if (m.score.home < m.score.away) {
+                        teams[m.away.name].won += 1;
+                        teams[m.away.name].points += 3;
+                        teams[m.home.name].lost += 1;
+                    } else {
+                        teams[m.home.name].drawn += 1;
+                        teams[m.away.name].drawn += 1;
+                        teams[m.home.name].points += 1;
+                        teams[m.away.name].points += 1;
+                    }
+                }
+            }
+            
+            for (const t of Object.values(teams)) {
+                t.goalDifference = t.goalsFor - t.goalsAgainst;
+            }
+            
+            // Sort by points desc, goal difference desc, goals for desc, team name asc
+            const sortedTeams = Object.values(teams).sort((a, b) => {
+                if (b.points !== a.points) return b.points - a.points;
+                if (b.goalDifference !== a.goalDifference) return b.goalDifference - a.goalDifference;
+                if (b.goalsFor !== a.goalsFor) return b.goalsFor - a.goalsFor;
+                return a.team.localeCompare(b.team);
+            });
+            
+            standings[groupName] = sortedTeams;
+        }
+        
+        res.json(standings);
+    } catch (err) {
+        console.error("Error computing standings:", err);
+        res.status(500).json({ error: "Failed to compute standings." });
+    }
+});
+
+// Cache for opinion
+let worldCupOpinionCache = {
+    fr: null,
+    en: null,
+    frTime: 0,
+    enTime: 0
+};
+const OPINION_CACHE_DURATION_MS = 10 * 60 * 1000; // 10 minutes
+
+// METEOSRAN OPINION ON WORLD CUP
+app.get('/api/worldcup/opinion', async (req, res) => {
+    const lang = req.query.lang === 'en' ? 'en' : 'fr';
+    const now = Date.now();
+    const cacheTime = lang === 'en' ? worldCupOpinionCache.enTime : worldCupOpinionCache.frTime;
+    const cachedData = lang === 'en' ? worldCupOpinionCache.en : worldCupOpinionCache.fr;
+
+    if (cachedData && (now - cacheTime < OPINION_CACHE_DURATION_MS)) {
+        console.log(`[MeteoSran Server] Returning cached World Cup opinion (${lang})`);
+        return res.json({ text: cachedData });
+    }
+
+    try {
+        const matches = await getAllMatches();
+        
+        // Compute group standings summary for prompt
+        const groups = {};
+        for (const m of matches) {
+            const grp = m.group || 'Unknown';
+            if (!groups[grp]) groups[grp] = [];
+            groups[grp].push(m);
+        }
+
+        let standingsText = '';
+        for (const [groupName, groupMatches] of Object.entries(groups)) {
+            const teams = {};
+            const ensureTeam = (name) => {
+                if (!teams[name]) {
+                    teams[name] = { played: 0, won: 0, drawn: 0, lost: 0, goalsFor: 0, goalsAgainst: 0, points: 0 };
+                }
+            };
+            for (const m of groupMatches) {
+                ensureTeam(m.home.name);
+                ensureTeam(m.away.name);
+                if (m.status === 'finished' || m.status === 'live') {
+                    teams[m.home.name].played += 1;
+                    teams[m.away.name].played += 1;
+                    teams[m.home.name].goalsFor += m.score.home;
+                    teams[m.home.name].goalsAgainst += m.score.away;
+                    teams[m.away.name].goalsFor += m.score.away;
+                    teams[m.away.name].goalsAgainst += m.score.home;
+                    if (m.score.home > m.score.away) {
+                        teams[m.home.name].won += 1;
+                        teams[m.home.name].points += 3;
+                        teams[m.away.name].lost += 1;
+                    } else if (m.score.home < m.score.away) {
+                        teams[m.away.name].won += 1;
+                        teams[m.away.name].points += 3;
+                        teams[m.home.name].lost += 1;
+                    } else {
+                        teams[m.home.name].drawn += 1;
+                        teams[m.away.name].drawn += 1;
+                        teams[m.home.name].points += 1;
+                        teams[m.away.name].points += 1;
+                    }
+                }
+            }
+            const sorted = Object.entries(teams).map(([name, stats]) => ({ name, ...stats }))
+                .sort((a, b) => b.points - a.points || (b.goalsFor - b.goalsAgainst) - (a.goalsFor - a.goalsAgainst));
+            
+            standingsText += `${groupName}:\n` + sorted.map((t, idx) => `  ${idx+1}. ${t.name} (Pts: ${t.points}, GD: ${t.goalsFor - t.goalsAgainst}, P: ${t.played})`).join('\n') + '\n';
+        }
+
+        // Summary of recent results
+        const finishedMatches = matches.filter(m => m.status === 'finished').slice(-10);
+        let resultsText = finishedMatches.map(m => `  ${m.home.name} ${m.score.home} - ${m.score.away} ${m.away.name} (${m.venue.city})`).join('\n');
+
+        const systemPrompt = `You are 'MeteoSran', the official AI weather and sports pundit for the FIFA World Cup 2026.
+Your personality is friendly, enthusiastic, highly knowledgeable, and witty.
+Your task is to write a brief, engaging commentary on the current status of the World Cup based on the standings and recent results provided.
+Make specific connections to weather conditions at match venues (e.g. altitude fatigue in Mexico City/Guadalajara, high heat/humidity in Miami/Houston/Atlanta, or pleasant conditions in Vancouver/Toronto/Seattle).
+Predict which teams are performing best and who you think will excel in the upcoming Knockout Bracket starting from the Round of 32.
+Provide your response in ${lang === 'fr' ? 'French (fr)' : 'English (en)'}.
+Use clean Markdown formatting. Focus on a warm, personal tone. Keep it to 2-3 paragraphs. Do not output any debug logs or brackets.`;
+
+        const userPrompt = `Here is the current state of the tournament:
+[STANDINGS]
+${standingsText}
+
+[RECENT RESULTS]
+${resultsText}`;
+
+        const contents = [{
+            role: 'user',
+            parts: [{ text: userPrompt }]
+        }];
+
+        const SUPPORTED_MODELS = [
+            'gemini-2.5-flash-lite',
+            'gemini-3.1-flash-lite',
+            'gemini-2.0-flash-lite',
+            'gemini-2.5-flash',
+            'gemini-2.0-flash',
+            'gemini-flash-latest',
+            'gemini-3.5-flash',
+        ];
+
+        let responseText = null;
+        for (const modelName of SUPPORTED_MODELS) {
+            const maxKeyAttempts = geminiKeysState.length;
+            let keyAttempts = 0;
+            let success = false;
+
+            while (keyAttempts < maxKeyAttempts) {
+                const keyInfo = getNextAvailableKey();
+                if (!keyInfo) break;
+
+                const { key: currentKey, index: keyIdx } = keyInfo;
+                keyAttempts++;
+                const genAIInstance = new GoogleGenAI({ apiKey: currentKey, vertexai: false });
+
+                try {
+                    console.log(`[MeteoSran Server] Generating opinion using: ${modelName}`);
+                    const response = await genAIInstance.models.generateContent({
+                        model: modelName,
+                        contents,
+                        config: {
+                            systemInstruction: systemPrompt,
+                            temperature: 0.85,
+                            topP: 0.95,
+                        }
+                    });
+
+                    responseText = response.text;
+                    if (responseText) {
+                        markKeySuccess(keyIdx);
+                        success = true;
+                        break;
+                    }
+                } catch (err) {
+                    console.error(`[MeteoSran Server] Key attempt failed for opinion generation with ${modelName}:`, err.message);
+                }
+            }
+
+            if (success && responseText) break;
+        }
+
+        if (!responseText) {
+            throw new Error("Failed to generate opinion with all models and keys.");
+        }
+
+        // Cache the result
+        if (lang === 'en') {
+            worldCupOpinionCache.en = responseText;
+            worldCupOpinionCache.enTime = now;
+        } else {
+            worldCupOpinionCache.fr = responseText;
+            worldCupOpinionCache.frTime = now;
+        }
+
+        res.json({ text: responseText });
+    } catch (err) {
+        console.error("Error generating World Cup opinion:", err);
+        res.status(500).json({ error: "Failed to generate opinion." });
+    }
+});
+
 // Serve static files from the React app
 app.use(express.static(path.join(__dirname, '../dist')));
 
@@ -1954,8 +2198,9 @@ const startServer = (port) => {
 
     }).on('error', (err) => {
         if (err.code === 'EADDRINUSE') {
-            console.warn(`[MeteoSran Server] Port ${port} is in use, trying ${port + 1}...`);
-            startServer(port + 1);
+            const nextPort = Number(port) + 1;
+            console.warn(`[MeteoSran Server] Port ${port} is in use, trying ${nextPort}...`);
+            startServer(nextPort);
         } else {
             console.error('[MeteoSran Server] Server error:', err);
         }

@@ -45,6 +45,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ firstName, onSugge
   const [featuredMatchId, setFeaturedMatchId] = useState<string>("arg_alg_2026");
   const [showHistoryModal, setShowHistoryModal] = useState(false);
   const [allMatches, setAllMatches] = useState<any[]>([]);
+  const [isLoadingMatches, setIsLoadingMatches] = useState(true);
   const [expandedMatchId, setExpandedMatchId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -92,6 +93,8 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ firstName, onSugge
         }
       } catch (err) {
         console.error("Error fetching other matches:", err);
+      } finally {
+        setIsLoadingMatches(false);
       }
     };
     fetchMatches();
@@ -353,14 +356,19 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ firstName, onSugge
           <div className="w-full max-w-2xl bg-slate-900 border border-slate-800 text-white rounded-3xl shadow-2xl flex flex-col max-h-[80vh] overflow-hidden animate-scale-up">
             
             {/* Modal Header */}
-            <div className="px-6 py-4 bg-gradient-to-r from-slate-900 to-slate-950 border-b border-slate-800 flex items-center justify-between">
-              <div>
-                <h3 className="text-lg font-bold text-white tracking-tight">
-                  {language === 'fr' ? 'Matchs Précédents' : 'Previous Matches'}
-                </h3>
-                <p className="text-[11px] text-slate-400">
-                  {language === 'fr' ? 'Historique et statistiques des rencontres terminées' : 'History and statistics of completed fixtures'}
-                </p>
+            <div className="px-6 py-4 bg-gradient-to-r from-slate-900 to-slate-950 border-b border-slate-800 flex items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center shadow-lg p-1.5 flex-shrink-0">
+                  <img src="/tournaments_fifa-world-cup-2026.football-logos.cc.svg" alt="FIFA WC 2026" className="w-full h-full object-contain" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-white tracking-tight leading-tight">
+                    {language === 'fr' ? 'Matchs Précédents' : 'Previous Matches'}
+                  </h3>
+                  <p className="text-[11px] text-slate-400">
+                    {language === 'fr' ? 'Historique et statistiques des rencontres terminées' : 'History and statistics of completed fixtures'}
+                  </p>
+                </div>
               </div>
               <button 
                 onClick={() => {
@@ -376,7 +384,34 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ firstName, onSugge
 
             {/* Modal Body */}
             <div className="flex-1 overflow-y-auto p-6 space-y-4 custom-scrollbar">
-              {(() => {
+              {isLoadingMatches ? (
+                Array.from({ length: 3 }).map((_, i) => (
+                  <div key={`skeleton-${i}`} className="rounded-2xl border border-slate-800/60 bg-slate-950/40 overflow-hidden animate-pulse">
+                    <div className="p-4">
+                      {/* Top meta skeleton */}
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="h-3 w-20 bg-slate-800/60 rounded" />
+                        <div className="h-4 w-28 bg-slate-800/60 rounded" />
+                      </div>
+                      {/* Teams + Score row skeleton */}
+                      <div className="flex items-center justify-between gap-2">
+                        {/* Home */}
+                        <div className="flex items-center gap-2 flex-1 justify-end">
+                          <div className="h-4 w-24 bg-slate-800/60 rounded" />
+                          <div className="w-8 h-8 rounded-full bg-slate-800/60 flex-shrink-0" />
+                        </div>
+                        {/* Score */}
+                        <div className="px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-800 min-w-[56px] min-h-[36px] shadow-inner flex-shrink-0" />
+                        {/* Away */}
+                        <div className="flex items-center gap-2 flex-1 justify-start">
+                          <div className="w-8 h-8 rounded-full bg-slate-800/60 flex-shrink-0" />
+                          <div className="h-4 w-24 bg-slate-800/60 rounded" />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              ) : (() => {
                 const finishedMatches = allMatches
                   .filter((m: any) => m.status === 'finished')
                   .sort((a: any, b: any) => new Date(b.kickoff).getTime() - new Date(a.kickoff).getTime());

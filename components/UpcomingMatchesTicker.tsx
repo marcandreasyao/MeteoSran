@@ -107,99 +107,99 @@ export const UpcomingMatchesTicker: React.FC<UpcomingMatchesTickerProps> = ({ on
     const dateKeys = Object.keys(matchesByDate);
 
     const renderMarqueeContent = () => (
-        <div className="flex items-center gap-6 whitespace-nowrap py-1 pr-6">
-            {dateKeys.map(dateKey => (
+        <div className="flex items-center gap-4 whitespace-nowrap py-1 pr-6 h-full">
+            {dateKeys.map((dateKey, index) => (
                 <React.Fragment key={dateKey}>
-                    {/* Date separator */}
-                    <span className="inline-flex items-center gap-1.5 text-[10px] md:text-xs font-black uppercase tracking-wider px-3 py-1 rounded-full bg-black/5 dark:bg-white/10 text-slate-700 dark:text-slate-200 select-none transition-colors">
-                        <span className="w-1.5 h-1.5 rounded-full bg-sky-500 animate-pulse"></span>
+                    {/* Date separator (not needed for the very first item if we want, but fine to keep) */}
+                    {index > 0 && <span className="w-1 h-1 rounded-full bg-white/40 dark:bg-white/40 flex-shrink-0"></span>}
+                    
+                    <span className="text-[12px] md:text-[13px] font-bold text-white tracking-wide select-none drop-shadow-sm">
                         {dateKey}
                     </span>
 
                     {/* Matches on this date */}
-                    {matchesByDate[dateKey].map(match => (
-                        <button
-                            key={match.id}
-                            onClick={() => onMatchClick?.(match)}
-                            className="inline-flex items-center gap-2.5 px-3 py-1.5 rounded-xl bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/15 active:scale-95 transition-all text-left text-xs md:text-sm font-bold text-slate-800 dark:text-slate-100 focus:outline-none cursor-pointer"
-                        >
-                            {(() => {
-                                if (match.status === 'live' && match.score) {
-                                    return (
-                                        <span className="text-[10px] md:text-[11px] font-jersey text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md select-none inline-flex items-center gap-1.5">
-                                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                                            <span>{match.score.home}</span>
-                                            <span className="font-sans text-[10px] text-emerald-600/70 dark:text-emerald-400/70 mx-[0.5px] select-none font-bold">-</span>
-                                            <span>{match.score.away}</span>
-                                        </span>
-                                    );
-                                }
-                                if (match.status === 'finished' && match.score) {
-                                    return (
-                                        <span className="text-[10px] md:text-[11px] font-jersey text-slate-500 dark:text-slate-400 bg-slate-500/10 px-2 py-0.5 rounded-md select-none inline-flex items-center gap-1.5">
-                                            <span>{match.score.home}</span>
-                                            <span className="font-sans text-[10px] text-slate-500/70 dark:text-slate-400/70 mx-[0.5px] select-none font-bold">-</span>
-                                            <span>{match.score.away}</span>
-                                            <span className="font-sans text-[8px] uppercase tracking-wider font-bold text-slate-500 ml-0.5">FIN</span>
-                                        </span>
-                                    );
-                                }
-                                const timeStr = formatTime(match.kickoff);
-                                if (timeStr.includes(':')) {
-                                    const parts = timeStr.split(':');
-                                    return (
-                                        <span className="text-[10px] md:text-[11px] font-jersey text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md select-none inline-flex items-center">
-                                            <span>{parts[0]}</span>
-                                            <span className="font-sans text-[10px] text-emerald-600/70 dark:text-emerald-400/70 mx-[0.5px] select-none translate-y-[-1px] font-bold">:</span>
-                                            <span>{parts[1]}</span>
-                                        </span>
-                                    );
-                                }
-                                return (
-                                    <span className="text-[10px] md:text-[11px] font-jersey text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md select-none">
-                                        {timeStr}
-                                    </span>
-                                );
-                            })()}
-                            <span className="flex items-center gap-1.5">
-                                <img 
-                                    src={`https://flagcdn.com/${match.home.code.toLowerCase()}.svg`} 
-                                    alt={match.home.name} 
-                                    className="w-5 h-3.5 object-cover rounded-[2px] border border-slate-300/20 dark:border-slate-700/20 shadow-sm" 
-                                />
-                                <span className="text-[10px] md:text-xs text-slate-400 dark:text-slate-500 font-black tracking-wider uppercase">vs</span>
-                                <img 
-                                    src={`https://flagcdn.com/${match.away.code.toLowerCase()}.svg`} 
-                                    alt={match.away.name} 
-                                    className="w-5 h-3.5 object-cover rounded-[2px] border border-slate-300/20 dark:border-slate-700/20 shadow-sm" 
-                                />
-                            </span>
-                            <span className="text-[10px] md:text-[11px] text-slate-600 dark:text-slate-300 font-bold truncate max-w-[150px] hidden sm:block">
-                                {match.home.name} - {match.away.name}
-                            </span>
-                        </button>
-                    ))}
-                    
-                    {/* Dot separator */}
-                    <span className="w-1.5 h-1.5 rounded-full bg-slate-400/30 dark:bg-slate-600/30 mx-1 flex-shrink-0"></span>
+                    {matchesByDate[dateKey].map(match => {
+                        const isLive = match.status === 'live';
+                        const isFinished = match.status === 'finished';
+                        
+                        // Base classes for all match pills
+                        const pillClasses = "inline-flex items-center gap-2 px-3 py-1.5 rounded-full transition-all text-xs font-bold focus:outline-none cursor-pointer flex-shrink-0 border border-transparent hover:border-white/20 " + 
+                            (isLive 
+                                ? "bg-[#d4142a] text-white shadow-[0_0_12px_rgba(212,20,42,0.6)]" 
+                                : "bg-white/10 hover:bg-white/20 text-white backdrop-blur-md shadow-sm");
+
+                        return (
+                            <button
+                                key={match.id}
+                                onClick={() => onMatchClick?.(match)}
+                                className={pillClasses}
+                                title={`${match.home.name} vs ${match.away.name}`}
+                            >
+                                {/* Left Side: Time, Elapsed, or Status */}
+                                {(() => {
+                                    if (isLive && match.score) {
+                                        return (
+                                            <span className="flex items-center gap-1.5 min-w-[20px] justify-center">
+                                                <span className="text-[12px] font-black">{match.elapsed ? `${match.elapsed}'` : '1\''}</span>
+                                            </span>
+                                        );
+                                    }
+                                    if (isFinished && match.score) {
+                                        return <span className="text-[10px] text-white/70 uppercase tracking-wider font-extrabold mr-0.5">FIN</span>;
+                                    }
+                                    const timeStr = formatTime(match.kickoff);
+                                    return <span className="text-[12px] font-semibold opacity-90">{timeStr}</span>;
+                                })()}
+
+                                {/* Middle/Right: Flags & Score */}
+                                <div className="flex items-center gap-1.5 ml-1">
+                                    <img 
+                                        src={`https://flagcdn.com/w40/${match.home.code.toLowerCase()}.png`} 
+                                        alt={match.home.code} 
+                                        className="w-4 h-4 object-cover rounded-full border border-white/20 shadow-sm" 
+                                    />
+                                    {isLive || isFinished ? (
+                                        <div className="flex items-center mx-0.5">
+                                            <span className="font-jersey text-[14px] tracking-wider">{match.score?.home}</span>
+                                            <span className="font-sans text-[11px] font-bold mx-1 opacity-80">-</span>
+                                            <span className="font-jersey text-[14px] tracking-wider">{match.score?.away}</span>
+                                        </div>
+                                    ) : (
+                                        <span className="text-[10px] opacity-60 font-bold mx-0.5">-</span>
+                                    )}
+                                    <img 
+                                        src={`https://flagcdn.com/w40/${match.away.code.toLowerCase()}.png`} 
+                                        alt={match.away.code} 
+                                        className="w-4 h-4 object-cover rounded-full border border-white/20 shadow-sm" 
+                                    />
+                                </div>
+                            </button>
+                        );
+                    })}
                 </React.Fragment>
             ))}
+            {/* Added an extra dot at the very end of a block for seamless transition to the next block */}
+            <span className="w-1 h-1 rounded-full bg-white/40 dark:bg-white/40 flex-shrink-0 ml-4"></span>
         </div>
     );
 
     return (
-        <div className="w-full relative overflow-hidden bg-gradient-to-r from-red-500/10 via-emerald-500/10 to-indigo-500/10 dark:from-red-500/20 dark:via-emerald-500/20 dark:to-indigo-500/20 border-y border-slate-200/30 dark:border-white/5 flex items-center h-11 md:h-13 z-20 backdrop-blur-md transition-colors duration-300">
+        <div className="w-full relative overflow-hidden bg-gradient-to-r from-[#4a1010] via-[#1a1c29] to-[#0f2c1a] border-y border-white/5 flex items-center h-12 md:h-14 z-20 shadow-[0_4px_20px_rgba(0,0,0,0.3)]">
             {/* Absolute positioning overlays to fade edges */}
-            <div className="absolute left-0 top-0 bottom-0 w-8 md:w-16 bg-gradient-to-r from-white dark:from-[#0a1020] to-transparent pointer-events-none z-10 opacity-70"></div>
-            <div className="absolute right-0 top-0 bottom-0 w-16 md:w-24 bg-gradient-to-l from-white dark:from-[#0a1020] to-transparent pointer-events-none z-10 opacity-70"></div>
+            <div className="absolute left-0 top-0 bottom-0 w-24 md:w-32 bg-gradient-to-r from-[#4a1010] via-[#4a1010]/80 to-transparent pointer-events-none z-10 opacity-100"></div>
+            <div className="absolute right-0 top-0 bottom-0 w-24 md:w-32 bg-gradient-to-l from-[#0f2c1a] via-[#0f2c1a]/80 to-transparent pointer-events-none z-10 opacity-100"></div>
 
             {/* Marquee Scroller */}
-            <div className="flex-1 overflow-hidden relative w-full h-full flex items-center">
+            <div 
+                className="flex-1 overflow-hidden relative w-full h-full flex items-center"
+                onMouseEnter={() => setIsPlaying(false)}
+                onMouseLeave={() => setIsPlaying(true)}
+            >
                 <div 
                     className="flex whitespace-nowrap animate-marquee items-center"
                     style={{ 
                         animationPlayState: isPlaying ? 'running' : 'paused',
-                        animationDuration: '180s',
+                        animationDuration: '100s',
                         animationTimingFunction: 'linear',
                         animationIterationCount: 'infinite'
                     }}
@@ -209,28 +209,30 @@ export const UpcomingMatchesTicker: React.FC<UpcomingMatchesTickerProps> = ({ on
                 </div>
             </div>
 
-            {/* Play/Pause Button */}
-            <button
-                onClick={() => setIsPlaying(!isPlaying)}
-                className="w-8 h-8 flex items-center justify-center rounded-lg bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 text-slate-700 dark:text-slate-300 mr-2 z-25 focus:outline-none transition-colors cursor-pointer"
-                aria-label={isPlaying ? "Mettre en pause le défilement" : "Lancer le défilement"}
-            >
-                <span className="material-symbols-outlined notranslate text-base" translate="no">
-                    {isPlaying ? 'pause' : 'play_arrow'}
-                </span>
-            </button>
+            {/* Play/Pause Button on the Right */}
+            <div className="absolute right-2 top-0 bottom-0 flex items-center z-30 pointer-events-auto">
+                <button
+                    onClick={() => setIsPlaying(!isPlaying)}
+                    className="w-7 h-7 flex items-center justify-center rounded-md bg-black/40 hover:bg-black/60 text-white/90 shadow-lg border border-white/10 backdrop-blur-md focus:outline-none transition-all cursor-pointer"
+                    aria-label={isPlaying ? "Mettre en pause le défilement" : "Lancer le défilement"}
+                >
+                    <span className="material-symbols-outlined notranslate text-[14px]" translate="no">
+                        {isPlaying ? 'pause' : 'play_arrow'}
+                    </span>
+                </button>
+            </div>
 
             {/* Global style keyframe injector */}
             <style>{`
                 @keyframes marquee {
-                    0% { transform: translateX(0%); }
-                    100% { transform: translateX(-50%); }
+                    0% { transform: translate3d(0%, 0, 0); }
+                    100% { transform: translate3d(-50%, 0, 0); }
                 }
                 .animate-marquee {
                     animation: marquee linear infinite;
                     will-change: transform;
-                    transform: translateZ(0);
                     backface-visibility: hidden;
+                    -webkit-font-smoothing: antialiased;
                 }
             `}</style>
         </div>

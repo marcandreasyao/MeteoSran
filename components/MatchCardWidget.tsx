@@ -95,8 +95,18 @@ export const MatchCardWidget: React.FC<MatchCardWidgetProps> = ({ matchId, onVot
             if (difference <= 0) {
                 // Past kickoff — the server will eventually flip to 'finished'
                 // Show live elapsed from server data
-                const elapsed = match.elapsed ?? Math.floor((now - kickoffTime) / 60000);
-                setCountdown(`${Math.min(elapsed, 90)}'`);
+                let elapsed = match.elapsed;
+                if (elapsed == null) {
+                    const rawElapsed = Math.floor((now - kickoffTime) / 60000);
+                    if (rawElapsed <= 45) {
+                        elapsed = rawElapsed;
+                    } else if (rawElapsed <= 60) {
+                        elapsed = 45; // Halftime
+                    } else {
+                        elapsed = rawElapsed - 15;
+                    }
+                }
+                setCountdown(`${Math.min(elapsed, 120)}'`);
                 return;
             }
 
@@ -235,7 +245,15 @@ export const MatchCardWidget: React.FC<MatchCardWidgetProps> = ({ matchId, onVot
                         <span className="text-[10px] text-white/80 font-medium">{match.group} • {match.round}</span>
                     </div>
                 </div>
-                <span className="material-symbols-outlined text-white/70 text-sm">chevron_right</span>
+                <button
+                    onClick={() => {
+                        window.dispatchEvent(new CustomEvent('open-worldcup-hub'));
+                    }}
+                    className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-white/15 active:scale-90 transition-all text-white/70 hover:text-white cursor-pointer select-none focus:outline-none"
+                    title="Standings & Bracket"
+                >
+                    <span className="material-symbols-outlined text-lg">chevron_right</span>
+                </button>
             </div>
 
             {/* Match Teams & Countdown Area */}

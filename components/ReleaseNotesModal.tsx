@@ -23,11 +23,23 @@ const COLOR_MAPS: Record<string, { bg: string, text: string }> = {
 
 const VERSIONS = [
   {
+    id: 'v1_8_3',
+    icon: 'account_tree',
+    iconColor: 'text-indigo-500 dark:text-indigo-400',
+    iconBg: 'bg-indigo-500/10 dark:bg-indigo-500/20',
+    badgeColor: 'bg-indigo-500/10 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20',
+    features: [
+      { key: 'worldCupHub', icon: 'account_tree', color: 'indigo' },
+      { key: 'premiumVisuals', icon: 'auto_awesome', color: 'violet' },
+      { key: 'robustBackend', icon: 'shield', color: 'emerald' },
+    ]
+  },
+  {
     id: 'v1_8_2',
     icon: 'stadium',
     iconColor: 'text-amber-500 dark:text-amber-400',
     iconBg: 'bg-amber-500/10 dark:bg-amber-500/20',
-    badgeColor: 'bg-amber-500/10 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/20',
+    badgeColor: 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200/50 dark:border-slate-700/50',
     features: [
       { key: 'smartSync', icon: 'sync', color: 'emerald' },
       { key: 'uiux', icon: 'animation', color: 'violet' },

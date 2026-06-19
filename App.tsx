@@ -25,6 +25,7 @@ import { UpcomingMatchesTicker } from './components/UpcomingMatchesTicker';
 const LoginScreen = lazy(() => import('./components/LoginScreen').then(m => ({ default: m.LoginScreen })));
 const ReleaseNotesModal = lazy(() => import('./components/ReleaseNotesModal').then(m => ({ default: m.ReleaseNotesModal })));
 const SettingsModal = lazy(() => import('./components/SettingsModal').then(m => ({ default: m.SettingsModal })));
+const WorldCupHubModal = lazy(() => import('./components/WorldCupHubModal').then(m => ({ default: m.WorldCupHubModal })));
 const PrivacyPolicy = lazy(() => import('./components/PrivacyPolicy').then(m => ({ default: m.PrivacyPolicy })));
 const TermsOfService = lazy(() => import('./components/TermsOfService').then(m => ({ default: m.TermsOfService })));
 
@@ -154,10 +155,17 @@ const App: React.FC = () => {
   const CURRENT_VERSION = '1.8.1';
   const [showReleaseNotes, setShowReleaseNotes] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [showWorldCupHub, setShowWorldCupHub] = useState(false);
   const [hasUnreadNotifications, setHasUnreadNotifications] = useState(false);
 
   const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
   const currentPath = window.location.pathname;
+
+  useEffect(() => {
+    const handleOpenHub = () => setShowWorldCupHub(true);
+    window.addEventListener('open-worldcup-hub', handleOpenHub);
+    return () => window.removeEventListener('open-worldcup-hub', handleOpenHub);
+  }, []);
 
   useEffect(() => {
     const isLegalPage = currentPath === '/privacy' || currentPath === '/privacy-policy' || currentPath === '/terms' || currentPath === '/terms-of-service';
@@ -1091,6 +1099,12 @@ const App: React.FC = () => {
       />
 
       <PWAInstallPrompt theme={theme} />
+
+      {showWorldCupHub && (
+        <Suspense fallback={<SuspenseLoader />}>
+          <WorldCupHubModal onClose={() => setShowWorldCupHub(false)} />
+        </Suspense>
+      )}
 
       {showReleaseNotes && (
         <Suspense fallback={<SuspenseLoader />}>
