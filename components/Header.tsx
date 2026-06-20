@@ -219,7 +219,7 @@ export const Header: React.FC<HeaderProps> = ({
               <div className="hidden md:block relative">
                 <button
                   onClick={onOpenNotifications}
-                  className="p-1.5 sm:p-2 rounded-full hover:bg-black/10 dark:hover:bg-white/10 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-sky-500 dark:focus:ring-sky-400 transition-colors"
+                  className="h-8 w-8 sm:h-9 sm:w-9 rounded-full hover:bg-black/10 dark:hover:bg-white/10 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-sky-500 dark:focus:ring-sky-400 transition-colors flex items-center justify-center flex-shrink-0"
                   aria-label={t('header.campaignTitle')}
                   title={t('header.campaignUnread')}
                 >
@@ -231,7 +231,7 @@ export const Header: React.FC<HeaderProps> = ({
               </div>
               <AnimatedThemeToggler theme={theme} toggleTheme={toggleTheme} />
               <button
-                className="hidden md:inline-flex p-1.5 sm:p-2 rounded-full hover:bg-black/10 dark:hover:bg-white/10 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-sky-500 dark:focus:ring-sky-400 transition-colors"
+                className="hidden md:flex h-8 w-8 sm:h-9 sm:w-9 rounded-full hover:bg-black/10 dark:hover:bg-white/10 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-sky-500 dark:focus:ring-sky-400 transition-colors items-center justify-center flex-shrink-0"
                 onClick={() => signOut(auth)}
                 aria-label={t('header.logout')}
                 title={t('header.logout')}
@@ -240,7 +240,7 @@ export const Header: React.FC<HeaderProps> = ({
               </button>
               <div className="hidden md:block">
                 <button
-                  className="p-1.5 sm:p-2 rounded-full hover:bg-black/10 dark:hover:bg-white/10 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-sky-500 dark:focus:ring-sky-400 transition-colors flex items-center justify-center"
+                  className="h-8 w-8 sm:h-9 sm:w-9 rounded-full hover:bg-black/10 dark:hover:bg-white/10 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-sky-500 dark:focus:ring-sky-400 transition-colors flex items-center justify-center flex-shrink-0"
                   onClick={onOpenSettings}
                   aria-label={t('header.openSettings')}
                   aria-expanded={showSettings}
