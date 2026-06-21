@@ -420,10 +420,12 @@ async function syncFromAPI() {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Smart poller: 60s tick, API calls only during active match windows
+// (DISABLED: Commented out to save Neon compute quota. On-demand sync used instead)
 // ─────────────────────────────────────────────────────────────────────────────
 export function startSmartPoller() {
-    console.log('[MatchSync] Smart match poller started (60s tick).');
+    console.log('[MatchSync] Smart match poller is DISABLED to save Neon free quota.');
 
+    /*
     setInterval(async () => {
         try {
             // Layer 1 always runs (zero cost)
@@ -464,6 +466,7 @@ export function startSmartPoller() {
             console.warn('[MatchSync] Poller tick error:', err.message);
         }
     }, 60 * 1000);
+    */
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -471,6 +474,14 @@ export function startSmartPoller() {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export async function getAllMatches() {
+    // ON-DEMAND SYNC & AUTO-CORRECT: Run sync when matches are queried (rate-limited inside syncFromAPI)
+    try {
+        await autoCorrectStatuses();
+        await syncFromAPI();
+    } catch (err) {
+        console.warn('[MatchSync] On-demand getAllMatches auto-correct/sync failed:', err.message);
+    }
+
     const rows = await prisma.worldCupMatch.findMany({
         orderBy: { kickoff: 'asc' },
     });
@@ -478,6 +489,14 @@ export async function getAllMatches() {
 }
 
 export async function getMatchById(id) {
+    // ON-DEMAND SYNC & AUTO-CORRECT: Run sync when a single match details are queried
+    try {
+        await autoCorrectStatuses();
+        await syncFromAPI();
+    } catch (err) {
+        console.warn('[MatchSync] On-demand getMatchById auto-correct/sync failed:', err.message);
+    }
+
     const row = await prisma.worldCupMatch.findUnique({ where: { id } });
     if (!row) return null;
     return dbRowToMatch(row);

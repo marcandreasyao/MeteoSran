@@ -2148,6 +2148,7 @@ const startServer = (port) => {
         // ─────────────────────────────────────────────────────────────
         // NEON KEEP-ALIVE: Ping every 4 minutes to prevent cold-starts.
         // Neon suspends after ~5 min of inactivity — this keeps it warm.
+        // (DISABLED to save Neon free tier compute quota)
         // ─────────────────────────────────────────────────────────────
         const NEON_PING_INTERVAL_MS = 4 * 60 * 1000; // 4 minutes
 
@@ -2160,25 +2161,29 @@ const startServer = (port) => {
             }
         };
 
-        // Initial warm-up on startup
+        // Initial warm-up on startup (DISABLED to save Neon free tier compute quota)
+        /*
         console.log('[MeteoSran Server] 🔌 Warming up Neon database connection...');
         pingNeon().then(() => {
             console.log('[MeteoSran Server] ✅ Neon database is awake and ready.');
         });
+        */
 
-        // Recurring ping to keep it alive
-        const neonKeepAlive = setInterval(pingNeon, NEON_PING_INTERVAL_MS);
-        console.log(`[MeteoSran Server] Neon keep-alive scheduled every ${NEON_PING_INTERVAL_MS / 60000} minutes.`);
+        // Recurring ping to keep it alive (DISABLED to save Neon free tier compute quota)
+        // const neonKeepAlive = setInterval(pingNeon, NEON_PING_INTERVAL_MS);
+        // console.log(`[MeteoSran Server] Neon keep-alive scheduled every ${NEON_PING_INTERVAL_MS / 60000} minutes.`);
+        const neonKeepAlive = null;
 
         // ─────────────────────────────────────────────────────────────
         // MATCH SYNC: Seed from API then start smart background poller
+        // (DISABLED background poller to save Neon free tier compute quota. On-demand sync used instead)
         // ─────────────────────────────────────────────────────────────
-        seedFromAPI().then(() => {
-            startSmartPoller();
-        }).catch(err => {
-            console.warn('[MeteoSran Server] Seed failed, starting poller anyway:', err.message);
-            startSmartPoller();
-        });
+        // seedFromAPI().then(() => {
+        //     startSmartPoller();
+        // }).catch(err => {
+        //     console.warn('[MeteoSran Server] Seed failed, starting poller anyway:', err.message);
+        //     startSmartPoller();
+        // });
 
         // ─────────────────────────────────────────────────────────────
         // GRACEFUL SHUTDOWN: Clean up on process termination

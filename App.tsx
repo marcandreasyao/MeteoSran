@@ -338,7 +338,7 @@ const App: React.FC = () => {
   // Automatic System Theme Adaptation
   useEffect(() => {
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-    
+
     const handleSystemThemeChange = (e: MediaQueryListEvent | MediaQueryList) => {
       const newTheme = e.matches ? 'dark' : 'light';
       setTheme(newTheme);
@@ -501,7 +501,7 @@ const App: React.FC = () => {
           return;
         }
       }
-      
+
       // 3. Fallback: Parse if they typed comma separated numbers directly (e.g. 5.34,-4.03)
       const parts = cityName.split(',');
       if (parts.length === 2) {
@@ -644,8 +644,8 @@ const App: React.FC = () => {
     const nextTheme = theme === 'light' ? 'dark' : 'light';
 
     // Support standard View Transitions API (Chrome 111+, Safari 18+, Edge)
-    const isTransitionSupported = 
-      typeof document !== 'undefined' && 
+    const isTransitionSupported =
+      typeof document !== 'undefined' &&
       'startViewTransition' in document &&
       window.matchMedia('(prefers-reduced-motion: no-preference)').matches;
 
@@ -933,10 +933,10 @@ const App: React.FC = () => {
   const handleTickerMatchClick = (match: any) => {
     const dateFormatted = new Date(match.kickoff).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
     const prompt = `Parle-moi du match de Coupe du Monde : ${match.home.name} vs ${match.away.name} le ${dateFormatted}. Est-ce que la météo va impacter le jeu à ${match.venue.city} (${match.venue.name}) ?`;
-    
+
     // Clear active conversation to start a new chat with this match's insights
     handleNewChat();
-    
+
     setCurrentInput({ text: prompt, imageFile: null });
     setTimeout(() => {
       handleSendMessage(prompt);
@@ -975,7 +975,7 @@ const App: React.FC = () => {
   }
 
   return (
-    <div 
+    <div
       className={`flex w-full h-[100dvh] transition-opacity duration-500 overflow-hidden ${showGlassFade ? 'opacity-70' : 'opacity-100'} ${theme === 'dark' ? 'dark text-white' : 'text-slate-900'}`}
       style={{ height: 'var(--visual-viewport-height, 100dvh)' }}
     >
@@ -986,60 +986,59 @@ const App: React.FC = () => {
       )}
 
       <Sidebar
-          isOpen={isSidebarOpen}
-          onClose={() => setIsSidebarOpen(false)}
-          chatSessions={chatSessions}
-          activeChatId={activeChatId}
-          onSelectChat={handleSelectChat}
-          onNewChat={handleNewChat}
-          searchQuery={searchQuery}
-          onSearchChange={setSearchQuery}
-          onRenameChat={handleRenameChat}
-          onDeleteChat={handleDeleteChat}
-          onPinChat={handlePinChat}
-          searchResults={searchResults}
-          isSearching={isSearching}
-          isAuthenticated={!!user}
-          onSignIn={() => setShowLoginModal(true)}
-          onOpenSettings={() => setShowSettings(true)}
-          showSettings={showSettings}
-          selectedMode={selectedMode}
-          onModeChange={handleModeChange}
-          hasUnreadNotifications={hasUnreadNotifications}
-          onOpenNotifications={() => setShowReleaseNotes(true)}
-        />
+        isOpen={isSidebarOpen}
+        onClose={() => setIsSidebarOpen(false)}
+        chatSessions={chatSessions}
+        activeChatId={activeChatId}
+        onSelectChat={handleSelectChat}
+        onNewChat={handleNewChat}
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+        onRenameChat={handleRenameChat}
+        onDeleteChat={handleDeleteChat}
+        onPinChat={handlePinChat}
+        searchResults={searchResults}
+        isSearching={isSearching}
+        isAuthenticated={!!user}
+        onSignIn={() => setShowLoginModal(true)}
+        onOpenSettings={() => setShowSettings(true)}
+        showSettings={showSettings}
+        selectedMode={selectedMode}
+        onModeChange={handleModeChange}
+        hasUnreadNotifications={hasUnreadNotifications}
+        onOpenNotifications={() => setShowReleaseNotes(true)}
+      />
 
       <div className={`flex-1 flex flex-col h-full w-full relative overflow-hidden pt-safe`}>
         {locationError && (
-          <div className={`${
-            locationError.startsWith('Location set') || 
-            locationError.startsWith('Position définie') || 
-            locationError.includes('Using IP-based') || 
-            locationError.includes('Utilisation de la localisation par IP')
+          <div className={`${locationError.startsWith('Location set') ||
+              locationError.startsWith('Position définie') ||
+              locationError.includes('Using IP-based') ||
+              locationError.includes('Utilisation de la localisation par IP')
               ? 'bg-emerald-50 dark:bg-emerald-950/20 text-emerald-800 dark:text-emerald-300 border-b border-emerald-200/50 dark:border-emerald-900/20'
               : 'bg-amber-50 dark:bg-amber-950/20 text-amber-800 dark:text-amber-300 border-b border-amber-200/50 dark:border-amber-900/20'
-          } p-2.5 text-center text-xs sm:text-sm z-30 flex items-center justify-between px-4 sm:px-6 transition-all duration-300`}>
+            } p-2.5 text-center text-xs sm:text-sm z-30 flex items-center justify-between px-4 sm:px-6 transition-all duration-300`}>
             <div className="flex-grow flex items-center justify-center gap-2">
               <span className="material-symbols-outlined notranslate text-base sm:text-lg leading-none" translate="no">
-                {locationError.startsWith('Location set') || 
-                locationError.startsWith('Position définie') || 
-                locationError.includes('Using IP-based') || 
-                locationError.includes('Utilisation de la localisation par IP')
+                {locationError.startsWith('Location set') ||
+                  locationError.startsWith('Position définie') ||
+                  locationError.includes('Using IP-based') ||
+                  locationError.includes('Utilisation de la localisation par IP')
                   ? 'check_circle'
                   : 'warning'}
               </span>
               <span className="font-medium">{locationError}</span>
               {locationPrompt && (
-                <button 
-                  className="underline font-bold ml-1.5 hover:opacity-80 transition-opacity" 
+                <button
+                  className="underline font-bold ml-1.5 hover:opacity-80 transition-opacity"
                   onClick={handleManualLocation}
                 >
                   {t('errors.enterManually')}
                 </button>
               )}
             </div>
-            <button 
-              onClick={() => setLocationError(null)} 
+            <button
+              onClick={() => setLocationError(null)}
               className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1 rounded-full hover:bg-black/5 dark:hover:bg-white/5 transition-colors focus:outline-none flex items-center justify-center flex-shrink-0"
               aria-label={t('common.close')}
             >
@@ -1062,6 +1061,22 @@ const App: React.FC = () => {
           isAuthenticated={!!user}
           onSignIn={() => setShowLoginModal(true)}
         />
+
+        {/* Global Database Warning Alert Banner */}
+        <div className="bg-amber-500/15 border-b border-amber-500/25 dark:bg-amber-500/10 text-amber-900 dark:text-amber-200 px-4 py-2.5 text-xs sm:text-sm text-center font-medium z-30 flex flex-col justify-center items-center gap-1.5 shadow-sm">
+          <div className="flex items-center gap-1.5">
+            <span className="material-symbols-outlined notranslate text-amber-600 dark:text-amber-400 text-lg leading-none animate-pulse" translate="no">warning</span>
+            <span className="font-bold tracking-wide uppercase text-amber-950 dark:text-amber-100">Database Alert / Alerte Base de Données</span>
+          </div>
+          <div className="max-w-4xl leading-relaxed text-slate-800 dark:text-slate-200 text-[11px] sm:text-xs">
+            <p className="mb-1">
+              <strong>EN:</strong> We are experiencing database issues due to high usage. Live World Cup updates and chat saving are currently unavailable. Service will resume very shortly. Thank you for your understanding!
+            </p>
+            <p>
+              <strong>FR:</strong> Dysfonctionnement de la base de données suite à une forte affluence. Les mises à jour de la Coupe du Monde et la sauvegarde des discussions sont momentanément indisponibles. Retour à la normale très bientôt. Merci de votre compréhension !
+            </p>
+          </div>
+        </div>
 
         <UpcomingMatchesTicker onMatchClick={handleTickerMatchClick} />
 
