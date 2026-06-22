@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useLanguage } from '../src/contexts/LanguageContext';
+import { useAuth } from '../src/contexts/AuthContext';
 
 interface Team {
     name: string;
@@ -28,12 +29,14 @@ interface WorldCupHubModalProps {
 
 export const WorldCupHubModal: React.FC<WorldCupHubModalProps> = ({ onClose }) => {
     const { language } = useLanguage();
-    const [activeTab, setActiveTab] = useState<'standings' | 'bracket' | 'opinion'>('standings');
+    const { user } = useAuth();
+    const [activeTab, setActiveTab] = useState<'standings' | 'bracket' | 'opinion' | 'leaderboard'>('standings');
     
     // Tab indicator refs and sliding logic
     const standingsRef = useRef<HTMLButtonElement>(null);
     const bracketRef = useRef<HTMLButtonElement>(null);
     const opinionRef = useRef<HTMLButtonElement>(null);
+    const leaderboardRef = useRef<HTMLButtonElement>(null);
     const [indicatorStyle, setIndicatorStyle] = useState({ left: 0, width: 0 });
 
     useEffect(() => {
@@ -42,6 +45,7 @@ export const WorldCupHubModal: React.FC<WorldCupHubModalProps> = ({ onClose }) =
             if (activeTab === 'standings') activeEl = standingsRef.current;
             else if (activeTab === 'bracket') activeEl = bracketRef.current;
             else if (activeTab === 'opinion') activeEl = opinionRef.current;
+            else if (activeTab === 'leaderboard') activeEl = leaderboardRef.current;
 
             if (activeEl) {
                 setIndicatorStyle({
@@ -64,6 +68,10 @@ export const WorldCupHubModal: React.FC<WorldCupHubModalProps> = ({ onClose }) =
     // Standings state
     const [standings, setStandings] = useState<{ [key: string]: Team[] }>({});
     const [standingsLoading, setStandingsLoading] = useState(true);
+
+    // Leaderboard state
+    const [leaderboard, setLeaderboard] = useState<any[]>([]);
+    const [leaderboardLoading, setLeaderboardLoading] = useState(false);
 
     // AI Opinion state
     const [opinion, setOpinion] = useState('');
@@ -118,6 +126,27 @@ export const WorldCupHubModal: React.FC<WorldCupHubModalProps> = ({ onClose }) =
             fetchOpinion();
         }
     }, [activeTab, language, opinion]);
+
+    // Fetch Leaderboard when tab changes
+    useEffect(() => {
+        if (activeTab === 'leaderboard') {
+            const fetchLeaderboard = async () => {
+                try {
+                    setLeaderboardLoading(true);
+                    const response = await fetch('/api/worldcup/leaderboard');
+                    if (response.ok) {
+                        const data = await response.json();
+                        setLeaderboard(data);
+                    }
+                } catch (err) {
+                    console.error("Error fetching leaderboard:", err);
+                } finally {
+                    setLeaderboardLoading(false);
+                }
+            };
+            fetchLeaderboard();
+        }
+    }, [activeTab]);
 
     // Seed Bracket based on current standings
     const seedBracket = (standingsData: { [key: string]: Team[] }) => {
@@ -426,10 +455,18 @@ export const WorldCupHubModal: React.FC<WorldCupHubModalProps> = ({ onClose }) =
                             <button 
                                 ref={opinionRef}
                                 onClick={() => setActiveTab('opinion')}
-                                className={`px-4 py-1.5 rounded-full z-10 transition-colors duration-300 cursor-pointer flex items-center gap-1 ${activeTab === 'opinion' ? 'text-white' : 'text-slate-400 hover:text-white'}`}
+                                className={`px-4 py-1.5 rounded-full z-10 transition-colors duration-305 cursor-pointer flex items-center gap-1 ${activeTab === 'opinion' ? 'text-white' : 'text-slate-400 hover:text-white'}`}
                             >
                                 <span className="material-symbols-outlined text-[14px] leading-none">insights</span>
                                 <span>Opinion</span>
+                            </button>
+                            <button 
+                                ref={leaderboardRef}
+                                onClick={() => setActiveTab('leaderboard')}
+                                className={`px-4 py-1.5 rounded-full z-10 transition-colors duration-300 cursor-pointer flex items-center gap-1 ${activeTab === 'leaderboard' ? 'text-white' : 'text-slate-400 hover:text-white'}`}
+                            >
+                                <span className="material-symbols-outlined text-[14px] leading-none">trophy</span>
+                                <span>{language === 'fr' ? 'Classement' : 'Leaderboard'}</span>
                             </button>
                         </div>
                         
@@ -692,6 +729,98 @@ export const WorldCupHubModal: React.FC<WorldCupHubModalProps> = ({ onClose }) =
                                             return chunk;
                                         })}</p>
                                     ))}
+                                </div>
+                            </div>
+                        )
+                    )}
+
+                    {/* LEADERBOARD TAB */}
+                    {activeTab === 'leaderboard' && (
+                        leaderboardLoading ? (
+                            <div className="flex flex-col items-center justify-center py-24 gap-4">
+                                <div className="w-10 h-10 border-4 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin"></div>
+                                <span className="text-slate-400 text-xs font-semibold">{language === 'fr' ? 'Chargement du classement...' : 'Loading leaderboard...'}</span>
+                            </div>
+                        ) : (
+                            <div className="max-w-2xl mx-auto flex flex-col gap-4 animate-fade-in w-full">
+                                <div className="text-center mb-2 select-none">
+                                    <h4 className="text-lg font-black tracking-tight text-white flex items-center justify-center gap-2">
+                                        <span>🏆</span>
+                                        <span>{language === 'fr' ? 'Classement des Pronostiqueurs' : 'Predictor Leaderboard'}</span>
+                                    </h4>
+                                    <p className="text-xs text-slate-400 mt-1">
+                                        {language === 'fr' ? 'Gagnez 10 points par bon pronostic de match !' : 'Earn 10 points for each correct match prediction!'}
+                                    </p>
+                                </div>
+
+                                <div className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/60 shadow-md">
+                                    <table className="w-full text-xs text-slate-300 border-collapse">
+                                        <thead>
+                                            <tr className="text-[10px] text-slate-550 font-bold uppercase select-none border-b border-slate-800/80 bg-slate-950/60">
+                                                <th className="py-3 px-4 text-center w-16">{language === 'fr' ? 'Rang' : 'Rank'}</th>
+                                                <th className="py-3 px-4 text-left">{language === 'fr' ? 'Utilisateur' : 'User'}</th>
+                                                <th className="py-3 px-4 text-center w-28">{language === 'fr' ? 'Corrects' : 'Correct'}</th>
+                                                <th className="py-3 px-4 text-center w-28">{language === 'fr' ? 'Points' : 'Points'}</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-slate-800/40">
+                                            {leaderboard.length === 0 ? (
+                                                <tr>
+                                                    <td colSpan={4} className="py-12 text-center text-slate-500 font-semibold">
+                                                        {language === 'fr' ? 'Aucun pronostic enregistré pour le moment.' : 'No predictions recorded yet.'}
+                                                    </td>
+                                                </tr>
+                                            ) : (
+                                                leaderboard.map((u) => {
+                                                    const isMe = user?.uid === u.userId;
+                                                    let rankBadge = null;
+                                                    if (u.rank === 1) rankBadge = <span className="text-base select-none">🥇</span>;
+                                                    else if (u.rank === 2) rankBadge = <span className="text-base select-none">🥈</span>;
+                                                    else if (u.rank === 3) rankBadge = <span className="text-base select-none">🥉</span>;
+                                                    else rankBadge = <span className="font-jersey text-sm text-slate-400 font-bold">{u.rank}</span>;
+
+                                                    return (
+                                                        <tr 
+                                                            key={u.userId} 
+                                                            className={`transition-colors duration-200 ${
+                                                                isMe 
+                                                                    ? 'bg-sky-500/10 border-y border-sky-500/35 hover:bg-sky-500/15' 
+                                                                    : 'hover:bg-white/5'
+                                                            }`}
+                                                        >
+                                                            <td className="py-3 px-4 text-center font-bold">
+                                                                <div className="flex items-center justify-center">
+                                                                    {rankBadge}
+                                                                </div>
+                                                            </td>
+                                                            <td className="py-3 px-4 font-bold text-slate-100">
+                                                                <div className="flex items-center gap-2">
+                                                                    <span className="truncate">{u.username}</span>
+                                                                    {isMe && (
+                                                                        <span className="text-[9px] font-bold text-sky-400 bg-sky-500/20 border border-sky-500/30 px-1.5 py-0.5 rounded-full select-none uppercase tracking-wider">
+                                                                            {language === 'fr' ? 'Vous' : 'You'}
+                                                                        </span>
+                                                                    )}
+                                                                </div>
+                                                            </td>
+                                                            <td className="py-3 px-4 text-center font-jersey text-slate-300 text-sm">
+                                                                {u.correctCount} <span className="font-sans text-slate-500 mx-0.5">/</span> {u.totalCount}
+                                                            </td>
+                                                            <td className="py-3 px-4 text-center">
+                                                                <span className={`font-jersey text-sm font-black px-2 py-0.5 rounded-md ${
+                                                                    isMe 
+                                                                        ? 'text-sky-400 bg-sky-500/10' 
+                                                                        : 'text-emerald-400 bg-emerald-500/10'
+                                                                }`}>
+                                                                    {u.points} pts
+                                                                </span>
+                                                            </td>
+                                                        </tr>
+                                                    );
+                                                })
+                                            )}
+                                        </tbody>
+                                    </table>
                                 </div>
                             </div>
                         )

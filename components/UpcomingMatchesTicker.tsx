@@ -107,7 +107,7 @@ export const UpcomingMatchesTicker: React.FC<UpcomingMatchesTickerProps> = ({ on
     const dateKeys = Object.keys(matchesByDate);
 
     const renderMarqueeContent = () => (
-        <div className="flex items-center gap-4 whitespace-nowrap py-1 pr-6 h-full">
+        <div className="flex flex-nowrap w-max items-center gap-4 whitespace-nowrap py-1 pr-6 h-full">
             {dateKeys.map((dateKey, index) => (
                 <React.Fragment key={dateKey}>
                     {/* Date separator (not needed for the very first item if we want, but fine to keep) */}
@@ -196,7 +196,7 @@ export const UpcomingMatchesTicker: React.FC<UpcomingMatchesTickerProps> = ({ on
                 onMouseLeave={() => setIsPlaying(true)}
             >
                 <div 
-                    className="flex whitespace-nowrap animate-marquee items-center"
+                    className="flex flex-nowrap w-max whitespace-nowrap animate-marquee items-center"
                     style={{ 
                         animationPlayState: isPlaying ? 'running' : 'paused',
                         animationDuration: '100s',

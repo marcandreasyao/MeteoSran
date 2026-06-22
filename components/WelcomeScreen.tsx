@@ -42,7 +42,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ firstName, onSugge
   const { language, t } = useLanguage();
   const [subtitleIndex] = useState(() => Math.floor(Math.random() * 11));
   const [otherMatches, setOtherMatches] = useState<any[]>([]);
-  const [featuredMatchId, setFeaturedMatchId] = useState<string>("arg_alg_2026");
+  const [featuredMatchId, setFeaturedMatchId] = useState<string | null>(null);
   const [showHistoryModal, setShowHistoryModal] = useState(false);
   const [allMatches, setAllMatches] = useState<any[]>([]);
   const [isLoadingMatches, setIsLoadingMatches] = useState(true);
@@ -187,7 +187,11 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ firstName, onSugge
             <img src="/tournaments_fifa-world-cup-2026.football-logos.cc.svg" alt="FIFA WC 2026" className="w-5 h-5 object-contain" />
             <span>Match Vedette Mondial 2026</span>
           </div>
-          <MatchCardWidget matchId={featuredMatchId} />
+          {featuredMatchId ? (
+            <MatchCardWidget matchId={featuredMatchId} />
+          ) : (
+            <div className="w-full max-w-4xl h-64 sm:h-[340px] bg-slate-200/50 dark:bg-slate-800/50 animate-pulse rounded-[32px] border border-slate-300/50 dark:border-slate-700/50" />
+          )}
         </div>
 
         {/* Autres Matchs du Jour / Other Games of the Day */}

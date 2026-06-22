@@ -706,6 +706,7 @@ async function autoCorrectStatuses() {
                 data: { status: 'finished', elapsed: 90 },
             });
             console.log(`[MatchSync] Auto-finished (safety): ${m.homeName} vs ${m.awayName}`);
+            await settleMatchPredictions(m.id, m.scoreHome, m.scoreAway);
         } else {
             await prisma.worldCupMatch.update({
                 where: { id: m.id },
@@ -729,6 +730,7 @@ async function autoCorrectStatuses() {
                 data: { status: 'finished', elapsed: 90 },
             });
             console.log(`[MatchSync] Auto-finished (120min): ${m.homeName} vs ${m.awayName}`);
+            await settleMatchPredictions(m.id, m.scoreHome, m.scoreAway);
         } else {
             // Just update elapsed minute
             await prisma.worldCupMatch.update({
@@ -823,6 +825,11 @@ async function syncFromAPI() {
                 where: { id: dbMatch.id },
                 data: updateData,
             });
+
+            if (newStatus === 'finished' && dbMatch.status !== 'finished') {
+                await settleMatchPredictions(dbMatch.id, updateData.scoreHome ?? dbMatch.scoreHome, updateData.scoreAway ?? dbMatch.scoreAway);
+            }
+
             syncCount++;
         }
 
@@ -1019,4 +1026,103 @@ export async function getGroupStandings(groupName) {
         if (b.points !== a.points) return b.points - a.points;
         return b.goalDifference - a.goalDifference;
     });
+}
+
+export async function recordPrediction(matchId, userId, username, choice) {
+    if (!['home', 'draw', 'away'].includes(choice)) {
+        throw new Error('Invalid choice value');
+    }
+
+    const match = await prisma.worldCupMatch.findUnique({ where: { id: matchId } });
+    if (!match) throw new Error('Match not found');
+    if (match.status !== 'scheduled') {
+        throw new Error('Prediction not allowed after match kickoff');
+    }
+
+    const existing = await prisma.prediction.findUnique({
+        where: { userId_matchId: { userId, matchId } }
+    });
+
+    let diff = {};
+    if (existing) {
+        if (existing.choice !== choice) {
+            const decKey = existing.choice === 'home' ? 'votesHome' : (existing.choice === 'draw' ? 'votesDraw' : 'votesAway');
+            const incKey = choice === 'home' ? 'votesHome' : (choice === 'draw' ? 'votesDraw' : 'votesAway');
+            diff[decKey] = { decrement: 1 };
+            diff[incKey] = { increment: 1 };
+        }
+    } else {
+        const incKey = choice === 'home' ? 'votesHome' : (choice === 'draw' ? 'votesDraw' : 'votesAway');
+        diff[incKey] = { increment: 1 };
+    }
+
+    if (Object.keys(diff).length > 0) {
+        await prisma.worldCupMatch.update({
+            where: { id: matchId },
+            data: diff
+        });
+    }
+
+    const pred = await prisma.prediction.upsert({
+        where: {
+            userId_matchId: { userId, matchId }
+        },
+        update: { choice, username },
+        create: { userId, matchId, username, choice }
+    });
+
+    return pred;
+}
+
+export async function getLeaderboard() {
+    const allPredictions = await prisma.prediction.findMany({
+        orderBy: { createdAt: 'desc' }
+    });
+
+    const userStats = {};
+    for (const pred of allPredictions) {
+        const { userId, username, points, isCorrect } = pred;
+        if (!userStats[userId]) {
+            userStats[userId] = {
+                userId,
+                username: username || 'Anonyme',
+                points: 0,
+                correctCount: 0,
+                totalCount: 0
+            };
+        }
+        userStats[userId].totalCount += 1;
+        userStats[userId].points += points;
+        if (isCorrect === true) {
+            userStats[userId].correctCount += 1;
+        }
+    }
+
+    const leaderboard = Object.values(userStats)
+        .sort((a, b) => b.points - a.points || b.correctCount - a.correctCount)
+        .map((item, index) => ({
+            rank: index + 1,
+            ...item
+        }));
+
+    return leaderboard;
+}
+
+export async function settleMatchPredictions(matchId, scoreHome, scoreAway) {
+    let outcome = 'draw';
+    if (scoreHome > scoreAway) outcome = 'home';
+    else if (scoreHome < scoreAway) outcome = 'away';
+
+    const predictions = await prisma.prediction.findMany({
+        where: { matchId, isCorrect: null }
+    });
+
+    for (const pred of predictions) {
+        const isCorrect = pred.choice === outcome;
+        const points = isCorrect ? 10 : 0;
+        await prisma.prediction.update({
+            where: { id: pred.id },
+            data: { isCorrect, points }
+        });
+    }
 }

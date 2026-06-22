@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useAuth } from '../src/contexts/AuthContext';
 
 interface Team {
     name: string;
@@ -75,6 +76,7 @@ const TEAM_COLORS: Record<string, { primary: string; secondary: string; glow: st
 };
 
 export const MatchCardWidget: React.FC<MatchCardWidgetProps> = ({ matchId, defaultShowWeather = false, onVoteCompleted }) => {
+    const { user } = useAuth();
     const [match, setMatch] = useState<Match | null>(null);
     const [loading, setLoading] = useState(true);
     const [countdown, setCountdown] = useState("");
@@ -121,15 +123,22 @@ export const MatchCardWidget: React.FC<MatchCardWidgetProps> = ({ matchId, defau
         const fetchMatch = async (showLoading = false) => {
             try {
                 if (showLoading) setLoading(true);
-                const response = await fetch(`/api/worldcup/match/${matchId}`);
+                const url = user?.uid ? `/api/worldcup/match/${matchId}?userId=${user.uid}` : `/api/worldcup/match/${matchId}`;
+                const response = await fetch(url);
                 if (response.ok && isMounted) {
                     const data = await response.json();
                     setMatch(data);
 
-                    // Check if already voted in localStorage
-                    const voted = localStorage.getItem(`voted_${matchId}`);
-                    if (voted) {
-                        setVotedChoice(voted);
+                    // Check if already voted in database, fallback to localStorage
+                    if (data.userPrediction) {
+                        setVotedChoice(data.userPrediction);
+                    } else {
+                        const voted = localStorage.getItem(`voted_${matchId}`);
+                        if (voted) {
+                            setVotedChoice(voted);
+                        } else {
+                            setVotedChoice(null);
+                        }
                     }
                 }
             } catch (err) {
@@ -148,7 +157,7 @@ export const MatchCardWidget: React.FC<MatchCardWidgetProps> = ({ matchId, defau
             isMounted = false;
             clearInterval(refreshInterval);
         };
-    }, [matchId]);
+    }, [matchId, user?.uid]);
 
     // Countdown effect — respects the live match.status from the server
     useEffect(() => {
@@ -201,21 +210,45 @@ export const MatchCardWidget: React.FC<MatchCardWidgetProps> = ({ matchId, defau
         if (votedChoice || !match) return;
 
         try {
-            const response = await fetch(`/api/worldcup/match/${match.id}/vote`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ choice })
-            });
+            if (user) {
+                const username = user.displayName || user.email?.split('@')[0] || 'Anonyme';
+                const response = await fetch(`/api/worldcup/match/${match.id}/predict`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        userId: user.uid,
+                        username,
+                        choice
+                    })
+                });
 
-            if (response.ok) {
-                const updatedMatch = await response.json();
-                setMatch(updatedMatch);
-                setVotedChoice(choice);
-                localStorage.setItem(`voted_${match.id}`, choice);
-                onVoteCompleted?.(match.id, choice);
+                if (response.ok) {
+                    const data = await response.json();
+                    setMatch(data.match);
+                    setVotedChoice(choice);
+                    localStorage.setItem(`voted_${match.id}`, choice);
+                    onVoteCompleted?.(match.id, choice);
+                } else {
+                    const errData = await response.json();
+                    console.error("Prediction submission failed:", errData.error);
+                }
+            } else {
+                const response = await fetch(`/api/worldcup/match/${match.id}/vote`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ choice })
+                });
+
+                if (response.ok) {
+                    const updatedMatch = await response.json();
+                    setMatch(updatedMatch);
+                    setVotedChoice(choice);
+                    localStorage.setItem(`voted_${match.id}`, choice);
+                    onVoteCompleted?.(match.id, choice);
+                }
             }
         } catch (err) {
-            console.error("Error submitting vote:", err);
+            console.error("Error submitting vote/prediction:", err);
         }
     };
 
@@ -676,7 +709,7 @@ export const MatchCardWidget: React.FC<MatchCardWidgetProps> = ({ matchId, defau
                 <div className="flex items-center justify-between mb-3.5 px-1">
                     <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
                         <span className="material-symbols-outlined text-[13px]" translate="no">ballot</span>
-                        Qui va gagner ?
+                        {user ? 'Votre Pronostic' : 'Qui va gagner ?'}
                     </h4>
                     <span className="text-[10px] text-slate-500 font-semibold bg-slate-900/50 px-2 py-0.5 rounded-md border border-slate-800/30 flex items-baseline gap-1 select-none font-jersey">
                         <span className="text-xs text-slate-400 flex items-baseline">{renderVotesCount(totalVotes)}</span>

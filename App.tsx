@@ -157,6 +157,16 @@ const App: React.FC = () => {
   const [showSettings, setShowSettings] = useState(false);
   const [showWorldCupHub, setShowWorldCupHub] = useState(false);
   const [hasUnreadNotifications, setHasUnreadNotifications] = useState(false);
+  const [showExtensionAlert, setShowExtensionAlert] = useState(true);
+
+  useEffect(() => {
+    if (showExtensionAlert) {
+      const timer = setTimeout(() => {
+        setShowExtensionAlert(false);
+      }, 30000);
+      return () => clearTimeout(timer);
+    }
+  }, [showExtensionAlert]);
 
   const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
   const currentPath = window.location.pathname;
@@ -1062,8 +1072,8 @@ const App: React.FC = () => {
           onSignIn={() => setShowLoginModal(true)}
         />
 
-        {/* Global Database Warning Alert Banner */}
-        <div className="bg-amber-500/15 border-b border-amber-500/25 dark:bg-amber-500/10 text-amber-900 dark:text-amber-200 px-4 py-2.5 text-xs sm:text-sm text-center font-medium z-30 flex flex-col justify-center items-center gap-1.5 shadow-sm">
+        {/* Global Database Warning Alert Banner (Temporarily Commented Out) */}
+        {/* <div className="bg-amber-500/15 border-b border-amber-500/25 dark:bg-amber-500/10 text-amber-900 dark:text-amber-200 px-4 py-2.5 text-xs sm:text-sm text-center font-medium z-30 flex flex-col justify-center items-center gap-1.5 shadow-sm">
           <div className="flex items-center gap-1.5">
             <span className="material-symbols-outlined notranslate text-amber-600 dark:text-amber-400 text-lg leading-none animate-pulse" translate="no">warning</span>
             <span className="font-bold tracking-wide uppercase text-amber-950 dark:text-amber-100">Database Alert / Alerte Base de Données</span>
@@ -1076,7 +1086,38 @@ const App: React.FC = () => {
               <strong>FR:</strong> Dysfonctionnement de la base de données suite à une forte affluence. Les mises à jour de la Coupe du Monde et la sauvegarde des discussions sont momentanément indisponibles. Retour à la normale très bientôt. Merci de votre compréhension !
             </p>
           </div>
-        </div>
+        </div> */}
+
+        {/* Database Extended & Restored Notice */}
+        {showExtensionAlert && (
+          <div className="bg-emerald-500/10 border-b border-emerald-500/20 dark:bg-emerald-500/10 text-emerald-900 dark:text-emerald-100 px-4 py-3 text-xs sm:text-sm text-center font-medium z-30 flex flex-col justify-center items-center gap-2 shadow-sm relative">
+            <div className="flex items-center gap-1.5">
+              <span className="material-symbols-outlined notranslate text-emerald-600 dark:text-emerald-400 text-lg leading-none" translate="no">check_circle</span>
+              <span className="font-bold tracking-wide uppercase text-emerald-950 dark:text-emerald-100">System Restored / Système Restauré</span>
+            </div>
+            <div className="max-w-4xl leading-relaxed text-slate-800 dark:text-slate-200 text-[11px] sm:text-xs">
+              <p className="mb-1">
+                <strong>EN:</strong> Core database issue solved & capacity extended! Chat history will be restored progressively. You can start new chats now and enjoy the new World Cup 2026 features.
+              </p>
+              <p>
+                <strong>FR:</strong> Base de données résolue et étendue ! L'historique de vos discussions reviendra progressivement. Vous pouvez démarrer de nouveaux chats et profiter des nouveautés de la Coupe du Monde 2026.
+              </p>
+            </div>
+            <button 
+              onClick={() => setShowExtensionAlert(false)}
+              className="mt-1.5 px-4 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-white text-[10px] sm:text-xs font-bold rounded-full transition-colors flex items-center gap-1.5 shadow-sm uppercase tracking-wider"
+            >
+              <span className="material-symbols-outlined notranslate text-[14px]" translate="no">thumb_up</span>
+              Got it / Compris
+            </button>
+            <button 
+              onClick={() => setShowExtensionAlert(false)}
+              className="absolute top-2 right-2 text-emerald-600/50 hover:text-emerald-600 dark:text-emerald-400/50 dark:hover:text-emerald-400 transition-colors"
+            >
+              <span className="material-symbols-outlined notranslate text-xl" translate="no">close</span>
+            </button>
+          </div>
+        )}
 
         <UpcomingMatchesTicker onMatchClick={handleTickerMatchClick} />
 

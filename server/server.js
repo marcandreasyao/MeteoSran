@@ -7,7 +7,7 @@ import { fileURLToPath } from 'url';
 import { GoogleGenAI } from "@google/genai";
 import { PrismaClient } from '@prisma/client';
 import { retrieveHybrid } from './ragService.js';
-import { getAllMatches, getMatchById, recordVote, getVotePercentages, startSmartPoller, seedFromAPI } from './matchService.js';
+import { getAllMatches, getMatchById, recordVote, getVotePercentages, startSmartPoller, seedFromAPI, recordPrediction, getLeaderboard } from './matchService.js';
 import { retrieveGraphContext } from './graphService.js';
 
 dotenv.config();
@@ -1865,7 +1865,23 @@ app.get('/api/worldcup/match/:id', async (req, res) => {
             return res.status(404).json({ error: "Match not found" });
         }
         const percentages = getVotePercentages(match);
-        res.json({ ...match, percentages });
+        
+        let userPrediction = null;
+        if (req.query.userId) {
+            const pred = await prisma.prediction.findUnique({
+                where: {
+                    userId_matchId: {
+                        userId: req.query.userId,
+                        matchId: req.params.id
+                    }
+                }
+            });
+            if (pred) {
+                userPrediction = pred.choice;
+            }
+        }
+
+        res.json({ ...match, percentages, userPrediction });
     } catch (err) {
         console.error("Error fetching match details:", err);
         res.status(500).json({ error: "Failed to fetch match details." });
@@ -1887,6 +1903,37 @@ app.post('/api/worldcup/match/:id/vote', async (req, res) => {
     } catch (err) {
         console.error("Error recording vote:", err);
         res.status(500).json({ error: "Failed to record vote." });
+    }
+});
+
+app.post('/api/worldcup/match/:id/predict', async (req, res) => {
+    try {
+        const { userId, username, choice } = req.body;
+        if (!userId) {
+            return res.status(400).json({ error: "User authentication required" });
+        }
+        if (!['home', 'draw', 'away'].includes(choice)) {
+            return res.status(400).json({ error: "Invalid prediction choice. Must be 'home', 'draw', or 'away'" });
+        }
+        const pred = await recordPrediction(req.params.id, userId, username, choice);
+        
+        const updatedMatch = await getMatchById(req.params.id);
+        const percentages = getVotePercentages(updatedMatch);
+
+        res.json({ prediction: pred, match: { ...updatedMatch, percentages } });
+    } catch (err) {
+        console.error("Error recording prediction:", err);
+        res.status(500).json({ error: err.message || "Failed to record prediction." });
+    }
+});
+
+app.get('/api/worldcup/leaderboard', async (req, res) => {
+    try {
+        const board = await getLeaderboard();
+        res.json(board);
+    } catch (err) {
+        console.error("Error fetching leaderboard:", err);
+        res.status(500).json({ error: "Failed to fetch leaderboard." });
     }
 });
 

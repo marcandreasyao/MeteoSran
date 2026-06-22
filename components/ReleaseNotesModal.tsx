@@ -29,6 +29,7 @@ const VERSIONS = [
     iconBg: 'bg-emerald-500/10 dark:bg-emerald-500/20',
     badgeColor: 'bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20',
     features: [
+      { key: 'predictionLeaderboard', icon: 'leaderboard', color: 'fuchsia' },
       { key: 'momentumChart', icon: 'stacked_line_chart', color: 'emerald' },
       { key: 'liveTimeline', icon: 'history', color: 'sky' },
       { key: 'weatherPlaybook', icon: 'thermostat', color: 'amber' },
