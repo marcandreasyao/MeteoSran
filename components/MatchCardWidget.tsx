@@ -352,7 +352,8 @@ export const MatchCardWidget: React.FC<MatchCardWidgetProps> = ({ matchId, defau
                     </div>
                 </div>
                 <button
-                    onClick={() => {
+                    onClick={(e) => {
+                        e.preventDefault(); e.stopPropagation();
                         window.dispatchEvent(new CustomEvent('open-worldcup-hub'));
                     }}
                     className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-white/15 active:scale-90 transition-all text-white/70 hover:text-white cursor-pointer select-none focus:outline-none"
@@ -430,7 +431,7 @@ export const MatchCardWidget: React.FC<MatchCardWidgetProps> = ({ matchId, defau
                         {/* WEATHER BADGE BUTTON */}
                         {weatherData ? (
                             <button
-                                onClick={() => setShowWeatherPanel(!showWeatherPanel)}
+                                onClick={(e) => { e.preventDefault(); e.stopPropagation(); setShowWeatherPanel(!showWeatherPanel); }}
                                 className={`mt-2 flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[9px] font-bold select-none cursor-pointer transition-all active:scale-95 border ${
                                     showWeatherPanel 
                                         ? 'bg-emerald-950/20 border-emerald-500/40 text-emerald-400' 
@@ -720,7 +721,7 @@ export const MatchCardWidget: React.FC<MatchCardWidgetProps> = ({ matchId, defau
                 <div className="flex flex-col gap-2.5">
                     {/* Home Vote Option */}
                     <button
-                        onClick={() => handleVote('home')}
+                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleVote('home'); }}
                         disabled={!!votedChoice}
                         className={`relative w-full overflow-hidden rounded-xl py-2 px-3 flex items-center justify-between border transition-all text-xs font-semibold
                             ${votedChoice 
@@ -755,7 +756,7 @@ export const MatchCardWidget: React.FC<MatchCardWidgetProps> = ({ matchId, defau
 
                     {/* Draw Option */}
                     <button
-                        onClick={() => handleVote('draw')}
+                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleVote('draw'); }}
                         disabled={!!votedChoice}
                         className={`relative w-full overflow-hidden rounded-xl py-2 px-3 flex items-center justify-between border transition-all text-xs font-semibold
                             ${votedChoice 
@@ -784,7 +785,7 @@ export const MatchCardWidget: React.FC<MatchCardWidgetProps> = ({ matchId, defau
 
                     {/* Away Vote Option */}
                     <button
-                        onClick={() => handleVote('away')}
+                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleVote('away'); }}
                         disabled={!!votedChoice}
                         className={`relative w-full overflow-hidden rounded-xl py-2 px-3 flex items-center justify-between border transition-all text-xs font-semibold
                             ${votedChoice 
@@ -825,7 +826,8 @@ export const MatchCardWidget: React.FC<MatchCardWidgetProps> = ({ matchId, defau
                     {/* Tab Selectors */}
                     <div className="flex border-b border-slate-800/40 bg-black/10">
                         <button
-                            onClick={() => {
+                            onClick={(e) => {
+                                e.preventDefault(); e.stopPropagation();
                                 if (showStats && activeTab === 'stats') {
                                     setShowStats(false);
                                 } else {
@@ -843,7 +845,8 @@ export const MatchCardWidget: React.FC<MatchCardWidgetProps> = ({ matchId, defau
                             Statistiques
                         </button>
                         <button
-                            onClick={() => {
+                            onClick={(e) => {
+                                e.preventDefault(); e.stopPropagation();
                                 if (showStats && activeTab === 'timeline') {
                                     setShowStats(false);
                                 } else {
