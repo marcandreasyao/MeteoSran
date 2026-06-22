@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useLanguage } from '../src/contexts/LanguageContext';
 import { useAuth } from '../src/contexts/AuthContext';
+import { triggerCelebration, getConfettiColors } from './ConfettiHelper';
+
 
 interface Team {
     name: string;
@@ -321,6 +323,9 @@ export const WorldCupHubModal: React.FC<WorldCupHubModalProps> = ({ onClose }) =
                 const updatedFinal = { ...finalMatch, predictedWinner: winner };
                 setFinalMatch(updatedFinal);
                 setChampion(winner);
+                if (winner && winner.code !== 'UN') {
+                    triggerCelebration(winner.code);
+                }
             }
         }
     };
@@ -407,7 +412,7 @@ export const WorldCupHubModal: React.FC<WorldCupHubModalProps> = ({ onClose }) =
             }}
             className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/75 backdrop-blur-md animate-fade-in"
         >
-            <div className="w-full max-w-5xl bg-slate-900 border border-slate-800 text-white rounded-3xl shadow-2xl flex flex-col h-[85vh] max-h-[800px] overflow-hidden animate-scale-up">
+            <div className="w-full max-w-5xl bg-slate-900 border border-slate-800 text-white rounded-3xl shadow-2xl flex flex-col h-[85vh] max-h-[800px] overflow-hidden animate-scale-up relative">
                 
                 {/* Modal Header */}
                 <div className="px-6 py-4 bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950 border-b border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -825,8 +830,44 @@ export const WorldCupHubModal: React.FC<WorldCupHubModalProps> = ({ onClose }) =
                             </div>
                         )
                     )}
-
                 </div>
+
+                {/* Centered Premium SVG Floating Bottom Button */}
+                {champion && activeRound === 'final' && activeTab === 'bracket' && (() => {
+                    const flagColors = getConfettiColors(champion.code);
+                    const primaryColor = flagColors[0] || '#f59e0b';
+                    const secondaryColor = flagColors[flagColors.length - 1] || '#eab308';
+                    
+                    return (
+                        <button
+                            onClick={() => triggerCelebration(champion.code)}
+                            className="absolute bottom-6 left-1/2 -translate-x-1/2 z-[110] flex items-center gap-2.5 px-6 py-3 rounded-full border bg-slate-900/90 text-white font-extrabold text-sm tracking-wide shadow-2xl backdrop-blur-md transition-all duration-300 hover:scale-105 hover:bg-slate-850 hover:shadow-[0_0_25px_-5px_rgba(0,0,0,0.8)] cursor-pointer group"
+                            style={{
+                                borderColor: `${primaryColor}60`,
+                                boxShadow: `0 8px 32px 0 rgba(0, 0, 0, 0.4), 0 0 20px 0 ${primaryColor}20`,
+                            }}
+                        >
+                            <div className="flex h-7 w-7 rounded-full items-center justify-center bg-gradient-to-tr from-yellow-500/20 to-amber-500/30 border border-yellow-500/30 group-hover:from-yellow-500/35 group-hover:to-amber-500/50 shadow-inner transition-all duration-300">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 text-yellow-400 group-hover:scale-115 group-hover:rotate-12 transition-transform duration-300">
+                                    <path d="M5.8 11.3 2 22l10.7-3.8C13 18 14.3 17.7 15.6 17.7H16a4 4 0 0 0 4-4v-.4c0-1.3-.3-2.6-.5-3.9L22 2l-10.7 3.8C10 6 8.7 6.3 7.4 6.3H7a4 4 0 0 0-4 4v.4c0 1.3.3 2.6.5 3.9Z" fill="currentColor" className="opacity-10" />
+                                    <path d="M4 14h.01" />
+                                    <path d="M20 10h.01" />
+                                    <path d="M7 17h.01" />
+                                    <path d="M17 7h.01" />
+                                </svg>
+                            </div>
+                            <span className="bg-gradient-to-r from-slate-100 to-slate-200 bg-clip-text text-transparent group-hover:to-white select-none">
+                                {language === 'fr' ? 'Célébrer !' : 'Celebrate!'}
+                            </span>
+                            {/* Small glowing dot indicators showing the active country color */}
+                            <span 
+                                className="w-2.5 h-2.5 rounded-full border border-white/20 shadow-sm animate-pulse"
+                                style={{ backgroundColor: primaryColor }}
+                            />
+                        </button>
+                    );
+                })()}
+
             </div>
             
             {/* Bounce animation helper styling */}
