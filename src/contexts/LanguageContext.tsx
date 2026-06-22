@@ -273,13 +273,29 @@ export const translations = {
       gotIt: "Got it, thanks!",
       back: "Back",
       versions: {
+        v1_8_4: {
+          version: "1.8.4",
+          title: "What's New in MeteoSran 1.8.4",
+          greeting: "Hi there,",
+          subtitle: "Live Match Timeline & Game Momentum Chart",
+          date: "June 2026",
+          badge: "Current",
+          features: {
+            momentumChartTitle: "Game Momentum Wave (Net Deviation)",
+            momentumChartDesc: "Experience matches visually with our Net Deviation Momentum Area Chart. Displays double-sided pressure wave gradients dynamically colored based on team themes, featuring plotted game-changing markers (goals, red cards) directly on the timeline.",
+            liveTimelineTitle: "Live Match Event Timeline",
+            liveTimelineDesc: "Follow key actions in real-time with an interactive ticker: goals, yellow/red cards, and substitutions. Features custom circular Material Symbol wrappers styled to match our premium aesthetic.",
+            weatherPlaybookTitle: "Sensory Weather & Tactical Playbook",
+            weatherPlaybookDesc: "Visualize stadium atmosphere with hardware-accelerated animated glassmorphic pitches (rain, snow, heat shimmer, fog, night stars) and tactical pLDDT fatigue risk/ball physics advisories based on stadium altitude."
+          }
+        },
         v1_8_3: {
           version: "1.8.3",
           title: "What's New in MeteoSran 1.8.3",
           greeting: "Hi there,",
           subtitle: "Interactive Bracket, Standings & Premium Visuals",
           date: "June 2026",
-          badge: "Current",
+          badge: "Previous",
           features: {
             worldCupHubTitle: "Standings & Bracket Hub",
             worldCupHubDesc: "Access a dedicated World Cup hub with live-calculated standings and an interactive bracket from the Round of 32. Features a smart prediction engine: qualified teams are seeded dynamically from the group stage (including best third-placed), winners propagate up the tree, and downstream paths auto-clear if early choices change. Includes local storage autosave.",
@@ -680,13 +696,29 @@ export const translations = {
       gotIt: "Compris, merci !",
       back: "Retour",
       versions: {
+        v1_8_4: {
+          version: "1.8.4",
+          title: "Nouveautés de MeteoSran 1.8.4",
+          greeting: "Bonjour,",
+          subtitle: "Fil du Match & Graphique de Pression de Jeu",
+          date: "Juin 2026",
+          badge: "Actuelle",
+          features: {
+            momentumChartTitle: "Graphique de Pression (Net Deviation)",
+            momentumChartDesc: "Visualisez la dynamique de chaque rencontre grâce à notre courbe double face. Les zones d'intensité sont peintes aux couleurs réelles de chaque pays, plaçant les jalons décisifs (buts, cartons rouges) sur le graphique.",
+            liveTimelineTitle: "Fil du Match Interactif",
+            liveTimelineDesc: "Suivez les actions marquantes en direct : buteurs, passeurs, cartons jaunes/rouges et changements tactiques. Les icônes reprennent le style premium épuré de nos cercles d'onglets.",
+            weatherPlaybookTitle: "Météo Sensorielle & Consignes Tactiques",
+            weatherPlaybookDesc: "Visualisez le climat avec un terrain animé en 60-120fps (pluie, neige, effet thermique, brouillard, ciel étoilé) et accédez aux consignes tactiques liées à l'altitude et à l'adhérence de la pelouse."
+          }
+        },
         v1_8_3: {
           version: "1.8.3",
           title: "Nouveautés de MeteoSran 1.8.3",
           greeting: "Bonjour,",
           subtitle: "Bracket Interactif, Classements & Design Premium",
           date: "Juin 2026",
-          badge: "Actuelle",
+          badge: "Précédente",
           features: {
             worldCupHubTitle: "Espace Classements & Bracket",
             worldCupHubDesc: "Hub Coupe du Monde avec classements en direct et bracket de phase finale interactif (16es). Intègre un algorithme de prédiction intelligent : qualification dynamique des meilleurs 3es, propagation automatique des vainqueurs et nettoyage récursif des choix obsolètes si un pronostic amont est modifié. Sauvegarde locale incluse.",

@@ -1132,7 +1132,7 @@ app.post('/api/ai/chat', async (req, res) => {
                         console.log(`[MeteoSran Server] ⚽ World Cup query detected. Fetching Hybrid RAG context for: "${lastUserText}"`);
                         const contextChunks = await retrieveHybrid(lastUserText, activeKey, 3);
                         if (contextChunks && contextChunks.length > 0) {
-                            const ragPrompt = `\n\n[WORLD CUP CONTEXT INFORMATION]\nUse the following verified details to enrich your response. Connect these facts with weather impacts or standings as appropriate. Do not repeat verbatim unless necessary:\n${contextChunks.join('\n\n')}\n\nImportant instructions:\n1. If discussing a match, you may output the interactive card tag: [WORLD_CUP_MATCH: match_id] (e.g. [WORLD_CUP_MATCH: arg_alg_2026] for Argentina vs Algeria, [WORLD_CUP_MATCH: fra_sen_2026] for France vs Senegal, [WORLD_CUP_MATCH: irq_nor_2026] for Iraq vs Norway, [WORLD_CUP_MATCH: aut_jor_2026] for Austria vs Jordan, [WORLD_CUP_MATCH: por_cod_2026] for Portugal vs DR Congo, [WORLD_CUP_MATCH: eng_cro_2026] for England vs Croatia, [WORLD_CUP_MATCH: gha_pan_2026] for Ghana vs Panama). Include the tag on its own line.\n2. Apply the weather analysis to the match location (e.g. altitude fatigue in Mexico City, heat/humidity in Miami).`;
+                            const ragPrompt = `\n\n[WORLD CUP CONTEXT INFORMATION]\nUse the following verified details to enrich your response. Connect these facts with weather impacts or standings as appropriate. Do not repeat verbatim unless necessary:\n${contextChunks.join('\n\n')}\n\nImportant instructions:\n1. If discussing a match, or if the user asks about the weather, temperature, stadium climate, or conditions of a match or venue, you MUST output the interactive card tag: [WORLD_CUP_MATCH: match_id] on its own line (e.g. [WORLD_CUP_MATCH: arg_alg_2026] for Argentina vs Algeria, [WORLD_CUP_MATCH: fra_sen_2026] for France vs Senegal, [WORLD_CUP_MATCH: irq_nor_2026] for Iraq vs Norway, [WORLD_CUP_MATCH: aut_jor_2026] for Austria vs Jordan, [WORLD_CUP_MATCH: por_cod_2026] for Portugal vs DR Congo, [WORLD_CUP_MATCH: eng_cro_2026] for England vs Croatia, [WORLD_CUP_MATCH: gha_pan_2026] for Ghana vs Panama). This tag is critical as it renders a hardware-accelerated animated weather pitch for the user.\n2. Apply the weather analysis to the match location (e.g. altitude fatigue in Mexico City, heat/humidity in Miami).`;
                             finalSystemInstruction += ragPrompt;
                         }
                     }
@@ -1887,6 +1887,407 @@ app.post('/api/worldcup/match/:id/vote', async (req, res) => {
     } catch (err) {
         console.error("Error recording vote:", err);
         res.status(500).json({ error: "Failed to record vote." });
+    }
+});
+
+// STADIUM WEATHER INFORMATION AND COORDINATES
+const STADIUMS_WEATHER_INFO = {
+    "Estadio Akron": { city: "Guadalajara", lat: 20.6811, lon: -103.4628, altitude: 1566, roof: "Open (Slight overhang)" },
+    "Lumen Field": { city: "Seattle", lat: 47.5952, lon: -122.3316, altitude: 54, roof: "Open (Covered stands)" },
+    "Gillette Stadium": { city: "Foxborough", lat: 42.0909, lon: -71.2643, altitude: 88, roof: "Open" },
+    "BC Place": { city: "Vancouver", lat: 49.2768, lon: -123.1120, altitude: 4, roof: "Retractable" },
+    "Arrowhead Stadium": { city: "Kansas City", lat: 39.0489, lon: -94.4839, altitude: 277, roof: "Open" },
+    "BMO Field": { city: "Toronto", lat: 43.6328, lon: -79.4186, altitude: 76, roof: "Open" },
+    "NRG Stadium": { city: "Houston", lat: 29.6847, lon: -95.4107, altitude: 15, roof: "Retractable Dome" },
+    "MetLife Stadium": { city: "East Rutherford", lat: 40.8128, lon: -74.0743, altitude: 2, roof: "Open" },
+    "AT&T Stadium": { city: "Arlington", lat: 32.7473, lon: -97.0945, altitude: 184, roof: "Retractable Dome" },
+    "Mercedes-Benz Stadium": { city: "Atlanta", lat: 33.7573, lon: -84.4006, altitude: 320, roof: "Retractable Dome" },
+    "Levi's Stadium": { city: "Santa Clara", lat: 37.4033, lon: -121.9698, altitude: 23, roof: "Open" },
+    "Hard Rock Stadium": { city: "Miami Gardens", lat: 25.9580, lon: -80.2389, altitude: 3, roof: "Open (Canopy roof)" },
+    "SoFi Stadium": { city: "Inglewood", lat: 33.9534, lon: -118.3387, altitude: 40, roof: "Fixed Translucent Roof (Open sides)" },
+    "Estadio BBVA": { city: "Monterrey", lat: 25.6689, lon: -100.2446, altitude: 540, roof: "Open" },
+    "Estadio Azteca": { city: "Mexico City", lat: 19.3029, lon: -99.1505, altitude: 2240, roof: "Open" },
+    "Lincoln Financial Field": { city: "Philadelphia", lat: 39.9008, lon: -75.1675, altitude: 12, roof: "Open" }
+};
+
+function getStadiumInfo(venueName, venueCity) {
+    const name = (venueName || '').toLowerCase();
+    const city = (venueCity || '').toLowerCase();
+
+    if (name.includes('azteca') || city.includes('mexico')) {
+        return { name: "Estadio Azteca", city: "Mexico City", lat: 19.3029, lon: -99.1505, altitude: 2240, roof: "Open" };
+    }
+    if (name.includes('akron') || city.includes('guadalajara') || city.includes('zapopan')) {
+        return { name: "Estadio Akron", city: "Guadalajara", lat: 20.6811, lon: -103.4628, altitude: 1566, roof: "Open (Slight overhang)" };
+    }
+    if (name.includes('bbva') || city.includes('monterrey') || city.includes('guadalupe')) {
+        return { name: "Estadio BBVA", city: "Monterrey", lat: 25.6689, lon: -100.2446, altitude: 540, roof: "Open" };
+    }
+    if (name.includes('lumen') || city.includes('seattle')) {
+        return { name: "Lumen Field", city: "Seattle", lat: 47.5952, lon: -122.3316, altitude: 54, roof: "Open (Covered stands)" };
+    }
+    if (name.includes('bc place') || city.includes('vancouver')) {
+        return { name: "BC Place", city: "Vancouver", lat: 49.2768, lon: -123.1120, altitude: 4, roof: "Retractable" };
+    }
+    if (name.includes('sofi') || city.includes('los angeles') || city.includes('inglewood')) {
+        return { name: "SoFi Stadium", city: "Inglewood", lat: 33.9534, lon: -118.3387, altitude: 40, roof: "Fixed Translucent Roof (Open sides)" };
+    }
+    if (name.includes('levi') || city.includes('santa clara') || city.includes('san francisco')) {
+        return { name: "Levi's Stadium", city: "Santa Clara", lat: 37.4033, lon: -121.9698, altitude: 23, roof: "Open" };
+    }
+    if (name.includes('at&t') || city.includes('arlington') || city.includes('dallas')) {
+        return { name: "AT&T Stadium", city: "Arlington", lat: 32.7473, lon: -97.0945, altitude: 184, roof: "Retractable Dome" };
+    }
+    if (name.includes('nrg') || city.includes('houston')) {
+        return { name: "NRG Stadium", city: "Houston", lat: 29.6847, lon: -95.4107, altitude: 15, roof: "Retractable Dome" };
+    }
+    if (name.includes('arrowhead') || city.includes('kansas')) {
+        return { name: "Arrowhead Stadium", city: "Kansas City", lat: 39.0489, lon: -94.4839, altitude: 277, roof: "Open" };
+    }
+    if (name.includes('mercedes') || city.includes('atlanta')) {
+        return { name: "Mercedes-Benz Stadium", city: "Atlanta", lat: 33.7573, lon: -84.4006, altitude: 320, roof: "Retractable Dome" };
+    }
+    if (name.includes('hard rock') || city.includes('miami')) {
+        return { name: "Hard Rock Stadium", city: "Miami Gardens", lat: 25.9580, lon: -80.2389, altitude: 3, roof: "Open (Canopy roof)" };
+    }
+    if (name.includes('lincoln') || city.includes('philadelphia')) {
+        return { name: "Lincoln Financial Field", city: "Philadelphia", lat: 39.9008, lon: -75.1675, altitude: 12, roof: "Open" };
+    }
+    if (name.includes('metlife') || city.includes('east ruth') || city.includes('new york') || city.includes('new jersey')) {
+        return { name: "MetLife Stadium", city: "East Rutherford", lat: 40.8128, lon: -74.0743, altitude: 2, roof: "Open" };
+    }
+    if (name.includes('gillette') || city.includes('foxborough') || city.includes('boston')) {
+        return { name: "Gillette Stadium", city: "Foxborough", lat: 42.0909, lon: -71.2643, altitude: 88, roof: "Open" };
+    }
+    if (name.includes('bmo') || city.includes('toronto')) {
+        return { name: "BMO Field", city: "Toronto", lat: 43.6328, lon: -79.4186, altitude: 76, roof: "Open" };
+    }
+
+    // Default fallback
+    return { name: venueName || "Stadium", city: venueCity || "Abidjan", lat: 5.3453, lon: -4.0244, altitude: 10, roof: "Open" };
+}
+
+function analyzeWeatherImpact(weather, stadium) {
+    const temp = weather.temperature;
+    const feelsLike = weather.realFeelTemperature ? weather.realFeelTemperature.value : temp;
+    const humidity = weather.relativeHumidity;
+    const windSpeed = weather.wind ? weather.wind.speed : 0;
+    const precipMm = weather.precip_mm || 0;
+    const hasPrecip = weather.hasPrecipitation || precipMm > 0;
+    const weatherText = (weather.weatherText || '').toLowerCase();
+    
+    const altitude = stadium.altitude;
+
+    let rating = "good";
+    let ratingText = "Conditions Optimales";
+    let ratingTextEn = "Optimal Conditions";
+    let color = "emerald-400";
+    let fatigueRisk = "low";
+    let ballPhysics = "normal";
+    
+    const tipsFr = [];
+    const tipsEn = [];
+
+    // Altitude Check
+    if (altitude >= 2000) {
+        fatigueRisk = "high";
+        ballPhysics = "fast_thin_air";
+        rating = "demanding";
+        ratingText = "Exigeant (Haute Altitude)";
+        ratingTextEn = "Demanding (High Altitude)";
+        color = "amber-400";
+        tipsFr.push("Tirs lointains conseillés : la densité de l'air réduite fait voyager le ballon 10-15% plus vite.");
+        tipsFr.push("Remplacements hâtifs conseillés (dès la 60') pour compenser la fatigue liée au manque d'oxygène.");
+        tipsEn.push("Long-range shots advised: thin air makes the ball travel 10-15% faster with less resistance.");
+        tipsEn.push("Early substitutions recommended (from 60') to counter fatigue from reduced oxygen levels.");
+    } else if (altitude >= 1000) {
+        fatigueRisk = "medium";
+        ballPhysics = "fast_thin_air";
+        rating = "demanding";
+        ratingText = "Modérément Exigeant (Altitude)";
+        ratingTextEn = "Moderately Demanding (Altitude)";
+        color = "amber-400";
+        tipsFr.push("La balle vole légèrement plus vite. Ajustez les passes longues.");
+        tipsFr.push("Prévoyez une fatigue accélérée au milieu de terrain.");
+        tipsEn.push("The ball travels slightly faster. Adjust long passes.");
+        tipsEn.push("Anticipate faster midfielder fatigue.");
+    }
+
+    // Heat and Humidity Check
+    if (feelsLike >= 35) {
+        fatigueRisk = "high";
+        rating = "extreme";
+        ratingText = "Conditions Extrêmes (Chaleur)";
+        ratingTextEn = "Extreme Heat Conditions";
+        color = "rose-400";
+        tipsFr.push("Pause fraîcheur obligatoire. Gérez le rythme pour économiser l'énergie.");
+        tipsFr.push("Privilégiez la possession de balle lente pour faire courir l'adversaire.");
+        tipsEn.push("Mandatory cooling breaks. Manage the tempo to conserve energy.");
+        tipsEn.push("Prioritize slow possession play to make the opponent run.");
+    } else if (feelsLike >= 30) {
+        if (fatigueRisk !== "high") fatigueRisk = "medium";
+        if (rating !== "extreme" && rating !== "demanding") {
+            rating = "moderate";
+            ratingText = "Chaud & Humide";
+            ratingTextEn = "Hot & Humid";
+            color = "amber-400";
+        }
+        tipsFr.push("Hydratation accrue requise. Température ressentie élevée.");
+        tipsEn.push("Increased hydration required. High feels-like temperature.");
+    }
+
+    // Rain and Wet Pitch Check
+    if (hasPrecip || weatherText.includes('pluie') || weatherText.includes('rain') || weatherText.includes('drizzle') || weatherText.includes('averse') || weatherText.includes('orage') || weatherText.includes('thunder')) {
+        ballPhysics = "fast_skip";
+        if (rating !== "extreme" && rating !== "demanding") {
+            rating = "moderate";
+            ratingText = "Pelouse Glissante (Pluie)";
+            ratingTextEn = "Slippery Pitch (Rain)";
+            color = "sky-400";
+        }
+        tipsFr.push("Pelouse glissante : favorisez les passes courtes au sol et évitez les passes en retrait risquées au gardien.");
+        tipsFr.push("Tentez des frappes à ras de terre : le ballon va fuser et surprendre le gardien.");
+        tipsEn.push("Slippery pitch: favor short ground passes and avoid risky backpasses to the goalkeeper.");
+        tipsEn.push("Take low shots from distance: the ball will skip on the wet grass and test the keeper.");
+    }
+
+    // Wind Check
+    if (windSpeed >= 30) {
+        if (rating !== "extreme" && rating !== "demanding") {
+            rating = "moderate";
+            ratingText = "Vents Violents";
+            ratingTextEn = "Strong Winds";
+            color = "amber-400";
+        }
+        tipsFr.push(`Vents à ${windSpeed} km/h : évitez les transversales aériennes et ajustez les trajectoires de coups de pied arrêtés.`);
+        tipsEn.push(`Strong winds at ${windSpeed} km/h: avoid high long balls and adjust set-piece trajectories.`);
+    }
+
+    // Standard Default Tips if empty
+    if (tipsFr.length === 0) {
+        ratingText = "Conditions Optimales";
+        ratingTextEn = "Optimal Conditions";
+        tipsFr.push("Climat idéal pour le football : intensité physique maximale possible.");
+        tipsFr.push("Jeu rapide et pressing haut recommandés.");
+        tipsEn.push("Ideal football climate: maximum physical intensity possible.");
+        tipsEn.push("Fast-tempo play and high pressing recommended.");
+    }
+
+    // Dynamic Sensory Weather Type for UI: clear | rain | wind | heat | cloudy | snow
+    let uiWeatherType = "clear";
+    if (hasPrecip) {
+        uiWeatherType = (weatherText.includes('neige') || weatherText.includes('snow')) ? "snow" : "rain";
+    } else if (windSpeed >= 25) {
+        uiWeatherType = "wind";
+    } else if (temp >= 30 || feelsLike >= 33) {
+        uiWeatherType = "heat";
+    } else if (weatherText.includes('nuag') || weatherText.includes('cloud') || weatherText.includes('couvert') || weatherText.includes('brume') || weatherText.includes('fog') || weatherText.includes('mist')) {
+        uiWeatherType = "cloudy";
+    }
+
+    // Witty comment from Pundit
+    let punditCommentFr = "";
+    let punditCommentEn = "";
+    if (altitude >= 2000) {
+        punditCommentFr = `Jouer à ${altitude}m d'altitude à l'${stadium.name} de ${stadium.city} va brûler les poumons des joueurs. Le ballon sera extrêmement rapide et aura moins de trajectoire courbe. Attention aux tirs lointains !`;
+        punditCommentEn = `Playing at ${altitude}m above sea level at ${stadium.city}'s ${stadium.name} will burn players' lungs. The ball will fly like a rocket but with less curve. Watch out for long-range strikes!`;
+    } else if (feelsLike >= 35) {
+        punditCommentFr = `Une chaleur écrasante de ${temp}°C (ressenti ${feelsLike}°C) à ${stadium.city}. Les organismes vont souffrir. La conservation du ballon sera la clé de la survie physique dans cette fournaise.`;
+        punditCommentEn = `Scorching heat of ${temp}°C (feels like ${feelsLike}°C) in ${stadium.city}. Midday fatigue will set in rapidly. Maintaining possession will be key to physical survival in this furnace.`;
+    } else if (hasPrecip) {
+        punditCommentFr = `La pluie sur la pelouse de ${stadium.city} va accélérer le jeu au sol. Le ballon va fuser sur le gazon mouillé. Les attaquants devront tenter leur chance de loin pour exploiter les rebonds glissants.`;
+        punditCommentEn = `Rain on the pitch in ${stadium.city} will accelerate ground play. The ball will skip and skate across the wet grass. Forwards should shoot early to test the goalkeeper with slippery bounces.`;
+    } else {
+        punditCommentFr = `Des conditions climatiques de rêve pour cette rencontre à ${stadium.city}. Température de ${temp}°C avec peu d'humidité. Attendez-vous à un football de haute intensité et un pressing constant.`;
+        punditCommentEn = `Dream weather conditions for this clash in ${stadium.city}. A perfect ${temp}°C temperature with low humidity. Expect a high-intensity match with constant pressing.`;
+    }
+
+    return {
+        rating,
+        ratingText: { fr: ratingText, en: ratingTextEn },
+        color,
+        fatigueRisk,
+        ballPhysics,
+        uiWeatherType,
+        tips: { fr: tipsFr, en: tipsEn },
+        punditComment: { fr: punditCommentFr, en: punditCommentEn }
+    };
+}
+
+async function getWeatherDataForCoordinates(lat, lon, locationLabel) {
+    const WEATHERAPI_KEY = process.env.WEATHERAPI_API_KEY || process.env.WEATHERAPI_KEY || '029386abbd2e4300b3920520262005';
+
+    if (OPENWEATHER_API_KEY && lat && lon) {
+        try {
+            console.log(`[MeteoSran Server] Stadium Weather: Querying OpenWeather for: ${lat}, ${lon}`);
+            const weatherUrl = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&units=metric&lang=fr&appid=${OPENWEATHER_API_KEY}`;
+            const forecastUrl = `https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&units=metric&lang=fr&appid=${OPENWEATHER_API_KEY}`;
+
+            const [wRes, fRes] = await Promise.all([fetch(weatherUrl), fetch(forecastUrl)]);
+            if (wRes.ok && fRes.ok) {
+                const wData = await wRes.json();
+                const fData = await fRes.json();
+                const mappedData = mapOpenWeather25ToSchema(wData, fData, locationLabel);
+                mappedData.lat = lat;
+                mappedData.lon = lon;
+                return mappedData;
+            }
+        } catch (owError) {
+            console.error("[MeteoSran Server] OpenWeather failed for stadium coordinates, trying WeatherAPI...", owError.message);
+        }
+    }
+
+    // WeatherAPI Fallback
+    const query = `${lat},${lon}`;
+    try {
+        console.log(`[MeteoSran Server] Stadium Weather: Querying WeatherAPI for: ${query}`);
+        const response = await fetch(`http://api.weatherapi.com/v1/forecast.json?key=${WEATHERAPI_KEY}&q=${encodeURIComponent(query)}&days=6&lang=fr&aqi=no&alerts=no`);
+        if (response.ok) {
+            const data = await response.json();
+            const uv = data.current.uv;
+            let uvText = "Faible";
+            if (uv >= 11) uvText = "Extrême";
+            else if (uv >= 8) uvText = "Très fort";
+            else if (uv >= 6) uvText = "Fort";
+            else if (uv >= 3) uvText = "Modéré";
+
+            const iconUrl = data.current.condition.icon.startsWith('http') 
+                ? data.current.condition.icon 
+                : `https:${data.current.condition.icon}`;
+
+            const forecast = data.forecast.forecastday.map(fd => {
+                const dateObj = new Date(fd.date);
+                const daysFr = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'];
+                const dayOfWeek = daysFr[dateObj.getDay()];
+                const fdIcon = fd.day.condition.icon.startsWith('http') 
+                    ? fd.day.condition.icon 
+                    : `https:${fd.day.condition.icon}`;
+                return {
+                    date: fd.date,
+                    dayOfWeek: dayOfWeek,
+                    temp: fd.day.avgtemp_c,
+                    maxTemp: fd.day.maxtemp_c,
+                    minTemp: fd.day.mintemp_c,
+                    conditionText: fd.day.condition.text,
+                    iconUrl: fdIcon,
+                    precip_mm: fd.day.totalprecip_mm,
+                    chanceOfRain: fd.day.daily_chance_of_rain
+                };
+            });
+
+            return {
+                location: locationLabel,
+                temperature: data.current.temp_c,
+                unit: "C",
+                weatherText: data.current.condition.text,
+                hasPrecipitation: data.current.precip_mm > 0,
+                isDayTime: data.current.is_day === 1,
+                weatherIcon: 1,
+                iconUrl: iconUrl,
+                relativeHumidity: data.current.humidity,
+                wind: {
+                    speed: data.current.wind_kph,
+                    unit: "km/h",
+                    direction: data.current.wind_dir,
+                },
+                pressure: {
+                    value: data.current.pressure_mb,
+                    unit: "mb",
+                },
+                realFeelTemperature: {
+                    value: data.current.feelslike_c,
+                    unit: "C",
+                },
+                uvIndex: uv,
+                uvIndexText: uvText,
+                precipitationType: data.current.precip_mm > 0 ? "Rain" : null,
+                precip_mm: data.current.precip_mm,
+                forecast: forecast
+            };
+        }
+    } catch (weatherApiError) {
+        console.warn("[MeteoSran Server] WeatherAPI failed for stadium coords, using mock fallback", weatherApiError.message);
+    }
+
+    // Ultimate fallback
+    return {
+        location: locationLabel,
+        temperature: 21,
+        unit: "C",
+        weatherText: "Climat Partiellement Nuageux",
+        hasPrecipitation: false,
+        isDayTime: true,
+        weatherIcon: 1,
+        iconUrl: "https://openweathermap.org/img/wn/02d@2x.png",
+        relativeHumidity: 55,
+        wind: { speed: 12, unit: "km/h", direction: "N" },
+        pressure: { value: 1015, unit: "mb" },
+        realFeelTemperature: { value: 21, unit: "C" },
+        uvIndex: 5,
+        uvIndexText: "Modéré",
+        precipitationType: null,
+        precip_mm: 0,
+        forecast: []
+    };
+}
+
+const matchWeatherCache = {};
+const MATCH_WEATHER_CACHE_DURATION_MS = 15 * 60 * 1000; // 15 mins
+
+app.get('/api/worldcup/match/:id/weather', async (req, res) => {
+    const matchId = req.params.id;
+    const now = Date.now();
+
+    if (matchWeatherCache[matchId] && (now - matchWeatherCache[matchId].timestamp < MATCH_WEATHER_CACHE_DURATION_MS)) {
+        console.log(`[MeteoSran Server] Serving cached weather impact for match: ${matchId}`);
+        return res.json(matchWeatherCache[matchId].data);
+    }
+
+    try {
+        const match = await prisma.worldCupMatch.findUnique({ where: { id: matchId } });
+        if (!match) {
+            return res.status(404).json({ error: "Match not found" });
+        }
+
+        const stadium = getStadiumInfo(match.venueName, match.venueCity);
+        const locationLabel = `${stadium.name}, ${stadium.city}`;
+        
+        const weather = await getWeatherDataForCoordinates(stadium.lat, stadium.lon, locationLabel);
+        const weatherImpact = analyzeWeatherImpact(weather, stadium);
+
+        const responseData = {
+            matchId,
+            stadium: {
+                name: stadium.name,
+                city: stadium.city,
+                altitude: stadium.altitude,
+                roof: stadium.roof,
+                coordinates: { lat: stadium.lat, lon: stadium.lon }
+            },
+            weather: {
+                temperature: weather.temperature,
+                unit: weather.unit,
+                weatherText: weather.weatherText,
+                iconUrl: weather.iconUrl,
+                humidity: weather.relativeHumidity,
+                wind: weather.wind,
+                feelsLike: weather.realFeelTemperature ? weather.realFeelTemperature.value : weather.temperature,
+                precipMm: weather.precip_mm,
+                hasPrecip: weather.hasPrecipitation
+            },
+            impact: weatherImpact
+        };
+
+        // Cache the result
+        matchWeatherCache[matchId] = {
+            timestamp: now,
+            data: responseData
+        };
+
+        res.json(responseData);
+    } catch (err) {
+        console.error("Error generating stadium weather impact:", err);
+        res.status(500).json({ error: "Failed to generate stadium weather impact" });
     }
 });
 

@@ -86,10 +86,420 @@ function tlaToIso(tla) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// World Cup squads for key teams to enable premium player timeline stats
+// ─────────────────────────────────────────────────────────────────────────────
+const TEAM_SQUADS = {
+    FR: {
+        forwards: ["K. Mbappé", "O. Dembélé", "M. Thuram", "R. Kolo Muani", "O. Giroud", "K. Coman"],
+        midfielders: ["A. Griezmann", "A. Rabiot", "A. Tchouaméni", "E. Camavinga", "W. Zaïre-Emery", "Y. Fofana"],
+        defenders: ["T. Hernandez", "W. Saliba", "D. Upamecano", "J. Koundé", "B. Pavard", "J. Clauss"],
+        goalkeeper: ["M. Maignan"]
+    },
+    SN: {
+        forwards: ["S. Mané", "N. Jackson", "I. Sarr", "B. Dia", "H. Diallo"],
+        midfielders: ["I. Gueye", "P. Sarr", "L. Camara", "P. Gueye", "N. Mendy"],
+        defenders: ["K. Koulibaly", "A. Diallo", "M. Niakhaté", "I. Jakobs", "Y. Sabaly"],
+        goalkeeper: ["E. Mendy"]
+    },
+    AR: {
+        forwards: ["L. Messi", "L. Martínez", "J. Álvarez", "A. Di María", "A. Correa"],
+        midfielders: ["E. Fernández", "A. Mac Allister", "R. De Paul", "L. Paredes", "G. Lo Celso"],
+        defenders: ["N. Otamendi", "C. Romero", "N. Tagliafico", "N. Molina", "G. Montiel"],
+        goalkeeper: ["E. Martínez"]
+    },
+    DZ: {
+        forwards: ["R. Mahrez", "B. Bounedjah", "I. Slimani", "A. Gouiri", "M. Amoura"],
+        midfielders: ["I. Bennacer", "H. Aouar", "N. Bentaleb", "F. Chaïbi", "S. Feghouli"],
+        defenders: ["R. Bensebaini", "A. Mandi", "Y. Atal", "R. Aït-Nouri", "A. Touba"],
+        goalkeeper: ["A. Mandrea"]
+    },
+    PT: {
+        forwards: ["C. Ronaldo", "J. Félix", "R. Leão", "G. Ramos", "D. Jota"],
+        midfielders: ["B. Fernandes", "B. Silva", "Vitinha", "R. Neves", "J. Palhinha"],
+        defenders: ["R. Dias", "J. Cancelo", "D. Dalot", "N. Mendes", "A. Silva"],
+        goalkeeper: ["D. Costa"]
+    },
+    NO: {
+        forwards: ["E. Haaland", "A. Sørloth", "J. Strand Larsen"],
+        midfielders: ["M. Ødegaard", "S. Berge", "P. Nusa", "O. Bobb", "M. Elyounoussi"],
+        defenders: ["J. Ryerson", "L. Østigård", "K. Ajer", "F. Bjørkan"],
+        goalkeeper: ["Ø. Nyland"]
+    },
+    EG: {
+        forwards: ["M. Salah", "M. Mohamed", "O. Marmoush", "Trézéguet"],
+        midfielders: ["M. Elneny", "Zizo", "H. Fathi", "M. Attia", "I. Ashour"],
+        defenders: ["A. Hegazi", "M. Abdelmonem", "M. Hany", "M. Hamdi"],
+        goalkeeper: ["M. El Shenawy"]
+    },
+    DE: {
+        forwards: ["K. Havertz", "N. Füllkrug", "L. Sané", "S. Gnabry", "T. Müller"],
+        midfielders: ["J. Musiala", "F. Wirtz", "I. Gündoğan", "T. Kroos", "L. Goretzka"],
+        defenders: ["J. Kimmich", "A. Rüdiger", "J. Tah", "D. Raum", "B. Henrichs"],
+        goalkeeper: ["M. Neuer"]
+    },
+    ES: {
+        forwards: ["A. Morata", "N. Williams", "L. Yamal", "M. Oyarzabal", "Ferran"],
+        midfielders: ["Pedri", "Gavi", "Rodri", "F. Ruiz", "D. Olmo", "M. Merino"],
+        defenders: ["D. Carvajal", "R. Le Normand", "A. Laporte", "M. Cucurella", "Alex Grimaldo"],
+        goalkeeper: ["Unai Simón"]
+    },
+    "GB-ENG": {
+        forwards: ["H. Kane", "B. Saka", "P. Foden", "O. Watkins", "C. Palmer", "M. Rashford"],
+        midfielders: ["J. Bellingham", "D. Rice", "C. Gallagher", "J. Maddison", "K. Mainoo"],
+        defenders: ["K. Walker", "J. Stones", "H. Maguire", "K. Trippier", "L. Shaw"],
+        goalkeeper: ["J. Pickford"]
+    },
+    NL: {
+        forwards: ["M. Depay", "C. Gakpo", "D. Malen", "W. Weghorst"],
+        midfielders: ["X. Simons", "F. de Jong", "T. Koopmeiners", "T. Reijnders", "G. Wijnaldum"],
+        defenders: ["V. van Dijk", "D. Dumfries", "N. Aké", "M. de Ligt", "J. Frimpong"],
+        goalkeeper: ["B. Verbruggen"]
+    },
+    BR: {
+        forwards: ["Vinícius Jr.", "Rodrygo", "Raphinha", "G. Martinelli", "Endrick", "Richarlison"],
+        midfielders: ["L. Paquetá", "B. Guimarães", "Casemiro", "Joelinton", "Andreas Pereira"],
+        defenders: ["Marquinhos", "E. Militão", "Danilo", "Bremer", "Gabriel Magalhães"],
+        goalkeeper: ["Alisson"]
+    },
+    CI: {
+        forwards: ["S. Haller", "S. Adingra", "N. Pépé", "J. Bamba"],
+        midfielders: ["F. Kessié", "S. Fofana", "I. Sangaré", "J. Seri"],
+        defenders: ["W. Singo", "O. Kossounou", "E. Ndicka", "G. Konan"],
+        goalkeeper: ["Y. Fofana"]
+    },
+    US: {
+        forwards: ["C. Pulisic", "F. Balogun", "T. Weah", "R. Pepi"],
+        midfielders: ["W. McKennie", "Y. Musah", "G. Reyna", "T. Adams"],
+        defenders: ["A. Robinson", "S. Dest", "T. Ream", "C. Richards"],
+        goalkeeper: ["M. Turner"]
+    },
+    CA: {
+        forwards: ["J. David", "C. Larin", "T. Buchanan", "L. Millar"],
+        midfielders: ["A. Davies", "S. Eustáquio", "I. Koné", "J. Shaffelburg"],
+        defenders: ["A. Johnston", "K. Miller", "D. Cornelius", "S. Adekugbe"],
+        goalkeeper: ["M. Crépeau"]
+    },
+    MX: {
+        forwards: ["S. Giménez", "H. Lozano", "J. Quiñones", "U. Antuna"],
+        midfielders: ["L. Chávez", "E. Álvarez", "E. Sánchez", "L. Romo", "O. Pineda"],
+        defenders: ["C. Montes", "J. Vásquez", "J. Gallardo", "J. Sánchez"],
+        goalkeeper: ["G. Ochoa"]
+    },
+    UY: {
+        forwards: ["D. Núñez", "L. Suárez", "F. Pellistri", "C. Olivera"],
+        midfielders: ["F. Valverde", "R. Bentancur", "M. Ugarte", "N. De La Cruz"],
+        defenders: ["R. Araújo", "J. Giménez", "M. Olivera", "N. Nández"],
+        goalkeeper: ["S. Rochet"]
+    },
+    CO: {
+        forwards: ["L. Díaz", "R. Borré", "J. Durán", "L. Sinisterra"],
+        midfielders: ["J. Rodríguez", "J. Arias", "J. Lerma", "R. Ríos"],
+        defenders: ["D. Sánchez", "C. Cuesta", "D. Muñoz", "J. Mojica"],
+        goalkeeper: ["C. Vargas"]
+    },
+    HR: {
+        forwards: ["A. Kramarić", "I. Perišić", "B. Petković", "L. Majer"],
+        midfielders: ["L. Modrić", "M. Kovačić", "M. Brozović", "M. Pašalić"],
+        defenders: ["J. Gvardiol", "J. Šutalo", "D. Vida", "J. Juranović"],
+        goalkeeper: ["D. Livaković"]
+    },
+    BE: {
+        forwards: ["R. Lukaku", "J. Doku", "L. Trossard", "J. Bakayoko"],
+        midfielders: ["K. De Bruyne", "A. Onana", "O. Mangala", "Y. Tielemans"],
+        defenders: ["W. Faes", "Z. Debast", "T. Castagne", "A. Theate"],
+        goalkeeper: ["K. Casteels"]
+    },
+    JP: {
+        forwards: ["K. Mitoma", "T. Kubo", "T. Minamino", "A. Ueda", "D. Maeda"],
+        midfielders: ["W. Endo", "H. Morita", "D. Kamada", "R. Doan", "A. Tanaka"],
+        defenders: ["T. Tomiyasu", "K. Itakura", "Y. Sugawara", "H. Ito"],
+        goalkeeper: ["Z. Suzuki"]
+    },
+    KR: {
+        forwards: ["H. Son", "G. Cho", "H. Hwang"],
+        midfielders: ["K. Lee", "J. Lee", "I. Hwang", "W. Hong"],
+        defenders: ["M. Kim", "Y. Seol", "S. Kim", "T. Kim"],
+        goalkeeper: ["H. Jo"]
+    },
+    GH: {
+        forwards: ["I. Williams", "A. Semenyo", "J. Ayew"],
+        midfielders: ["M. Kudus", "T. Partey", "S. Abdul Samed", "E. Ashimeru"],
+        defenders: ["M. Salisu", "D. Amartey", "T. Lamptey", "A. Djiku"],
+        goalkeeper: ["L. Ati-Zigi"]
+    },
+    SA: {
+        forwards: ["S. Al-Dawsari", "F. Al-Buraikan", "S. Al-Shehri"],
+        midfielders: ["M. Kanno", "A. Ghareeb", "A. Al-Malki", "F. Al-Ghamdi"],
+        defenders: ["Y. Al-Shahrani", "A. Al-Bulaihi", "S. Abdulhamid", "A. Lajami"],
+        goalkeeper: ["M. Al-Owais"]
+    }
+};
+
+// Seeded deterministic pseudo-random generator
+function getSeededRandom(seedString) {
+    let hash = 0;
+    for (let i = 0; i < seedString.length; i++) {
+        hash = seedString.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    return function() {
+        hash = (hash * 9301 + 49297) % 233280;
+        return hash / 233280;
+    };
+}
+
+// Fallback squad generator for teams not statically mapped
+function getFallbackSquad(teamName, isHome) {
+    const names = [
+        "Silva", "Santos", "Kovac", "Novak", "Hansen", "Diallo", "Muller", "Smith", 
+        "Jones", "Martin", "Dubois", "Rossi", "Bianchi", "Gomez", "Fernandez", "Rodriguez"
+    ];
+    let seed = 0;
+    for (let i = 0; i < teamName.length; i++) {
+        seed += teamName.charCodeAt(i);
+    }
+    const getSeededName = (idx) => {
+        const lastName = names[(seed + idx) % names.length];
+        const firstInitials = ["J.", "M.", "A.", "D.", "S.", "R.", "G.", "P.", "L.", "K."];
+        const firstInitial = firstInitials[(seed * idx + 7) % firstInitials.length];
+        return `${firstInitial} ${lastName}`;
+    };
+
+    return {
+        forwards: [getSeededName(1), getSeededName(2), getSeededName(3), getSeededName(4)],
+        midfielders: [getSeededName(5), getSeededName(6), getSeededName(7), getSeededName(8)],
+        defenders: [getSeededName(9), getSeededName(10), getSeededName(11), getSeededName(12)],
+        goalkeeper: [getSeededName(13)]
+    };
+}
+
+// Generates match events (goals, cards, subs) and a 90-minute net pressure chart deterministically
+function generateDeterministicEventsAndMomentum(match) {
+    const seedString = match.id + (match.kickoff || '');
+    const rand = getSeededRandom(seedString);
+    const randInt = (min, max) => Math.floor(min + rand() * (max - min + 1));
+
+    const homeSquad = TEAM_SQUADS[match.home.code] || getFallbackSquad(match.home.name, true);
+    const awaySquad = TEAM_SQUADS[match.away.code] || getFallbackSquad(match.away.name, false);
+
+    const events = [];
+    const scoreHome = match.score?.home ?? 0;
+    const scoreAway = match.score?.away ?? 0;
+    const elapsed = match.elapsed != null ? match.elapsed : 90;
+    const isLive = match.status === 'live';
+
+    // 1. GOALS
+    const homeGoalMinutes = [];
+    const awayGoalMinutes = [];
+    const maxGoalMin = isLive ? Math.max(5, elapsed) : 90;
+
+    for (let i = 0; i < scoreHome; i++) {
+        homeGoalMinutes.push(randInt(2, maxGoalMin));
+    }
+    for (let i = 0; i < scoreAway; i++) {
+        awayGoalMinutes.push(randInt(2, maxGoalMin));
+    }
+
+    homeGoalMinutes.sort((a, b) => a - b);
+    awayGoalMinutes.sort((a, b) => a - b);
+
+    const getGoalDetails = (squad) => {
+        const isForward = rand() < 0.7;
+        const scorers = isForward ? squad.forwards : squad.midfielders;
+        const scorer = scorers[randInt(0, scorers.length - 1)];
+
+        let assist = null;
+        if (rand() < 0.7) {
+            const allOutfield = [...squad.forwards, ...squad.midfielders, ...squad.defenders].filter(p => p !== scorer);
+            assist = allOutfield[randInt(0, allOutfield.length - 1)];
+        }
+        return { scorer, assist };
+    };
+
+    homeGoalMinutes.forEach((min) => {
+        const { scorer, assist } = getGoalDetails(homeSquad);
+        events.push({
+            type: 'goal',
+            team: 'home',
+            minute: min,
+            player: scorer,
+            assist: assist
+        });
+    });
+
+    awayGoalMinutes.forEach((min) => {
+        const { scorer, assist } = getGoalDetails(awaySquad);
+        events.push({
+            type: 'goal',
+            team: 'away',
+            minute: min,
+            player: scorer,
+            assist: assist
+        });
+    });
+
+    // 2. BOOKINGS
+    const yellowCountHome = randInt(1, 3);
+    const yellowCountAway = randInt(1, 3);
+
+    const getCardPlayer = (squad) => {
+        const val = rand();
+        let pool = squad.defenders;
+        if (val > 0.6 && val <= 0.9) pool = squad.midfielders;
+        else if (val > 0.9) pool = squad.forwards;
+        return pool[randInt(0, pool.length - 1)];
+    };
+
+    for (let i = 0; i < yellowCountHome; i++) {
+        const min = randInt(5, 88);
+        const player = getCardPlayer(homeSquad);
+        events.push({
+            type: 'yellow_card',
+            team: 'home',
+            minute: min,
+            player: player
+        });
+    }
+
+    for (let i = 0; i < yellowCountAway; i++) {
+        const min = randInt(5, 88);
+        const player = getCardPlayer(awaySquad);
+        events.push({
+            type: 'yellow_card',
+            team: 'away',
+            minute: min,
+            player: player
+        });
+    }
+
+    let homeHasRed = false;
+    let awayHasRed = false;
+    if (rand() < 0.05) {
+        const min = randInt(30, 85);
+        const player = getCardPlayer(homeSquad);
+        events.push({
+            type: 'red_card',
+            team: 'home',
+            minute: min,
+            player: player
+        });
+        homeHasRed = true;
+    }
+    if (rand() < 0.05) {
+        const min = randInt(30, 85);
+        const player = getCardPlayer(awaySquad);
+        events.push({
+            type: 'red_card',
+            team: 'away',
+            minute: min,
+            player: player
+        });
+        awayHasRed = true;
+    }
+
+    // 3. SUBSTITUTIONS
+    const subCountHome = randInt(2, 4);
+    const subCountAway = randInt(2, 4);
+
+    const makeSubstitutions = (squad, teamKey, count) => {
+        const subs = [];
+        const activeDefenders = [...squad.defenders];
+        const activeMidfielders = [...squad.midfielders];
+        const activeForwards = [...squad.forwards];
+
+        const subNames = [
+            "Diallo", "Menezes", "Bakayoko", "Larsson", "Ouedraogo", "Sato", 
+            "Gomez", "Kowalski", "Petrov", "O'Connor", "Junior", "Toure"
+        ];
+        const seedVal = (squad.defenders[0]?.charCodeAt(0) || 68) + (squad.midfielders[0]?.charCodeAt(0) || 77);
+        const getBenchName = (posInit, idx) => {
+            const name = subNames[(seedVal + idx) % subNames.length];
+            return `${posInit}. ${name}`;
+        };
+
+        const bDef = [getBenchName(squad.defenders[0]?.[0] || 'D', 1), getBenchName(squad.defenders[0]?.[0] || 'D', 2)];
+        const bMid = [getBenchName(squad.midfielders[0]?.[0] || 'M', 3), getBenchName(squad.midfielders[0]?.[0] || 'M', 4)];
+        const bFwd = [getBenchName(squad.forwards[0]?.[0] || 'F', 5), getBenchName(squad.forwards[0]?.[0] || 'F', 6)];
+
+        for (let i = 0; i < count; i++) {
+            const min = randInt(55 + i * 8, Math.min(89, 58 + i * 10));
+            const posVal = rand();
+            let playerOut, playerIn;
+            if (posVal < 0.4 && activeForwards.length > 0 && bFwd.length > 0) {
+                playerOut = activeForwards.splice(randInt(0, activeForwards.length - 1), 1)[0];
+                playerIn = bFwd.splice(0, 1)[0];
+            } else if (posVal < 0.8 && activeMidfielders.length > 0 && bMid.length > 0) {
+                playerOut = activeMidfielders.splice(randInt(0, activeMidfielders.length - 1), 1)[0];
+                playerIn = bMid.splice(0, 1)[0];
+            } else if (activeDefenders.length > 0 && bDef.length > 0) {
+                playerOut = activeDefenders.splice(randInt(0, activeDefenders.length - 1), 1)[0];
+                playerIn = bDef.splice(0, 1)[0];
+            }
+
+            if (playerOut && playerIn) {
+                subs.push({
+                    type: 'substitution',
+                    team: teamKey,
+                    minute: min,
+                    playerOut: playerOut,
+                    playerIn: playerIn
+                });
+            }
+        }
+        return subs;
+    };
+
+    events.push(...makeSubstitutions(homeSquad, 'home', subCountHome));
+    events.push(...makeSubstitutions(awaySquad, 'away', subCountAway));
+
+    events.sort((a, b) => a.minute - b.minute);
+
+    const filteredEvents = isLive 
+        ? events.filter(e => e.minute <= elapsed) 
+        : events;
+
+    // 4. MOMENTUM (Net Deviation)
+    const momentum = [];
+    let currentPressure = randInt(-10, 10);
+
+    for (let min = 1; min <= 90; min++) {
+        let drift = -0.1 * currentPressure;
+        let step = (rand() - 0.5) * 16;
+
+        const homeGoalAtMin = homeGoalMinutes.includes(min);
+        const awayGoalAtMin = awayGoalMinutes.includes(min);
+        
+        let goalSpike = 0;
+        if (homeGoalAtMin) {
+            goalSpike = 40;
+        } else if (awayGoalAtMin) {
+            goalSpike = -40;
+        }
+
+        let redCardBias = 0;
+        if (homeHasRed && min >= (events.find(e => e.type === 'red_card' && e.team === 'home')?.minute || 91)) {
+            redCardBias = -15;
+        }
+        if (awayHasRed && min >= (events.find(e => e.type === 'red_card' && e.team === 'away')?.minute || 91)) {
+            redCardBias = 15;
+        }
+
+        currentPressure = currentPressure + drift + step + goalSpike + redCardBias;
+        currentPressure = Math.max(-60, Math.min(60, currentPressure));
+        
+        momentum.push(Math.round(currentPressure));
+    }
+
+    return {
+        events: filteredEvents,
+        momentum: momentum
+    };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Convert a DB row to the frontend-compatible match shape
 // ─────────────────────────────────────────────────────────────────────────────
 function dbRowToMatch(row) {
-    return {
+    const matchObj = {
         id: row.id,
         fdApiId: row.fdApiId,
         group: row.group,
@@ -105,6 +515,12 @@ function dbRowToMatch(row) {
         votes: { home: row.votesHome, draw: row.votesDraw, away: row.votesAway },
         stats: row.stats || generateStatsFromScore(row),
     };
+
+    const { events, momentum } = generateDeterministicEventsAndMomentum(matchObj);
+    matchObj.events = events;
+    matchObj.momentum = momentum;
+
+    return matchObj;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -474,10 +890,16 @@ export function startSmartPoller() {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export async function getAllMatches() {
-    // ON-DEMAND SYNC & AUTO-CORRECT: Run sync when matches are queried (rate-limited inside syncFromAPI)
+    // ON-DEMAND SYNC & AUTO-CORRECT:
     try {
-        await autoCorrectStatuses();
-        await syncFromAPI();
+        const count = await prisma.worldCupMatch.count();
+        if (count === 0) {
+            console.log('[MatchSync] Database is empty. Running initial tournament seed...');
+            await seedFromAPI();
+        } else {
+            await autoCorrectStatuses();
+            await syncFromAPI();
+        }
     } catch (err) {
         console.warn('[MatchSync] On-demand getAllMatches auto-correct/sync failed:', err.message);
     }

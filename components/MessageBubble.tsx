@@ -466,7 +466,10 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, onRegener
                 {/* ── World Cup Match Card Widget ── */}
                 {matchId && !isTyping && (
                   <div className="mt-4">
-                    <MatchCardWidget matchId={matchId} />
+                    <MatchCardWidget 
+                      matchId={matchId} 
+                      defaultShowWeather={message.text.toLowerCase().match(/(météo|climat|weather|temp|pluie|rain|soleil|sun|neige|snow|vent|wind|stade|stadium|chaleur|heat|humidity|humidité|altitude|atmosphère|physique|fatigue)/i) !== null}
+                    />
                   </div>
                 )}
               </>
