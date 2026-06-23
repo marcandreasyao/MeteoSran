@@ -896,11 +896,6 @@ export const MatchCardWidget: React.FC<MatchCardWidgetProps> = ({ matchId, defau
                                         <span className="font-sans text-[10px] ml-0.5 text-slate-500/80 font-bold">%</span>
                                     </span>
                                 ) : null}
-                                {isChosen && (
-                                    <span className="w-4 h-4 rounded-full bg-emerald-500 flex items-center justify-center flex-shrink-0">
-                                        <span className="material-symbols-outlined text-[10px] text-white font-black" style={{ fontVariationSettings: "'FILL' 1" }}>check</span>
-                                    </span>
-                                )}
                                 {isVotingLocked && !isChosen && (
                                     <span className="material-symbols-outlined text-[12px] text-slate-700">lock</span>
                                 )}
