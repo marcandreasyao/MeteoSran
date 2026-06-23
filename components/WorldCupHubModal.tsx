@@ -39,6 +39,7 @@ export const WorldCupHubModal: React.FC<WorldCupHubModalProps> = ({ onClose }) =
     const bracketRef = useRef<HTMLButtonElement>(null);
     const opinionRef = useRef<HTMLButtonElement>(null);
     const leaderboardRef = useRef<HTMLButtonElement>(null);
+    const tabContainerRef = useRef<HTMLDivElement>(null);
     const [indicatorStyle, setIndicatorStyle] = useState({ left: 0, width: 0 });
 
     useEffect(() => {
@@ -54,6 +55,16 @@ export const WorldCupHubModal: React.FC<WorldCupHubModalProps> = ({ onClose }) =
                     left: activeEl.offsetLeft,
                     width: activeEl.offsetWidth
                 });
+
+                // Smoothly scroll the active tab into center of the visible area in the tab container on mobile
+                if (tabContainerRef.current) {
+                    const container = tabContainerRef.current;
+                    const scrollLeft = activeEl.offsetLeft - container.offsetWidth / 2 + activeEl.offsetWidth / 2;
+                    container.scrollTo({
+                        left: scrollLeft,
+                        behavior: 'smooth'
+                    });
+                }
             }
         };
 
@@ -431,8 +442,20 @@ export const WorldCupHubModal: React.FC<WorldCupHubModalProps> = ({ onClose }) =
                     </div>
                     
                     {/* Tabs & Close button */}
-                    <div className="flex items-center gap-2 self-end sm:self-auto">
-                        <div className="relative flex bg-slate-950 border border-slate-800 p-0.5 rounded-full text-xs font-bold shadow-inner select-none">
+                    <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-start flex-shrink-0">
+                        <div 
+                            ref={tabContainerRef}
+                            className="relative flex max-w-[calc(100%-40px)] sm:max-w-none sm:w-auto bg-slate-950 border border-slate-800 p-0.5 rounded-full text-xs font-bold shadow-inner select-none overflow-x-auto no-scrollbar scroll-smooth whitespace-nowrap"
+                            style={{
+                                scrollbarWidth: 'none',
+                                msOverflowStyle: 'none',
+                            }}
+                        >
+                            <style>{`
+                                .no-scrollbar::-webkit-scrollbar {
+                                    display: none;
+                                }
+                            `}</style>
                             {/* Sliding active tab pill */}
                             <div 
                                 className="absolute top-0.5 bottom-0.5 rounded-full bg-gradient-to-r from-red-600 via-emerald-600 to-indigo-600 shadow transition-all duration-300 ease-out will-change-[transform,width]"
@@ -477,7 +500,7 @@ export const WorldCupHubModal: React.FC<WorldCupHubModalProps> = ({ onClose }) =
                         
                         <button 
                             onClick={onClose}
-                            className="w-8 h-8 flex items-center justify-center rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors cursor-pointer"
+                            className="w-8 h-8 flex items-center justify-center rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors cursor-pointer flex-shrink-0"
                             aria-label="Close"
                         >
                             <span className="material-symbols-outlined text-lg">close</span>

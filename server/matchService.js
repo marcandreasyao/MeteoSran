@@ -2,12 +2,13 @@ import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
-// Football-Data.org API key
-const FOOTBALL_DATA_TOKEN = process.env.FOOTBALL_DATA_TOKEN || '';
+// Football-Data.org API key (dynamically evaluated to avoid ESM import order bugs)
+const getFootballDataToken = () => process.env.FOOTBALL_DATA_TOKEN || '';
 
 // Tracks the last time we successfully called the external API (ms epoch)
 let lastApiSyncMs = 0;
 const API_SYNC_MIN_INTERVAL_MS = 2 * 60 * 1000; // 2 minutes
+let isSyncing = false;
 
 // Map Football-Data.org status strings to our internal status strings
 const FD_STATUS_MAP = {
@@ -570,7 +571,8 @@ function generateStatsFromScore(row) {
 // Startup: fetch full WC tournament from Football-Data.org and seed the DB
 // ─────────────────────────────────────────────────────────────────────────────
 export async function seedFromAPI() {
-    if (!FOOTBALL_DATA_TOKEN) {
+    const token = getFootballDataToken();
+    if (!token) {
         console.warn('[MatchSync] No FOOTBALL_DATA_TOKEN — cannot seed from API.');
         return;
     }
@@ -578,7 +580,7 @@ export async function seedFromAPI() {
     try {
         const url = 'https://api.football-data.org/v4/competitions/WC/matches?season=2026';
         const res = await fetch(url, {
-            headers: { 'X-Auth-Token': FOOTBALL_DATA_TOKEN },
+            headers: { 'X-Auth-Token': token },
             signal: AbortSignal.timeout(15000),
         });
 
@@ -701,22 +703,32 @@ async function autoCorrectStatuses() {
         
         if (rawElapsed >= 120) {
             // Safety: should be finished
+            const merged = { ...m, status: 'finished', elapsed: 90 };
             await prisma.worldCupMatch.update({
                 where: { id: m.id },
-                data: { status: 'finished', elapsed: 90 },
+                data: { 
+                    status: 'finished', 
+                    elapsed: 90,
+                    stats: m.stats || generateStatsFromScore(merged)
+                },
             });
             console.log(`[MatchSync] Auto-finished (safety): ${m.homeName} vs ${m.awayName}`);
             await settleMatchPredictions(m.id, m.scoreHome, m.scoreAway);
         } else {
+            const merged = { ...m, status: 'live', elapsed: trueElapsed };
             await prisma.worldCupMatch.update({
                 where: { id: m.id },
-                data: { status: 'live', elapsed: trueElapsed },
+                data: { 
+                    status: 'live', 
+                    elapsed: trueElapsed,
+                    stats: m.stats || generateStatsFromScore(merged)
+                },
             });
             console.log(`[MatchSync] Auto-started: ${m.homeName} vs ${m.awayName} (${trueElapsed}')`);
         }
     }
 
-    // Live matches past 120 min -> finished
+    // Live matches past 120 min -> finished (only if not recently synced from API)
     const staleLive = await prisma.worldCupMatch.findMany({
         where: { status: 'live' },
     });
@@ -724,19 +736,34 @@ async function autoCorrectStatuses() {
         const rawElapsed = Math.floor((now.getTime() - m.kickoff.getTime()) / 60000);
         const trueElapsed = calculateElapsedMin(m.kickoff);
         
-        if (rawElapsed >= 120) {
+        // If the match was synced from the API within the last 15 minutes, trust the API status (e.g. paused/delayed/extra-time matches)
+        const isRecentlySynced = m.lastSyncedAt && (now.getTime() - m.lastSyncedAt.getTime() < 15 * 60 * 1000);
+
+        if (rawElapsed >= 120 && !isRecentlySynced) {
+            const merged = { ...m, status: 'finished', elapsed: 90 };
             await prisma.worldCupMatch.update({
                 where: { id: m.id },
-                data: { status: 'finished', elapsed: 90 },
+                data: { 
+                    status: 'finished', 
+                    elapsed: 90,
+                    stats: m.stats || generateStatsFromScore(merged)
+                },
             });
             console.log(`[MatchSync] Auto-finished (120min): ${m.homeName} vs ${m.awayName}`);
             await settleMatchPredictions(m.id, m.scoreHome, m.scoreAway);
         } else {
-            // Just update elapsed minute
-            await prisma.worldCupMatch.update({
-                where: { id: m.id },
-                data: { elapsed: trueElapsed },
-            });
+            // Just update elapsed minute and ensure stats exist
+            // Avoid database writes if elapsed minute has not changed to keep DB fetch fast
+            if (trueElapsed !== m.elapsed || !m.stats) {
+                const merged = { ...m, elapsed: trueElapsed };
+                await prisma.worldCupMatch.update({
+                    where: { id: m.id },
+                    data: { 
+                        elapsed: trueElapsed,
+                        stats: m.stats || generateStatsFromScore(merged)
+                    },
+                });
+            }
         }
     }
 }
@@ -745,16 +772,24 @@ async function autoCorrectStatuses() {
 // Layer 2 — Football-Data.org API sync for live/finished matches
 // ─────────────────────────────────────────────────────────────────────────────
 async function syncFromAPI() {
-    if (!FOOTBALL_DATA_TOKEN) return;
+    const token = getFootballDataToken();
+    if (!token) return;
+
+    if (isSyncing) {
+        console.log('[MatchSync] Sync already in progress, skipping concurrent sync.');
+        return;
+    }
 
     const now = Date.now();
     if (now - lastApiSyncMs < API_SYNC_MIN_INTERVAL_MS) return;
+
+    isSyncing = true;
 
     try {
         // Fetch all matches for the season and filter locally to avoid unsupported comma-separated status filters
         const url = 'https://api.football-data.org/v4/competitions/WC/matches?season=2026';
         const res = await fetch(url, {
-            headers: { 'X-Auth-Token': FOOTBALL_DATA_TOKEN },
+            headers: { 'X-Auth-Token': token },
             signal: AbortSignal.timeout(8000),
         });
 
@@ -773,20 +808,19 @@ async function syncFromAPI() {
         );
         let syncCount = 0;
 
+        // Fetch all matches once to do in-memory lookups, avoiding 42 sequential queries on connection_limit=1
+        const dbMatches = await prisma.worldCupMatch.findMany();
+
         for (const am of apiMatches) {
             if (!am.homeTeam?.tla || !am.awayTeam?.tla) continue;
 
-            // Find in DB by Football-Data.org fixture ID
-            let dbMatch = await prisma.worldCupMatch.findUnique({
-                where: { fdApiId: am.id },
-            });
+            // Find in dbMatches array by Football-Data.org fixture ID
+            let dbMatch = dbMatches.find(m => m.fdApiId === am.id);
 
             // Fallback: try by our generated ID
             if (!dbMatch) {
                 const matchId = generateMatchId(am.homeTeam.tla, am.awayTeam.tla);
-                dbMatch = await prisma.worldCupMatch.findUnique({
-                    where: { id: matchId },
-                });
+                dbMatch = dbMatches.find(m => m.id === matchId);
             }
 
             if (!dbMatch) continue;
@@ -794,6 +828,26 @@ async function syncFromAPI() {
             const newStatus = FD_STATUS_MAP[am.status] || dbMatch.status;
             const fullTime = am.score?.fullTime;
             const halfTime = am.score?.halfTime;
+
+            // Check if anything changed to avoid unneeded database writes
+            const isScoreChanged = (fullTime?.home != null && fullTime.home !== dbMatch.scoreHome) ||
+                                   (fullTime?.away != null && fullTime.away !== dbMatch.scoreAway) ||
+                                   (halfTime?.home != null && halfTime.home !== dbMatch.htScoreHome) ||
+                                   (halfTime?.away != null && halfTime.away !== dbMatch.htScoreAway);
+            const isStatusChanged = newStatus !== dbMatch.status;
+            
+            let targetElapsed = dbMatch.elapsed;
+            if (am.minute != null) {
+                targetElapsed = am.minute;
+            } else if (newStatus === 'finished') {
+                targetElapsed = 90;
+            }
+            const isElapsedChanged = targetElapsed !== dbMatch.elapsed;
+            const isStatsMissing = !dbMatch.stats;
+
+            if (!isScoreChanged && !isStatusChanged && !isElapsedChanged && !isStatsMissing) {
+                continue;
+            }
 
             const updateData = {
                 status: newStatus,
@@ -804,11 +858,9 @@ async function syncFromAPI() {
             if (fullTime?.away != null) updateData.scoreAway = fullTime.away;
             if (halfTime?.home != null) updateData.htScoreHome = halfTime.home;
             if (halfTime?.away != null) updateData.htScoreAway = halfTime.away;
-
-            if (am.minute != null) {
-                updateData.elapsed = am.minute;
-            } else if (newStatus === 'finished') {
-                updateData.elapsed = 90;
+            
+            if (targetElapsed !== dbMatch.elapsed) {
+                updateData.elapsed = targetElapsed;
             }
 
             // Regenerate stats from new scores
@@ -838,6 +890,8 @@ async function syncFromAPI() {
         }
     } catch (err) {
         console.warn('[MatchSync] API sync failed:', err.message);
+    } finally {
+        isSyncing = false;
     }
 }
 
@@ -904,8 +958,9 @@ export async function getAllMatches() {
             console.log('[MatchSync] Database is empty. Running initial tournament seed...');
             await seedFromAPI();
         } else {
-            await autoCorrectStatuses();
-            await syncFromAPI();
+            // Run in background without awaiting to keep DB fetch non-blocking
+            autoCorrectStatuses().catch(err => console.warn('[MatchSync] Background auto-correct failed:', err.message));
+            syncFromAPI().catch(err => console.warn('[MatchSync] Background API sync failed:', err.message));
         }
     } catch (err) {
         console.warn('[MatchSync] On-demand getAllMatches auto-correct/sync failed:', err.message);
@@ -918,10 +973,10 @@ export async function getAllMatches() {
 }
 
 export async function getMatchById(id) {
-    // ON-DEMAND SYNC & AUTO-CORRECT: Run sync when a single match details are queried
+    // ON-DEMAND SYNC & AUTO-CORRECT: Run sync in the background when a single match is queried
     try {
-        await autoCorrectStatuses();
-        await syncFromAPI();
+        autoCorrectStatuses().catch(err => console.warn('[MatchSync] Background auto-correct failed:', err.message));
+        syncFromAPI().catch(err => console.warn('[MatchSync] Background API sync failed:', err.message));
     } catch (err) {
         console.warn('[MatchSync] On-demand getMatchById auto-correct/sync failed:', err.message);
     }

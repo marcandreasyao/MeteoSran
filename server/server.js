@@ -1,4 +1,4 @@
-import dotenv from 'dotenv';
+import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import fetch from 'node-fetch';
@@ -10,7 +10,6 @@ import { retrieveHybrid } from './ragService.js';
 import { getAllMatches, getMatchById, recordVote, getVotePercentages, startSmartPoller, seedFromAPI, recordPrediction, getLeaderboard } from './matchService.js';
 import { retrieveGraphContext } from './graphService.js';
 
-dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
