@@ -458,33 +458,69 @@ function generateDeterministicEventsAndMomentum(match) {
         ? events.filter(e => e.minute <= elapsed) 
         : events;
 
-    // 4. MOMENTUM (Net Deviation)
+    // 4. MOMENTUM (Stats-Driven Net Pressure)
+    // Uses real match stats to anchor the mean pressure. For live/finished matches
+    // with actual possession/shot data, the momentum chart reflects the statistical
+    // dominance of each team, not a pure hallucinated random walk.
     const momentum = [];
-    let currentPressure = randInt(-10, 10);
+
+    // ── Derive a "statistical dominance" baseline from real stats ──
+    // Range: -1.0 (complete away dominance) to +1.0 (complete home dominance)
+    let statBaseline = 0; // 0 = perfectly balanced (default for scheduled matches)
+    
+    if (match.stats) {
+        const { possession, shots, shotsOnTarget } = match.stats;
+        
+        // Possession contributes 50% of dominance signal
+        const possessionHome = (possession?.home ?? 50) / 100;
+        const possessionDominance = (possessionHome - 0.5) * 2; // -1 to +1
+        
+        // Shot quality contributes 50% of dominance signal
+        const totalSOT = (shotsOnTarget?.home ?? 0) + (shotsOnTarget?.away ?? 0);
+        const shotDominance = totalSOT > 0
+            ? ((shotsOnTarget?.home ?? 0) / totalSOT - 0.5) * 2
+            : 0;
+        
+        statBaseline = possessionDominance * 0.5 + shotDominance * 0.5;
+    } else {
+        // No stats: derive baseline from score alone
+        const totalGoals = scoreHome + scoreAway;
+        if (totalGoals > 0) {
+            statBaseline = ((scoreHome / totalGoals) - 0.5) * 0.8;
+        }
+    }
+
+    // Convert normalized baseline (-1 to +1) to pressure scale (-60 to +60)
+    const pressureTarget = statBaseline * 35;
+    const redCardHomeMin = events.find(e => e.type === 'red_card' && e.team === 'home')?.minute || 91;
+    const redCardAwayMin = events.find(e => e.type === 'red_card' && e.team === 'away')?.minute || 91;
+
+    let currentPressure = randInt(-8, 8);
 
     for (let min = 1; min <= 90; min++) {
-        let drift = -0.1 * currentPressure;
-        let step = (rand() - 0.5) * 16;
+        // Mean-reversion toward stat-derived target (not zero) — ensures chart "tells the story"
+        const meanReversionStrength = 0.12;
+        const drift = meanReversionStrength * (pressureTarget - currentPressure);
+        
+        // Smaller noise for a cleaner, more readable waveform
+        const noise = (rand() - 0.5) * 12;
 
+        // Goal spikes: sharp pressure surge then decays toward new baseline
         const homeGoalAtMin = homeGoalMinutes.includes(min);
         const awayGoalAtMin = awayGoalMinutes.includes(min);
-        
         let goalSpike = 0;
-        if (homeGoalAtMin) {
-            goalSpike = 40;
-        } else if (awayGoalAtMin) {
-            goalSpike = -40;
-        }
+        if (homeGoalAtMin) goalSpike = 38 + randInt(-5, 5);
+        else if (awayGoalAtMin) goalSpike = -(38 + randInt(-5, 5));
 
+        // Red card permanently shifts the pressure target after the event
         let redCardBias = 0;
-        if (homeHasRed && min >= (events.find(e => e.type === 'red_card' && e.team === 'home')?.minute || 91)) {
-            redCardBias = -15;
-        }
-        if (awayHasRed && min >= (events.find(e => e.type === 'red_card' && e.team === 'away')?.minute || 91)) {
-            redCardBias = 15;
-        }
+        if (homeHasRed && min >= redCardHomeMin) redCardBias = -14;
+        if (awayHasRed && min >= redCardAwayMin) redCardBias = 14;
 
-        currentPressure = currentPressure + drift + step + goalSpike + redCardBias;
+        // Apply halftime reset: slight regression toward zero at minute 45→46 transition
+        const halftimeReset = min === 46 ? -(currentPressure * 0.4) : 0;
+
+        currentPressure = currentPressure + drift + noise + goalSpike + redCardBias + halftimeReset;
         currentPressure = Math.max(-60, Math.min(60, currentPressure));
         
         momentum.push(Math.round(currentPressure));

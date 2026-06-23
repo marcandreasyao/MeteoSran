@@ -2208,6 +2208,26 @@ async function getWeatherDataForCoordinates(lat, lon, locationLabel) {
                 const fdIcon = fd.day.condition.icon.startsWith('http') 
                     ? fd.day.condition.icon 
                     : `https:${fd.day.condition.icon}`;
+                
+                // Include hourly slots for hyper-local kickoff forecast
+                const hourly = (fd.hour || []).map(h => {
+                    const hIcon = h.condition.icon.startsWith('http') ? h.condition.icon : `https:${h.condition.icon}`;
+                    return {
+                        time: h.time,         // e.g. "2026-06-15 14:00"
+                        temp_c: h.temp_c,
+                        feelslike_c: h.feelslike_c,
+                        humidity: h.humidity,
+                        wind_kph: h.wind_kph,
+                        wind_dir: h.wind_dir,
+                        precip_mm: h.precip_mm,
+                        chance_of_rain: h.chance_of_rain,
+                        conditionText: h.condition.text,
+                        iconUrl: hIcon,
+                        is_day: h.is_day,
+                        uv: h.uv,
+                    };
+                });
+
                 return {
                     date: fd.date,
                     dayOfWeek: dayOfWeek,
@@ -2217,7 +2237,8 @@ async function getWeatherDataForCoordinates(lat, lon, locationLabel) {
                     conditionText: fd.day.condition.text,
                     iconUrl: fdIcon,
                     precip_mm: fd.day.totalprecip_mm,
-                    chanceOfRain: fd.day.daily_chance_of_rain
+                    chanceOfRain: fd.day.daily_chance_of_rain,
+                    hourly,
                 };
             });
 
@@ -2299,6 +2320,77 @@ app.get('/api/worldcup/match/:id/weather', async (req, res) => {
         const locationLabel = `${stadium.name}, ${stadium.city}`;
         
         const weather = await getWeatherDataForCoordinates(stadium.lat, stadium.lon, locationLabel);
+        
+        // ── HYPER-LOCAL KICKOFF FORECAST ──────────────────────────────────────────
+        // For upcoming matches: find the hourly forecast slot closest to kickoff time
+        // and build a dedicated kickoffForecast with conditions AT match time.
+        let kickoffForecast = null;
+        const kickoffMs = new Date(match.kickoff).getTime();
+        const hoursUntilKickoff = (kickoffMs - now) / (1000 * 60 * 60);
+        const isUpcoming = hoursUntilKickoff > -3 && hoursUntilKickoff <= 120; // up to 5 days ahead
+
+        if (isUpcoming && weather.forecast && weather.forecast.length > 0) {
+            const kickoffDate = new Date(match.kickoff);
+            const targetDate = kickoffDate.toISOString().split('T')[0];
+
+            // Find the forecast day matching the kickoff date
+            const dayForecast = weather.forecast.find(f => f.date === targetDate);
+            if (dayForecast && dayForecast.hourly && dayForecast.hourly.length > 0) {
+                // Pick hourly slot closest to kickoff hour
+                const targetHour = kickoffDate.getUTCHours();
+                let bestSlot = null;
+                let bestDiff = Infinity;
+                for (const slot of dayForecast.hourly) {
+                    // WeatherAPI hourly time format: "2026-06-15 14:00" (local time)
+                    const slotHour = parseInt(slot.time.split(' ')[1]?.split(':')[0] || '0', 10);
+                    const diff = Math.abs(slotHour - targetHour);
+                    if (diff < bestDiff) {
+                        bestDiff = diff;
+                        bestSlot = slot;
+                    }
+                }
+
+                if (bestSlot) {
+                    const kickoffWeatherForAnalysis = {
+                        temperature: bestSlot.temp_c,
+                        realFeelTemperature: { value: bestSlot.feelslike_c },
+                        relativeHumidity: bestSlot.humidity,
+                        wind: { speed: bestSlot.wind_kph },
+                        hasPrecipitation: bestSlot.precip_mm > 0,
+                        precip_mm: bestSlot.precip_mm,
+                        weatherText: bestSlot.conditionText || '',
+                    };
+                    const kickoffImpact = analyzeWeatherImpact(kickoffWeatherForAnalysis, stadium);
+
+                    kickoffForecast = {
+                        temperature: bestSlot.temp_c,
+                        feelsLike: bestSlot.feelslike_c,
+                        humidity: bestSlot.humidity,
+                        windKph: bestSlot.wind_kph,
+                        windDir: bestSlot.wind_dir,
+                        precip_mm: bestSlot.precip_mm,
+                        chanceOfRain: bestSlot.chance_of_rain,
+                        conditionText: bestSlot.conditionText,
+                        iconUrl: bestSlot.iconUrl,
+                        isDayTime: bestSlot.is_day === 1,
+                        impact: {
+                            rating: kickoffImpact.rating,
+                            ratingText: kickoffImpact.ratingText,
+                            color: kickoffImpact.color,
+                            fatigueRisk: kickoffImpact.fatigueRisk,
+                            ballPhysics: kickoffImpact.ballPhysics,
+                            uiWeatherType: kickoffImpact.uiWeatherType,
+                            punditComment: kickoffImpact.punditComment,
+                            tips: kickoffImpact.tips,
+                        },
+                        forecastedAt: bestSlot.time,
+                        hoursUntilKickoff: Math.round(hoursUntilKickoff * 10) / 10,
+                    };
+                }
+            }
+        }
+        // ─────────────────────────────────────────────────────────────────────────
+
         const weatherImpact = analyzeWeatherImpact(weather, stadium);
 
         const responseData = {
@@ -2321,7 +2413,8 @@ app.get('/api/worldcup/match/:id/weather', async (req, res) => {
                 precipMm: weather.precip_mm,
                 hasPrecip: weather.hasPrecipitation
             },
-            impact: weatherImpact
+            impact: weatherImpact,
+            kickoffForecast,
         };
 
         // Cache the result

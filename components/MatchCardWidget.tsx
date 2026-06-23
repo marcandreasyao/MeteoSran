@@ -86,8 +86,8 @@ export const MatchCardWidget: React.FC<MatchCardWidgetProps> = ({ matchId, defau
     const [showWeatherPanel, setShowWeatherPanel] = useState(defaultShowWeather);
     const [weatherData, setWeatherData] = useState<any | null>(null);
     const [weatherLoading, setWeatherLoading] = useState(false);
+    const [kickoffAlertDismissed, setKickoffAlertDismissed] = useState(false);
 
-    // Fetch stadium weather impact details
     useEffect(() => {
         let isMounted = true;
         const fetchWeather = async () => {
@@ -705,6 +705,124 @@ export const MatchCardWidget: React.FC<MatchCardWidgetProps> = ({ matchId, defau
                 </div>
             )}
 
+            {/* HYPER-LOCAL KICKOFF WEATHER ALERT BANNER */}
+            {/* Shows for scheduled matches when we have a kickoff-time forecast */}
+            {match.status === 'scheduled' &&
+             weatherData?.kickoffForecast &&
+             !kickoffAlertDismissed && (() => {
+                const kf = weatherData.kickoffForecast;
+                const hoursLeft = kf.hoursUntilKickoff;
+                const impact = kf.impact;
+                
+                // Severity-based color palette
+                const isExtreme = impact?.rating === 'extreme';
+                const isDemanding = impact?.rating === 'demanding';
+                const isRain = impact?.uiWeatherType === 'rain';
+                const isWind = impact?.uiWeatherType === 'wind';
+                
+                const bannerBg = isExtreme
+                    ? 'from-rose-950/80 via-rose-900/60 to-slate-950/80 border-rose-500/30'
+                    : isDemanding
+                    ? 'from-amber-950/80 via-amber-900/60 to-slate-950/80 border-amber-500/30'
+                    : isRain
+                    ? 'from-sky-950/80 via-sky-900/60 to-slate-950/80 border-sky-500/30'
+                    : isWind
+                    ? 'from-slate-950/80 via-slate-800/60 to-slate-950/80 border-slate-500/30'
+                    : 'from-emerald-950/80 via-emerald-900/40 to-slate-950/80 border-emerald-500/20';
+                
+                const accentColor = isExtreme ? 'text-rose-400' :
+                    isDemanding ? 'text-amber-400' :
+                    isRain ? 'text-sky-400' : 'text-emerald-400';
+                
+                const accentBorder = isExtreme ? 'border-rose-500/40' :
+                    isDemanding ? 'border-amber-500/40' :
+                    isRain ? 'border-sky-500/40' : 'border-emerald-500/40';
+
+                const weatherEmoji = impact?.uiWeatherType === 'rain' ? '🌧️' :
+                    impact?.uiWeatherType === 'wind' ? '💨' :
+                    impact?.uiWeatherType === 'heat' ? '🔥' :
+                    impact?.uiWeatherType === 'cloudy' ? '☁️' :
+                    impact?.uiWeatherType === 'snow' ? '❄️' : '☀️';
+
+                return (
+                    <div className={`border-t bg-gradient-to-r ${bannerBg} border`}>
+                        <div className="px-4 py-3 flex flex-col gap-2">
+                            {/* Alert Header */}
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                    <span className="text-base leading-none">{weatherEmoji}</span>
+                                    <div className="flex flex-col">
+                                        <span className={`text-[9px] font-black uppercase tracking-widest ${accentColor}`}>
+                                            Prévision Coup d'Envoi
+                                        </span>
+                                        <span className="text-[8.5px] text-slate-400 font-semibold">
+                                            {hoursLeft > 24
+                                                ? `dans ${Math.round(hoursLeft / 24)}j · ${weatherData.stadium?.city}`
+                                                : hoursLeft > 1
+                                                ? `dans ${Math.round(hoursLeft)}h · ${weatherData.stadium?.city}`
+                                                : `Bientôt · ${weatherData.stadium?.city}`}
+                                        </span>
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    {/* Forecasted temp pill */}
+                                    <div className={`flex items-baseline gap-0.5 px-2 py-0.5 rounded-lg bg-slate-950/40 border ${accentBorder}`}>
+                                        <span className={`font-jersey text-base font-black ${accentColor}`}>
+                                            {Math.round(kf.temperature)}
+                                        </span>
+                                        <span className="font-sans text-[9px] text-slate-500 font-bold">°C</span>
+                                        {kf.chanceOfRain > 20 && (
+                                            <span className="text-[8px] text-sky-400 font-bold ml-1">💧{kf.chanceOfRain}%</span>
+                                        )}
+                                    </div>
+                                    {/* Dismiss button */}
+                                    <button
+                                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); setKickoffAlertDismissed(true); }}
+                                        className="w-5 h-5 flex items-center justify-center rounded-full hover:bg-white/10 active:scale-90 transition-all text-slate-500 hover:text-slate-300 cursor-pointer"
+                                    >
+                                        <span className="material-symbols-outlined text-[12px]">close</span>
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Condition + Wind row */}
+                            <div className="flex items-center justify-between text-[9px] font-semibold">
+                                <span className="text-slate-300">{kf.conditionText}</span>
+                                {kf.windKph > 20 && (
+                                    <span className="text-slate-400 flex items-center gap-1">
+                                        <span className="material-symbols-outlined text-[10px]">air</span>
+                                        {Math.round(kf.windKph)} km/h {kf.windDir}
+                                    </span>
+                                )}
+                            </div>
+
+                            {/* Impact Rating pill + pundit snippet */}
+                            {impact && (
+                                <div className={`flex items-start gap-2 p-2 rounded-xl bg-slate-950/30 border ${accentBorder}`}>
+                                    <span className="material-symbols-outlined text-[14px] text-slate-400 flex-shrink-0 mt-0.5">smart_toy</span>
+                                    <div className="flex flex-col gap-1 min-w-0">
+                                        <span className={`text-[8.5px] font-black uppercase tracking-widest ${accentColor}`}>
+                                            {impact.ratingText?.fr || impact.ratingText}
+                                        </span>
+                                        {impact.punditComment?.fr && (
+                                            <p className="text-[9.5px] text-slate-300 italic leading-snug line-clamp-2">
+                                                &ldquo;{impact.punditComment.fr}&rdquo;
+                                            </p>
+                                        )}
+                                        {impact.tips?.fr?.slice(0, 1).map((tip: string, idx: number) => (
+                                            <span key={idx} className="text-[8.5px] text-slate-400 flex items-start gap-1">
+                                                <span className={`${accentColor} flex-shrink-0`}>•</span>
+                                                {tip}
+                                            </span>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                );
+            })()}
+
             {/* Interactive Poll Section */}
             <div className="p-4 border-t border-slate-800/80 bg-slate-950/20">
                 <div className="flex items-center justify-between mb-3.5 px-1">
@@ -920,16 +1038,18 @@ export const MatchCardWidget: React.FC<MatchCardWidgetProps> = ({ matchId, defau
                                         <div className="flex items-center justify-between">
                                             <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider flex items-center gap-1.5">
                                                 <span className="material-symbols-outlined text-[13px] text-emerald-400">stacked_line_chart</span>
-                                                Moments de pression (Net Deviation)
+                                                Pression Terrain {match.stats ? '(Stats Live)' : '(Projection)'}
                                             </span>
                                             <div className="flex items-center gap-3 text-[8.5px] font-bold uppercase tracking-wider">
                                                 <span className="flex items-center gap-1 text-emerald-400">
                                                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
                                                     {match.home.name}
+                                                    {match.stats && <span className="font-jersey text-[9px] ml-0.5 opacity-70">{match.stats.possession.home}%</span>}
                                                 </span>
                                                 <span className="flex items-center gap-1 text-sky-400">
                                                     <span className="w-1.5 h-1.5 rounded-full bg-sky-500" />
                                                     {match.away.name}
+                                                    {match.stats && <span className="font-jersey text-[9px] ml-0.5 opacity-70">{match.stats.possession.away}%</span>}
                                                 </span>
                                             </div>
                                         </div>
