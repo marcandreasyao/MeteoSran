@@ -241,7 +241,9 @@ function getSeededRandom(seedString) {
     let hash = 0;
     for (let i = 0; i < seedString.length; i++) {
         hash = seedString.charCodeAt(i) + ((hash << 5) - hash);
+        hash = hash & hash; // Convert to 32bit integer
     }
+    hash = Math.abs(hash); // Prevent negative outputs from bitwise overflow
     return function() {
         hash = (hash * 9301 + 49297) % 233280;
         return hash / 233280;

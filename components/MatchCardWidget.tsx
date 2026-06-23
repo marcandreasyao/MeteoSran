@@ -87,6 +87,8 @@ export const MatchCardWidget: React.FC<MatchCardWidgetProps> = ({ matchId, defau
     const [weatherData, setWeatherData] = useState<any | null>(null);
     const [weatherLoading, setWeatherLoading] = useState(false);
     const [kickoffAlertDismissed, setKickoffAlertDismissed] = useState(false);
+    const [voteSubmitting, setVoteSubmitting] = useState<string | null>(null); // which choice is being submitted
+    const [voteError, setVoteError] = useState<string | null>(null);
 
     useEffect(() => {
         let isMounted = true;
@@ -129,16 +131,15 @@ export const MatchCardWidget: React.FC<MatchCardWidgetProps> = ({ matchId, defau
                     const data = await response.json();
                     setMatch(data);
 
-                    // Check if already voted in database, fallback to localStorage
+                    // Restore voted state: server-side prediction takes precedence,
+                    // then localStorage. Never wipe a locally-known vote on re-fetch.
                     if (data.userPrediction) {
                         setVotedChoice(data.userPrediction);
                     } else {
                         const voted = localStorage.getItem(`voted_${matchId}`);
-                        if (voted) {
-                            setVotedChoice(voted);
-                        } else {
-                            setVotedChoice(null);
-                        }
+                        // Only set from localStorage — don't call setVotedChoice(null) here,
+                        // because the 60s re-fetch would clear an in-flight or fresh vote.
+                        if (voted) setVotedChoice(voted);
                     }
                 }
             } catch (err) {
@@ -207,7 +208,13 @@ export const MatchCardWidget: React.FC<MatchCardWidgetProps> = ({ matchId, defau
     }, [match]);
 
     const handleVote = async (choice: 'home' | 'draw' | 'away') => {
-        if (votedChoice || !match) return;
+        // Block if already voted, already submitting, or match isn't open for votes
+        if (votedChoice || voteSubmitting || !match) return;
+        // Block votes after kickoff (live or finished)
+        if (match.status === 'live' || match.status === 'finished') return;
+
+        setVoteError(null);
+        setVoteSubmitting(choice);
 
         try {
             if (user) {
@@ -215,11 +222,7 @@ export const MatchCardWidget: React.FC<MatchCardWidgetProps> = ({ matchId, defau
                 const response = await fetch(`/api/worldcup/match/${match.id}/predict`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        userId: user.uid,
-                        username,
-                        choice
-                    })
+                    body: JSON.stringify({ userId: user.uid, username, choice })
                 });
 
                 if (response.ok) {
@@ -229,8 +232,9 @@ export const MatchCardWidget: React.FC<MatchCardWidgetProps> = ({ matchId, defau
                     localStorage.setItem(`voted_${match.id}`, choice);
                     onVoteCompleted?.(match.id, choice);
                 } else {
-                    const errData = await response.json();
-                    console.error("Prediction submission failed:", errData.error);
+                    const errData = await response.json().catch(() => ({}));
+                    setVoteError(errData.error || 'Erreur réseau. Réessayez.');
+                    console.error('Prediction submission failed:', errData.error);
                 }
             } else {
                 const response = await fetch(`/api/worldcup/match/${match.id}/vote`, {
@@ -245,10 +249,15 @@ export const MatchCardWidget: React.FC<MatchCardWidgetProps> = ({ matchId, defau
                     setVotedChoice(choice);
                     localStorage.setItem(`voted_${match.id}`, choice);
                     onVoteCompleted?.(match.id, choice);
+                } else {
+                    setVoteError('Erreur réseau. Réessayez.');
                 }
             }
         } catch (err) {
-            console.error("Error submitting vote/prediction:", err);
+            setVoteError('Connexion perdue. Réessayez.');
+            console.error('Error submitting vote/prediction:', err);
+        } finally {
+            setVoteSubmitting(null);
         }
     };
 
@@ -823,120 +832,163 @@ export const MatchCardWidget: React.FC<MatchCardWidgetProps> = ({ matchId, defau
                 );
             })()}
 
-            {/* Interactive Poll Section */}
-            <div className="p-4 border-t border-slate-800/80 bg-slate-950/20">
-                <div className="flex items-center justify-between mb-3.5 px-1">
-                    <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
-                        <span className="material-symbols-outlined text-[13px]" translate="no">ballot</span>
-                        {user ? 'Votre Pronostic' : 'Qui va gagner ?'}
-                    </h4>
-                    <span className="text-[10px] text-slate-500 font-semibold bg-slate-900/50 px-2 py-0.5 rounded-md border border-slate-800/30 flex items-baseline gap-1 select-none font-jersey">
-                        <span className="text-xs text-slate-400 flex items-baseline">{renderVotesCount(totalVotes)}</span>
-                        <span className="text-[8.5px] uppercase tracking-wider text-slate-500">votes</span>
-                    </span>
-                </div>
+            {/* ── INTERACTIVE POLL SECTION ─────────────────────────────────────────── */}
+            {(() => {
+                // Votes are always visible for live/finished matches.
+                // For scheduled matches, visible after user has voted.
+                const isMatchOver = match.status === 'live' || match.status === 'finished';
+                const showResults = !!(votedChoice) || isMatchOver;
+                // Voting is only open for scheduled matches before kickoff
+                const votingOpen = match.status === 'scheduled' && !votedChoice;
+                const isVotingLocked = isMatchOver && !votedChoice; // match started but user never voted
 
-                <div className="flex flex-col gap-2.5">
-                    {/* Home Vote Option */}
-                    <button
-                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleVote('home'); }}
-                        disabled={!!votedChoice}
-                        className={`relative w-full overflow-hidden rounded-xl py-2 px-3 flex items-center justify-between border transition-all text-xs font-semibold
-                            ${votedChoice 
-                                ? 'bg-slate-900/40 border-slate-800/40' 
-                                : 'bg-slate-900 hover:bg-slate-850 hover:border-slate-600 border-slate-800 cursor-pointer active:scale-[0.99]'}`}
-                    >
-                        {/* Animated Percentage Fill */}
-                        {votedChoice && (
-                            <div 
-                                className={`absolute left-0 top-0 bottom-0 transition-all duration-700 ease-out 
-                                    ${votedChoice === 'home' ? 'bg-emerald-500/15' : 'bg-slate-800/20'}`}
-                                style={{ width: `${percentages.home}%` }}
-                            />
-                        )}
-                        <span className="relative flex items-center gap-2">
-                            <img 
-                                src={`https://flagcdn.com/${match.home.code.toLowerCase()}.svg`} 
-                                alt={match.home.name} 
-                                className="w-5 h-3.5 object-cover rounded-[2px] border border-slate-700/30 shadow-sm" 
-                            />
-                            <span className={votedChoice === 'home' ? 'text-emerald-400 font-bold' : ''}>
-                                {match.home.name}
-                            </span>
-                        </span>
-                        {votedChoice && (
-                            <span className={`relative flex items-center font-jersey text-sm ${votedChoice === 'home' ? 'text-emerald-400' : 'text-slate-450'}`}>
-                                <span>{percentages.home}</span>
-                                <span className="font-sans text-[10px] ml-0.5 text-slate-500/80 font-bold select-none">%</span>
-                            </span>
-                        )}
-                    </button>
+                const VoteButton = ({ choice, label, icon }: {
+                    choice: 'home' | 'draw' | 'away';
+                    label: string;
+                    icon: React.ReactNode;
+                }) => {
+                    const pct = percentages[choice];
+                    const isChosen = votedChoice === choice;
+                    const isSubmittingThis = voteSubmitting === choice;
+                    const isSubmittingOther = voteSubmitting !== null && voteSubmitting !== choice;
+                    const isDisabled = !votingOpen || isSubmittingOther || !!voteSubmitting;
 
-                    {/* Draw Option */}
-                    <button
-                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleVote('draw'); }}
-                        disabled={!!votedChoice}
-                        className={`relative w-full overflow-hidden rounded-xl py-2 px-3 flex items-center justify-between border transition-all text-xs font-semibold
-                            ${votedChoice 
-                                ? 'bg-slate-900/40 border-slate-800/40' 
-                                : 'bg-slate-900 hover:bg-slate-850 hover:border-slate-600 border-slate-800 cursor-pointer active:scale-[0.99]'}`}
-                    >
-                        {/* Animated Percentage Fill */}
-                        {votedChoice && (
-                            <div 
-                                className={`absolute left-0 top-0 bottom-0 transition-all duration-700 ease-out 
-                                    ${votedChoice === 'draw' ? 'bg-emerald-500/15' : 'bg-slate-800/20'}`}
-                                style={{ width: `${percentages.draw}%` }}
-                            />
-                        )}
-                        <span className="relative flex items-center gap-2">
-                            <span>🤝</span>
-                            <span className={votedChoice === 'draw' ? 'text-emerald-400 font-bold' : ''}>Match nul (N)</span>
-                        </span>
-                        {votedChoice && (
-                            <span className={`relative flex items-center font-jersey text-sm ${votedChoice === 'draw' ? 'text-emerald-400' : 'text-slate-450'}`}>
-                                <span>{percentages.draw}</span>
-                                <span className="font-sans text-[10px] ml-0.5 text-slate-500/80 font-bold select-none">%</span>
-                            </span>
-                        )}
-                    </button>
+                    return (
+                        <button
+                            onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleVote(choice); }}
+                            disabled={isDisabled || showResults}
+                            className={`relative w-full overflow-hidden rounded-xl py-2 px-3 flex items-center justify-between border transition-all duration-200 text-xs font-semibold select-none
+                                ${ showResults
+                                    ? isChosen
+                                        ? 'bg-emerald-950/30 border-emerald-500/50 cursor-default'
+                                        : 'bg-slate-900/40 border-slate-800/40 cursor-default'
+                                    : isSubmittingThis
+                                    ? 'bg-emerald-950/20 border-emerald-700/40 cursor-wait'
+                                    : 'bg-slate-900 hover:bg-slate-850 hover:border-slate-600 border-slate-800 cursor-pointer active:scale-[0.99]'
+                                }`}
+                        >
+                            {/* Percentage fill bar — always shown for live/finished, or after voting */}
+                            {showResults && (
+                                <div
+                                    className={`absolute left-0 top-0 bottom-0 transition-all duration-700 ease-out
+                                        ${isChosen ? 'bg-emerald-500/18' : 'bg-slate-800/25'}`}
+                                    style={{ width: `${pct}%` }}
+                                />
+                            )}
 
-                    {/* Away Vote Option */}
-                    <button
-                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleVote('away'); }}
-                        disabled={!!votedChoice}
-                        className={`relative w-full overflow-hidden rounded-xl py-2 px-3 flex items-center justify-between border transition-all text-xs font-semibold
-                            ${votedChoice 
-                                ? 'bg-slate-900/40 border-slate-800/40' 
-                                : 'bg-slate-900 hover:bg-slate-850 hover:border-slate-600 border-slate-800 cursor-pointer active:scale-[0.99]'}`}
-                    >
-                        {/* Animated Percentage Fill */}
-                        {votedChoice && (
-                            <div 
-                                className={`absolute left-0 top-0 bottom-0 transition-all duration-700 ease-out 
-                                    ${votedChoice === 'away' ? 'bg-emerald-500/15' : 'bg-slate-800/20'}`}
-                                style={{ width: `${percentages.away}%` }}
-                            />
-                        )}
-                        <span className="relative flex items-center gap-2">
-                            <img 
-                                src={`https://flagcdn.com/${match.away.code.toLowerCase()}.svg`} 
-                                alt={match.away.name} 
-                                className="w-5 h-3.5 object-cover rounded-[2px] border border-slate-700/30 shadow-sm" 
-                            />
-                            <span className={votedChoice === 'away' ? 'text-emerald-400 font-bold' : ''}>
-                                {match.away.name}
+                            {/* Label */}
+                            <span className="relative flex items-center gap-2">
+                                {icon}
+                                <span className={isChosen ? 'text-emerald-400 font-bold' : isMatchOver && !votedChoice ? 'text-slate-500' : ''}>
+                                    {label}
+                                </span>
                             </span>
-                        </span>
-                        {votedChoice && (
-                            <span className={`relative flex items-center font-jersey text-sm ${votedChoice === 'away' ? 'text-emerald-400' : 'text-slate-450'}`}>
-                                <span>{percentages.away}</span>
-                                <span className="font-sans text-[10px] ml-0.5 text-slate-500/80 font-bold select-none">%</span>
+
+                            {/* Right side: % or spinner or ✓ badge */}
+                            <span className="relative flex items-center gap-1.5">
+                                {isSubmittingThis ? (
+                                    <span className="w-3.5 h-3.5 rounded-full border-2 border-emerald-500/30 border-t-emerald-400 animate-spin" />
+                                ) : showResults ? (
+                                    <span className={`flex items-center font-jersey text-sm ${
+                                        isChosen ? 'text-emerald-400' : 'text-slate-500'
+                                    }`}>
+                                        <span>{pct}</span>
+                                        <span className="font-sans text-[10px] ml-0.5 text-slate-500/80 font-bold">%</span>
+                                    </span>
+                                ) : null}
+                                {isChosen && (
+                                    <span className="w-4 h-4 rounded-full bg-emerald-500 flex items-center justify-center flex-shrink-0">
+                                        <span className="material-symbols-outlined text-[10px] text-white font-black" style={{ fontVariationSettings: "'FILL' 1" }}>check</span>
+                                    </span>
+                                )}
+                                {isVotingLocked && !isChosen && (
+                                    <span className="material-symbols-outlined text-[12px] text-slate-700">lock</span>
+                                )}
                             </span>
+                        </button>
+                    );
+                };
+
+                return (
+                    <div className="p-4 border-t border-slate-800/80 bg-slate-950/20">
+                        {/* Poll Header */}
+                        <div className="flex items-center justify-between mb-3.5 px-1">
+                            <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                                <span className="material-symbols-outlined text-[13px]" translate="no">
+                                    {isMatchOver ? 'bar_chart' : 'ballot'}
+                                </span>
+                                {isMatchOver
+                                    ? 'Pronostics de la communauté'
+                                    : user ? 'Votre Pronostic' : 'Qui va gagner ?'}
+                            </h4>
+                            <div className="flex items-center gap-2">
+                                {votedChoice && !isMatchOver && (
+                                    <span className="text-[8.5px] text-emerald-500 font-black uppercase tracking-wider bg-emerald-950/40 border border-emerald-500/30 px-1.5 py-0.5 rounded-full flex items-center gap-0.5 animate-fade-in">
+                                        <span className="material-symbols-outlined text-[10px]" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
+                                        Enregistré
+                                    </span>
+                                )}
+                                {isVotingLocked && (
+                                    <span className="text-[8.5px] text-slate-500 font-black uppercase tracking-wider bg-slate-900/60 border border-slate-700/40 px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
+                                        <span className="material-symbols-outlined text-[10px]">lock</span>
+                                        Votes fermés
+                                    </span>
+                                )}
+                                <span className="text-[10px] text-slate-500 font-semibold bg-slate-900/50 px-2 py-0.5 rounded-md border border-slate-800/30 flex items-baseline gap-1 select-none font-jersey">
+                                    <span className="text-xs text-slate-400 flex items-baseline">{renderVotesCount(totalVotes)}</span>
+                                    <span className="text-[8.5px] uppercase tracking-wider text-slate-500">votes</span>
+                                </span>
+                            </div>
+                        </div>
+
+                        {/* Error message */}
+                        {voteError && (
+                            <div className="mb-2.5 px-3 py-2 rounded-xl bg-rose-950/40 border border-rose-500/30 text-[10px] text-rose-400 font-semibold flex items-center gap-1.5 animate-fade-in">
+                                <span className="material-symbols-outlined text-[12px]">error</span>
+                                {voteError}
+                            </div>
                         )}
-                    </button>
-                </div>
-            </div>
+
+                        {/* Vote Buttons */}
+                        <div className="flex flex-col gap-2.5">
+                            <VoteButton
+                                choice="home"
+                                label={match.home.name}
+                                icon={
+                                    <img
+                                        src={`https://flagcdn.com/${match.home.code.toLowerCase()}.svg`}
+                                        alt={match.home.name}
+                                        className="w-5 h-3.5 object-cover rounded-[2px] border border-slate-700/30 shadow-sm"
+                                    />
+                                }
+                            />
+                            <VoteButton
+                                choice="draw"
+                                label="Match nul"
+                                icon={<span className="text-base leading-none">🤝</span>}
+                            />
+                            <VoteButton
+                                choice="away"
+                                label={match.away.name}
+                                icon={
+                                    <img
+                                        src={`https://flagcdn.com/${match.away.code.toLowerCase()}.svg`}
+                                        alt={match.away.name}
+                                        className="w-5 h-3.5 object-cover rounded-[2px] border border-slate-700/30 shadow-sm"
+                                    />
+                                }
+                            />
+                        </div>
+
+                        {/* Guest sign-in nudge for scheduled matches without a vote */}
+                        {!user && votingOpen && (
+                            <p className="mt-2.5 text-center text-[9px] text-slate-600 font-semibold">
+                                Connectez-vous pour un pronostic officiel avec classement 🏆
+                            </p>
+                        )}
+                    </div>
+                );
+            })()}
 
             {/* Collapsible Tabs Section */}
             {(match.status === 'live' || match.status === 'finished') && (
