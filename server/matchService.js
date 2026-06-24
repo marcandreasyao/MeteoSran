@@ -9,6 +9,35 @@ const getFootballDataToken = () => process.env.FOOTBALL_DATA_TOKEN || '';
 let lastApiSyncMs = 0;
 const API_SYNC_MIN_INTERVAL_MS = 2 * 60 * 1000; // 2 minutes
 let isSyncing = false;
+let activeSyncPromise = null;
+let matchCache = [];
+let cacheLoadPromise = null;
+
+async function ensureMatchCacheLoaded(force = false) {
+    if (force) {
+        matchCache = [];
+    }
+    if (matchCache.length > 0) {
+        return matchCache;
+    }
+    if (cacheLoadPromise) {
+        return cacheLoadPromise;
+    }
+
+    cacheLoadPromise = (async () => {
+        try {
+            const rows = await prisma.worldCupMatch.findMany({
+                orderBy: { kickoff: 'asc' },
+            });
+            matchCache = rows.map(dbRowToMatch);
+            return matchCache;
+        } finally {
+            cacheLoadPromise = null;
+        }
+    })();
+
+    return cacheLoadPromise;
+}
 
 // Map Football-Data.org status strings to our internal status strings
 const FD_STATUS_MAP = {
@@ -692,6 +721,7 @@ export async function seedFromAPI() {
 
         if (ops.length > 0) {
             await prisma.$transaction(ops);
+            await ensureMatchCacheLoaded(true);
         }
 
         lastApiSyncMs = Date.now();
@@ -802,6 +832,7 @@ async function autoCorrectStatuses() {
     // Execute all updates in a single transaction
     if (ops.length > 0) {
         await prisma.$transaction(ops);
+        await ensureMatchCacheLoaded(true);
     }
 
     // Settle predictions after the transaction succeeds
@@ -927,6 +958,7 @@ async function syncFromAPI() {
 
         if (ops.length > 0) {
             await prisma.$transaction(ops);
+            await ensureMatchCacheLoaded(true);
             // Settle predictions after the transaction succeeds
             for (const s of postSyncSettlements) {
                 await settleMatchPredictions(s.matchId, s.scoreHome, s.scoreAway);
@@ -941,27 +973,25 @@ async function syncFromAPI() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Smart poller: 60s tick, API calls only during active match windows
-// ACTIVE on Supabase (no compute timeout limits unlike Neon free tier)
+// Unified Sync Cycle: Runs auto-correct and/or API sync with a shared lock
+// to prevent concurrent DB connection pool exhaustion (connection_limit=1).
 // ─────────────────────────────────────────────────────────────────────────────
-export function startSmartPoller() {
-    console.log('[MatchSync] ✅ Smart match poller ACTIVE (Supabase). Tick every 60s, API sync throttled to 2min.');
+export async function runSyncCycle() {
+    if (activeSyncPromise) {
+        return activeSyncPromise;
+    }
 
-    setInterval(async () => {
+    activeSyncPromise = (async () => {
         try {
-            // Layer 1 always runs (zero API cost — time-based corrections only)
+            // Layer 1: Time-based corrections (always run, zero cost)
             await autoCorrectStatuses();
 
-            // Check if API sync is warranted
+            // Layer 2: API sync (only if matches are active or recently finished/kickoff)
             const now = new Date();
-
-            // Any live match → always sync
             const liveCount = await prisma.worldCupMatch.count({
                 where: { status: 'live' },
             });
 
-            // Any finished match whose kickoff was today (within last 24h) → sync
-            // 24h window ensures same-day matches always get correct final scores
             const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
             const todayFinishedCount = await prisma.worldCupMatch.count({
                 where: {
@@ -970,8 +1000,6 @@ export function startSmartPoller() {
                 },
             });
 
-            // Also sync if any match kicked off in the last 3 hours and is still showing scheduled
-            // (catches cases where autoCorrect moved it to live but API hasn't confirmed yet)
             const threeHoursAgo = new Date(now.getTime() - 3 * 60 * 60 * 1000);
             const recentScheduledCount = await prisma.worldCupMatch.count({
                 where: {
@@ -984,6 +1012,26 @@ export function startSmartPoller() {
                 await syncFromAPI();
             }
         } catch (err) {
+            console.warn('[MatchSync] Sync cycle failed:', err.message);
+        } finally {
+            activeSyncPromise = null;
+        }
+    })();
+
+    return activeSyncPromise;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Smart poller: 60s tick, API calls only during active match windows
+// ACTIVE on Supabase (no compute timeout limits unlike Neon free tier)
+// ─────────────────────────────────────────────────────────────────────────────
+export function startSmartPoller() {
+    console.log('[MatchSync] ✅ Smart match poller ACTIVE (Supabase). Tick every 60s, API sync throttled to 2min.');
+
+    setInterval(async () => {
+        try {
+            await runSyncCycle();
+        } catch (err) {
             console.warn('[MatchSync] Poller tick error:', err.message);
         }
     }, 60 * 1000);
@@ -994,79 +1042,37 @@ export function startSmartPoller() {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export async function getAllMatches() {
-    // ON-DEMAND SYNC & AUTO-CORRECT:
     try {
-        const count = await prisma.worldCupMatch.count();
-        if (count === 0) {
+        const matches = await ensureMatchCacheLoaded();
+
+        if (matches.length === 0) {
             console.log('[MatchSync] Database is empty. Running initial tournament seed...');
             await seedFromAPI();
-        } else {
-            // Smart-blocking: if any match is live or recently kicked off, AWAIT the sync
-            // so the user's first load gets fresh scores (not stale data).
-            const now = new Date();
-            const threeHoursAgo = new Date(now.getTime() - 3 * 60 * 60 * 1000);
-            const urgentCount = await prisma.worldCupMatch.count({
-                where: {
-                    OR: [
-                        { status: 'live' },
-                        { status: 'scheduled', kickoff: { gte: threeHoursAgo, lte: now } },
-                    ],
-                },
-            });
-
-            if (urgentCount > 0) {
-                // Await sync with a safety timeout so we never hang
-                await Promise.race([
-                    (async () => {
-                        await autoCorrectStatuses();
-                        await syncFromAPI();
-                    })(),
-                    new Promise(resolve => setTimeout(resolve, 6000)), // 6s max
-                ]);
-            } else {
-                // No urgency — fire in background
-                autoCorrectStatuses().catch(err => console.warn('[MatchSync] Background auto-correct failed:', err.message));
-                syncFromAPI().catch(err => console.warn('[MatchSync] Background API sync failed:', err.message));
-            }
+            return ensureMatchCacheLoaded(true);
         }
-    } catch (err) {
-        console.warn('[MatchSync] On-demand getAllMatches auto-correct/sync failed:', err.message);
-    }
 
-    const rows = await prisma.worldCupMatch.findMany({
-        orderBy: { kickoff: 'asc' },
-    });
-    return rows.map(dbRowToMatch);
+        // Fire sync in background (non-blocking)
+        runSyncCycle().catch(err => console.warn('[MatchSync] Background sync cycle failed:', err.message));
+
+        return matches;
+    } catch (err) {
+        console.warn('[MatchSync] getAllMatches failed:', err.message);
+        return matchCache;
+    }
 }
 
 export async function getMatchById(id) {
-    // ON-DEMAND SYNC & AUTO-CORRECT: If the requested match is live, await sync first
     try {
-        const row = await prisma.worldCupMatch.findUnique({ where: { id } });
-        if (row && row.status === 'live') {
-            // Await sync with a safety timeout so we never hang
-            await Promise.race([
-                (async () => {
-                    await autoCorrectStatuses();
-                    await syncFromAPI();
-                })(),
-                new Promise(resolve => setTimeout(resolve, 6000)), // 6s max
-            ]);
-            // Re-fetch after sync
-            const updated = await prisma.worldCupMatch.findUnique({ where: { id } });
-            return updated ? dbRowToMatch(updated) : null;
-        } else {
-            // Non-live: fire sync in background, return immediately
-            autoCorrectStatuses().catch(err => console.warn('[MatchSync] Background auto-correct failed:', err.message));
-            syncFromAPI().catch(err => console.warn('[MatchSync] Background API sync failed:', err.message));
-            if (!row) return null;
-            return dbRowToMatch(row);
-        }
+        const matches = await ensureMatchCacheLoaded();
+        const match = matches.find(m => m.id === id);
+
+        // Fire sync in background (non-blocking)
+        runSyncCycle().catch(err => console.warn('[MatchSync] Background sync cycle failed:', err.message));
+
+        return match || null;
     } catch (err) {
-        console.warn('[MatchSync] On-demand getMatchById auto-correct/sync failed:', err.message);
-        const row = await prisma.worldCupMatch.findUnique({ where: { id } });
-        if (!row) return null;
-        return dbRowToMatch(row);
+        console.warn('[MatchSync] getMatchById failed:', err.message);
+        return matchCache.find(m => m.id === id) || null;
     }
 }
 
@@ -1209,6 +1215,10 @@ export async function recordPrediction(matchId, userId, username, choice) {
         update: { choice, username },
         create: { userId, matchId, username, choice }
     });
+
+    if (Object.keys(diff).length > 0) {
+        await ensureMatchCacheLoaded(true);
+    }
 
     return pred;
 }
