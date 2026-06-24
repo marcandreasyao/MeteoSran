@@ -2709,21 +2709,19 @@ const startServer = (port) => {
         });
         */
 
-        // Recurring ping to keep it alive (DISABLED to save Neon free tier compute quota)
-        // const neonKeepAlive = setInterval(pingNeon, NEON_PING_INTERVAL_MS);
-        // console.log(`[MeteoSran Server] Neon keep-alive scheduled every ${NEON_PING_INTERVAL_MS / 60000} minutes.`);
+        // Recurring ping to keep it alive (not needed on Supabase)
         const neonKeepAlive = null;
 
         // ─────────────────────────────────────────────────────────────
         // MATCH SYNC: Seed from API then start smart background poller
-        // (DISABLED background poller to save Neon free tier compute quota. On-demand sync used instead)
+        // ACTIVE on Supabase — safe from compute quota limits
         // ─────────────────────────────────────────────────────────────
-        // seedFromAPI().then(() => {
-        //     startSmartPoller();
-        // }).catch(err => {
-        //     console.warn('[MeteoSran Server] Seed failed, starting poller anyway:', err.message);
-        //     startSmartPoller();
-        // });
+        seedFromAPI().then(() => {
+            startSmartPoller();
+        }).catch(err => {
+            console.warn('[MeteoSran Server] Seed failed, starting poller anyway:', err.message);
+            startSmartPoller();
+        });
 
         // ─────────────────────────────────────────────────────────────
         // GRACEFUL SHUTDOWN: Clean up on process termination

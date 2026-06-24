@@ -564,7 +564,7 @@ function dbRowToMatch(row) {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Generate plausible match stats from score (when no API provides them)
-// Uses seeded randomness from team names for consistency
+// Uses proper seeded PRNG from getSeededRandom() for full determinism
 // ─────────────────────────────────────────────────────────────────────────────
 function generateStatsFromScore(row) {
     if (row.status !== 'finished' && row.status !== 'live') {
@@ -578,30 +578,30 @@ function generateStatsFromScore(row) {
         };
     }
 
-    // Simple seed from team name chars for consistent pseudo-random
-    const seed = (row.homeName + row.awayName).split('').reduce((acc, c) => acc + c.charCodeAt(0), 0);
-    const seededRand = (min, max) => min + ((seed * 7 + max * 13) % (max - min + 1));
+    // Use proper seeded PRNG keyed to the match identity for full determinism
+    const rand = getSeededRandom('stats_' + (row.homeName || '') + (row.awayName || ''));
+    const randInt = (min, max) => Math.floor(min + rand() * (max - min + 1));
 
-    const totalGoals = row.scoreHome + row.scoreAway;
-    const homeAdvantage = totalGoals > 0 ? row.scoreHome / totalGoals : 0.5;
+    const totalGoals = (row.scoreHome || 0) + (row.scoreAway || 0);
+    const homeAdvantage = totalGoals > 0 ? (row.scoreHome || 0) / totalGoals : 0.5;
 
     // Possession correlates with who scored more
-    const homePoss = Math.max(35, Math.min(65, Math.round(45 + (homeAdvantage - 0.5) * 30 + seededRand(-3, 3))));
+    const homePoss = Math.max(35, Math.min(65, Math.round(45 + (homeAdvantage - 0.5) * 30 + randInt(-3, 3))));
     const awayPoss = 100 - homePoss;
 
     // Shots correlate with goals (~4-6 shots per goal, plus some misses)
-    const homeShots = Math.max(row.scoreHome + 2, Math.round(row.scoreHome * 4.5 + seededRand(3, 7)));
-    const awayShots = Math.max(row.scoreAway + 2, Math.round(row.scoreAway * 4.5 + seededRand(2, 6)));
-    const homeSOT = Math.max(row.scoreHome, Math.round(homeShots * 0.4 + seededRand(0, 2)));
-    const awaySOT = Math.max(row.scoreAway, Math.round(awayShots * 0.4 + seededRand(0, 2)));
+    const homeShots = Math.max((row.scoreHome || 0) + 2, Math.round((row.scoreHome || 0) * 4.5 + randInt(3, 7)));
+    const awayShots = Math.max((row.scoreAway || 0) + 2, Math.round((row.scoreAway || 0) * 4.5 + randInt(2, 6)));
+    const homeSOT = Math.max(row.scoreHome || 0, Math.round(homeShots * 0.4 + randInt(0, 2)));
+    const awaySOT = Math.max(row.scoreAway || 0, Math.round(awayShots * 0.4 + randInt(0, 2)));
 
     return {
         possession: { home: homePoss, away: awayPoss },
         shots: { home: homeShots, away: awayShots },
         shotsOnTarget: { home: homeSOT, away: awaySOT },
-        fouls: { home: seededRand(8, 16), away: seededRand(8, 16) },
-        yellowCards: { home: seededRand(1, 3), away: seededRand(1, 3) },
-        corners: { home: seededRand(3, 8), away: seededRand(2, 7) },
+        fouls: { home: randInt(8, 16), away: randInt(8, 16) },
+        yellowCards: { home: randInt(1, 3), away: randInt(1, 3) },
+        corners: { home: randInt(3, 8), away: randInt(2, 7) },
     };
 }
 
@@ -629,10 +629,13 @@ export async function seedFromAPI() {
 
         const json = await res.json();
         const apiMatches = (json.matches || []).filter(m =>
-            m.stage === 'GROUP_STAGE' && m.homeTeam?.name && m.awayTeam?.name
+            m.homeTeam?.name && m.awayTeam?.name
         );
 
-        let upsertCount = 0;
+        // Batch all DB operations in a single transaction for connection_limit=1
+        const dbMatches = await prisma.worldCupMatch.findMany();
+        const ops = [];
+
         for (const am of apiMatches) {
             const homeCode = tlaToIso(am.homeTeam.tla);
             const awayCode = tlaToIso(am.awayTeam.tla);
@@ -640,9 +643,10 @@ export async function seedFromAPI() {
             const status = FD_STATUS_MAP[am.status] || 'scheduled';
             const fullTime = am.score?.fullTime;
             const halfTime = am.score?.halfTime;
+            const stage = am.stage || 'GROUP_STAGE';
 
             const updateFields = {
-                group: mapGroup(am.group),
+                group: stage.includes('GROUP') ? mapGroup(am.group) : stage.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()),
                 round: `Round ${am.matchday || 1}`,
                 homeName: am.homeTeam.shortName || am.homeTeam.name,
                 homeCode,
@@ -658,52 +662,40 @@ export async function seedFromAPI() {
                 lastSyncedAt: new Date(),
             };
 
-            // 1. Try to find by fdApiId
-            const matchByApiId = await prisma.worldCupMatch.findUnique({
-                where: { fdApiId: am.id }
-            });
-
-            if (matchByApiId) {
-                // Update existing record
-                await prisma.worldCupMatch.update({
-                    where: { id: matchByApiId.id },
-                    data: updateFields
-                });
-            } else {
-                // 2. Try to find by matchId
-                const matchById = await prisma.worldCupMatch.findUnique({
-                    where: { id: matchId }
-                });
-
-                if (matchById) {
-                    // Update existing record and link fdApiId
-                    await prisma.worldCupMatch.update({
-                        where: { id: matchId },
-                        data: {
-                            fdApiId: am.id,
-                            ...updateFields
-                        }
-                    });
-                } else {
-                    // 3. Create new record
-                    await prisma.worldCupMatch.create({
-                        data: {
-                            id: matchId,
-                            fdApiId: am.id,
-                            venueName: am.venue || getDeterministicVenue(matchId).name,
-                            venueCity: getDeterministicVenue(matchId).city,
-                            ...updateFields,
-                            scoreHome: fullTime?.home ?? 0,
-                            scoreAway: fullTime?.away ?? 0,
-                        }
-                    });
-                }
+            // Generate and persist stats for live/finished matches
+            if (status === 'finished' || status === 'live') {
+                const mergedRow = { ...updateFields, scoreHome: fullTime?.home ?? 0, scoreAway: fullTime?.away ?? 0 };
+                updateFields.stats = generateStatsFromScore(mergedRow);
             }
-            upsertCount++;
+
+            // Find existing record in-memory (avoids sequential queries)
+            let existing = dbMatches.find(m => m.fdApiId === am.id);
+            if (!existing) existing = dbMatches.find(m => m.id === matchId);
+
+            if (existing) {
+                const data = existing.fdApiId ? updateFields : { fdApiId: am.id, ...updateFields };
+                ops.push(prisma.worldCupMatch.update({ where: { id: existing.id }, data }));
+            } else {
+                ops.push(prisma.worldCupMatch.create({
+                    data: {
+                        id: matchId,
+                        fdApiId: am.id,
+                        venueName: am.venue || getDeterministicVenue(matchId).name,
+                        venueCity: getDeterministicVenue(matchId).city,
+                        ...updateFields,
+                        scoreHome: fullTime?.home ?? 0,
+                        scoreAway: fullTime?.away ?? 0,
+                    }
+                }));
+            }
+        }
+
+        if (ops.length > 0) {
+            await prisma.$transaction(ops);
         }
 
         lastApiSyncMs = Date.now();
-        console.log(`[MatchSync] Seeded/updated ${upsertCount} group-stage matches from Football-Data.org.`);
+        console.log(`[MatchSync] Seeded/updated ${ops.length} matches from Football-Data.org.`);
     } catch (err) {
         console.warn('[MatchSync] Seed failed:', err.message);
     }
@@ -730,8 +722,10 @@ function calculateElapsedMin(kickoffTime) {
 // ─────────────────────────────────────────────────────────────────────────────
 async function autoCorrectStatuses() {
     const now = new Date();
+    const ops = [];
+    const postSettlements = [];
 
-    // Scheduled matches whose kickoff has passed -> live
+    // Scheduled matches whose kickoff has passed -> live or finished
     const startedMatches = await prisma.worldCupMatch.findMany({
         where: { status: 'scheduled', kickoff: { lte: now } },
     });
@@ -742,26 +736,26 @@ async function autoCorrectStatuses() {
         if (rawElapsed >= 120) {
             // Safety: should be finished
             const merged = { ...m, status: 'finished', elapsed: 90 };
-            await prisma.worldCupMatch.update({
+            ops.push(prisma.worldCupMatch.update({
                 where: { id: m.id },
                 data: { 
                     status: 'finished', 
                     elapsed: 90,
                     stats: m.stats || generateStatsFromScore(merged)
                 },
-            });
+            }));
             console.log(`[MatchSync] Auto-finished (safety): ${m.homeName} vs ${m.awayName}`);
-            await settleMatchPredictions(m.id, m.scoreHome, m.scoreAway);
+            postSettlements.push({ matchId: m.id, scoreHome: m.scoreHome, scoreAway: m.scoreAway });
         } else {
             const merged = { ...m, status: 'live', elapsed: trueElapsed };
-            await prisma.worldCupMatch.update({
+            ops.push(prisma.worldCupMatch.update({
                 where: { id: m.id },
                 data: { 
                     status: 'live', 
                     elapsed: trueElapsed,
                     stats: m.stats || generateStatsFromScore(merged)
                 },
-            });
+            }));
             console.log(`[MatchSync] Auto-started: ${m.homeName} vs ${m.awayName} (${trueElapsed}')`);
         }
     }
@@ -779,30 +773,40 @@ async function autoCorrectStatuses() {
 
         if (rawElapsed >= 120 && !isRecentlySynced) {
             const merged = { ...m, status: 'finished', elapsed: 90 };
-            await prisma.worldCupMatch.update({
+            ops.push(prisma.worldCupMatch.update({
                 where: { id: m.id },
                 data: { 
                     status: 'finished', 
                     elapsed: 90,
                     stats: m.stats || generateStatsFromScore(merged)
                 },
-            });
+            }));
             console.log(`[MatchSync] Auto-finished (120min): ${m.homeName} vs ${m.awayName}`);
-            await settleMatchPredictions(m.id, m.scoreHome, m.scoreAway);
+            postSettlements.push({ matchId: m.id, scoreHome: m.scoreHome, scoreAway: m.scoreAway });
         } else {
             // Just update elapsed minute and ensure stats exist
             // Avoid database writes if elapsed minute has not changed to keep DB fetch fast
             if (trueElapsed !== m.elapsed || !m.stats) {
                 const merged = { ...m, elapsed: trueElapsed };
-                await prisma.worldCupMatch.update({
+                ops.push(prisma.worldCupMatch.update({
                     where: { id: m.id },
                     data: { 
                         elapsed: trueElapsed,
                         stats: m.stats || generateStatsFromScore(merged)
                     },
-                });
+                }));
             }
         }
+    }
+
+    // Execute all updates in a single transaction
+    if (ops.length > 0) {
+        await prisma.$transaction(ops);
+    }
+
+    // Settle predictions after the transaction succeeds
+    for (const s of postSettlements) {
+        await settleMatchPredictions(s.matchId, s.scoreHome, s.scoreAway);
     }
 }
 
@@ -840,14 +844,14 @@ async function syncFromAPI() {
         lastApiSyncMs = now;
 
         const apiMatches = (json.matches || []).filter(m =>
-            m.stage === 'GROUP_STAGE' && 
             m.homeTeam?.name && 
             ['IN_PLAY', 'PAUSED', 'FINISHED', 'AWARDED', 'SUSPENDED'].includes(m.status)
         );
-        let syncCount = 0;
+        const ops = [];
 
-        // Fetch all matches once to do in-memory lookups, avoiding 42 sequential queries on connection_limit=1
+        // Fetch all matches once to do in-memory lookups, avoiding sequential queries on connection_limit=1
         const dbMatches = await prisma.worldCupMatch.findMany();
+        const postSyncSettlements = [];
 
         for (const am of apiMatches) {
             if (!am.homeTeam?.tla || !am.awayTeam?.tla) continue;
@@ -911,20 +915,23 @@ async function syncFromAPI() {
                 console.log(`[MatchSync] ${dbMatch.homeName} vs ${dbMatch.awayName}: ${dbMatch.status} -> ${newStatus}`);
             }
 
-            await prisma.worldCupMatch.update({
+            ops.push(prisma.worldCupMatch.update({
                 where: { id: dbMatch.id },
                 data: updateData,
-            });
+            }));
 
             if (newStatus === 'finished' && dbMatch.status !== 'finished') {
-                await settleMatchPredictions(dbMatch.id, updateData.scoreHome ?? dbMatch.scoreHome, updateData.scoreAway ?? dbMatch.scoreAway);
+                postSyncSettlements.push({ matchId: dbMatch.id, scoreHome: updateData.scoreHome ?? dbMatch.scoreHome, scoreAway: updateData.scoreAway ?? dbMatch.scoreAway });
             }
-
-            syncCount++;
         }
 
-        if (syncCount > 0) {
-            console.log(`[MatchSync] Synced ${syncCount} match(es) from Football-Data.org.`);
+        if (ops.length > 0) {
+            await prisma.$transaction(ops);
+            // Settle predictions after the transaction succeeds
+            for (const s of postSyncSettlements) {
+                await settleMatchPredictions(s.matchId, s.scoreHome, s.scoreAway);
+            }
+            console.log(`[MatchSync] Synced ${ops.length} match(es) from Football-Data.org.`);
         }
     } catch (err) {
         console.warn('[MatchSync] API sync failed:', err.message);
@@ -935,15 +942,14 @@ async function syncFromAPI() {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Smart poller: 60s tick, API calls only during active match windows
-// (DISABLED: Commented out to save Neon compute quota. On-demand sync used instead)
+// ACTIVE on Supabase (no compute timeout limits unlike Neon free tier)
 // ─────────────────────────────────────────────────────────────────────────────
 export function startSmartPoller() {
-    console.log('[MatchSync] Smart match poller is DISABLED to save Neon free quota.');
+    console.log('[MatchSync] ✅ Smart match poller ACTIVE (Supabase). Tick every 60s, API sync throttled to 2min.');
 
-    /*
     setInterval(async () => {
         try {
-            // Layer 1 always runs (zero cost)
+            // Layer 1 always runs (zero API cost — time-based corrections only)
             await autoCorrectStatuses();
 
             // Check if API sync is warranted
@@ -981,7 +987,6 @@ export function startSmartPoller() {
             console.warn('[MatchSync] Poller tick error:', err.message);
         }
     }, 60 * 1000);
-    */
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -996,9 +1001,33 @@ export async function getAllMatches() {
             console.log('[MatchSync] Database is empty. Running initial tournament seed...');
             await seedFromAPI();
         } else {
-            // Run in background without awaiting to keep DB fetch non-blocking
-            autoCorrectStatuses().catch(err => console.warn('[MatchSync] Background auto-correct failed:', err.message));
-            syncFromAPI().catch(err => console.warn('[MatchSync] Background API sync failed:', err.message));
+            // Smart-blocking: if any match is live or recently kicked off, AWAIT the sync
+            // so the user's first load gets fresh scores (not stale data).
+            const now = new Date();
+            const threeHoursAgo = new Date(now.getTime() - 3 * 60 * 60 * 1000);
+            const urgentCount = await prisma.worldCupMatch.count({
+                where: {
+                    OR: [
+                        { status: 'live' },
+                        { status: 'scheduled', kickoff: { gte: threeHoursAgo, lte: now } },
+                    ],
+                },
+            });
+
+            if (urgentCount > 0) {
+                // Await sync with a safety timeout so we never hang
+                await Promise.race([
+                    (async () => {
+                        await autoCorrectStatuses();
+                        await syncFromAPI();
+                    })(),
+                    new Promise(resolve => setTimeout(resolve, 6000)), // 6s max
+                ]);
+            } else {
+                // No urgency — fire in background
+                autoCorrectStatuses().catch(err => console.warn('[MatchSync] Background auto-correct failed:', err.message));
+                syncFromAPI().catch(err => console.warn('[MatchSync] Background API sync failed:', err.message));
+            }
         }
     } catch (err) {
         console.warn('[MatchSync] On-demand getAllMatches auto-correct/sync failed:', err.message);
@@ -1011,17 +1040,34 @@ export async function getAllMatches() {
 }
 
 export async function getMatchById(id) {
-    // ON-DEMAND SYNC & AUTO-CORRECT: Run sync in the background when a single match is queried
+    // ON-DEMAND SYNC & AUTO-CORRECT: If the requested match is live, await sync first
     try {
-        autoCorrectStatuses().catch(err => console.warn('[MatchSync] Background auto-correct failed:', err.message));
-        syncFromAPI().catch(err => console.warn('[MatchSync] Background API sync failed:', err.message));
+        const row = await prisma.worldCupMatch.findUnique({ where: { id } });
+        if (row && row.status === 'live') {
+            // Await sync with a safety timeout so we never hang
+            await Promise.race([
+                (async () => {
+                    await autoCorrectStatuses();
+                    await syncFromAPI();
+                })(),
+                new Promise(resolve => setTimeout(resolve, 6000)), // 6s max
+            ]);
+            // Re-fetch after sync
+            const updated = await prisma.worldCupMatch.findUnique({ where: { id } });
+            return updated ? dbRowToMatch(updated) : null;
+        } else {
+            // Non-live: fire sync in background, return immediately
+            autoCorrectStatuses().catch(err => console.warn('[MatchSync] Background auto-correct failed:', err.message));
+            syncFromAPI().catch(err => console.warn('[MatchSync] Background API sync failed:', err.message));
+            if (!row) return null;
+            return dbRowToMatch(row);
+        }
     } catch (err) {
         console.warn('[MatchSync] On-demand getMatchById auto-correct/sync failed:', err.message);
+        const row = await prisma.worldCupMatch.findUnique({ where: { id } });
+        if (!row) return null;
+        return dbRowToMatch(row);
     }
-
-    const row = await prisma.worldCupMatch.findUnique({ where: { id } });
-    if (!row) return null;
-    return dbRowToMatch(row);
 }
 
 export async function recordVote(id, teamChoice) {
