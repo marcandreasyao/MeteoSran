@@ -910,10 +910,10 @@ export const MatchCardWidget: React.FC<MatchCardWidgetProps> = ({ matchId, defau
                         <div className="flex items-center justify-between mb-3.5 px-1">
                             <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
                                 <span className="material-symbols-outlined text-[13px]" translate="no">
-                                    {isMatchOver ? 'bar_chart' : 'ballot'}
+                                    {showResults ? 'bar_chart' : 'ballot'}
                                 </span>
-                                {isMatchOver
-                                    ? 'Pronostics de la communauté'
+                                {showResults
+                                    ? `Pronostics (${totalVotes} votes)`
                                     : user ? 'Votre Pronostic' : 'Qui va gagner ?'}
                             </h4>
                             <div className="flex items-center gap-2">
