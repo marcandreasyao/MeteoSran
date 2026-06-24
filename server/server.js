@@ -5,16 +5,14 @@ import fetch from 'node-fetch';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { GoogleGenAI } from "@google/genai";
-import { PrismaClient } from '@prisma/client';
 import { retrieveHybrid } from './ragService.js';
-import { getAllMatches, getMatchById, recordVote, getVotePercentages, startSmartPoller, seedFromAPI, recordPrediction, getLeaderboard } from './matchService.js';
+import { getAllMatches, getMatchById, recordVote, getVotePercentages, startSmartPoller, seedFromAPI, recordPrediction, getLeaderboard, runSyncCycle, getSyncStatus } from './matchService.js';
 import { retrieveGraphContext } from './graphService.js';
+import prisma from './db.js';
 
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-
-const prisma = new PrismaClient();
 
 // Neon cold-start retry helper.
 // Neon serverless databases can take a few seconds to wake up.
@@ -1933,6 +1931,27 @@ app.get('/api/worldcup/leaderboard', async (req, res) => {
     } catch (err) {
         console.error("Error fetching leaderboard:", err);
         res.status(500).json({ error: "Failed to fetch leaderboard." });
+    }
+});
+
+app.post('/api/worldcup/sync', async (req, res) => {
+    try {
+        console.log('[MeteoSran Server] Manual sync requested on-demand.');
+        await runSyncCycle();
+        const status = getSyncStatus();
+        res.json({ success: true, ...status });
+    } catch (err) {
+        console.error("Error during manual sync:", err);
+        res.status(500).json({ error: "Sync failed", details: err.message });
+    }
+});
+
+app.get('/api/worldcup/sync/status', async (req, res) => {
+    try {
+        const status = getSyncStatus();
+        res.json(status);
+    } catch (err) {
+        res.status(500).json({ error: "Failed to fetch sync status", details: err.message });
     }
 });
 

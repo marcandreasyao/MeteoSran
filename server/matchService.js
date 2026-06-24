@@ -1,6 +1,4 @@
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import prisma from './db.js';
 
 // Football-Data.org API key (dynamically evaluated to avoid ESM import order bugs)
 const getFootballDataToken = () => process.env.FOOTBALL_DATA_TOKEN || '';
@@ -12,6 +10,7 @@ let isSyncing = false;
 let activeSyncPromise = null;
 let matchCache = [];
 let cacheLoadPromise = null;
+let lastSyncError = null;
 
 async function ensureMatchCacheLoaded(force = false) {
     if (force) {
@@ -967,6 +966,8 @@ async function syncFromAPI() {
         }
     } catch (err) {
         console.warn('[MatchSync] API sync failed:', err.message);
+        lastSyncError = err.message || String(err);
+        throw err;
     } finally {
         isSyncing = false;
     }
@@ -983,6 +984,7 @@ export async function runSyncCycle() {
 
     activeSyncPromise = (async () => {
         try {
+            lastSyncError = null;
             // Layer 1: Time-based corrections (always run, zero cost)
             await autoCorrectStatuses();
 
@@ -1013,12 +1015,23 @@ export async function runSyncCycle() {
             }
         } catch (err) {
             console.warn('[MatchSync] Sync cycle failed:', err.message);
+            lastSyncError = err.message || String(err);
+            throw err;
         } finally {
             activeSyncPromise = null;
         }
     })();
 
     return activeSyncPromise;
+}
+
+export function getSyncStatus() {
+    return {
+        isSyncing: isSyncing || !!activeSyncPromise,
+        lastApiSyncMs,
+        lastSyncError,
+        status: (isSyncing || activeSyncPromise) ? 'syncing' : (lastSyncError ? 'error' : 'synced')
+    };
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

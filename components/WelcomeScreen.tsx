@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { SparklesText } from './magicui/SparklesText';
 import { useLanguage } from '../src/contexts/LanguageContext';
 import { MatchCardWidget } from './MatchCardWidget';
+import { MatchDbSyncStatus } from './MatchDbSyncStatus';
 
 interface WelcomeScreenProps {
   firstName: string;
@@ -182,10 +183,12 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ firstName, onSugge
         </p>
         {/* Match à l'affiche / World Cup Featured Match */}
         <div className="w-full mb-8 flex flex-col items-center sm:items-start z-10">
-          <div className="flex items-center gap-2 mb-3 px-1 text-slate-700 dark:text-slate-300 font-bold text-xs md:text-sm tracking-wider uppercase select-none">
-            <span className="animate-pulse flex h-2 w-2 rounded-full bg-emerald-500"></span>
-            <img src="/tournaments_fifa-world-cup-2026.football-logos.cc.svg" alt="FIFA WC 2026" className="w-5 h-5 object-contain" />
-            <span>Match Vedette Mondial 2026</span>
+          <div className="flex flex-wrap items-center justify-between w-full mb-3 px-1 gap-2">
+            <div className="flex items-center gap-2 text-slate-700 dark:text-slate-300 font-bold text-xs md:text-sm tracking-wider uppercase select-none">
+              <img src="/tournaments_fifa-world-cup-2026.football-logos.cc.svg" alt="FIFA WC 2026" className="w-5 h-5 object-contain" />
+              <span>Match Vedette Mondial 2026</span>
+            </div>
+            <MatchDbSyncStatus />
           </div>
           {featuredMatchId ? (
             <MatchCardWidget matchId={featuredMatchId} />
