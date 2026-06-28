@@ -312,6 +312,11 @@ function generateDeterministicEventsAndMomentum(match) {
     const homeSquad = TEAM_SQUADS[match.home.code] || getFallbackSquad(match.home.name, true);
     const awaySquad = TEAM_SQUADS[match.away.code] || getFallbackSquad(match.away.name, false);
 
+    const isScheduled = match.status === 'scheduled' || match.status === 'timed';
+    if (isScheduled) {
+        return { events: [], momentum: [] };
+    }
+
     const events = [];
     const scoreHome = match.score?.home ?? 0;
     const scoreAway = match.score?.away ?? 0;
