@@ -43,7 +43,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ firstName, onSugge
   const { language, t } = useLanguage();
   const [subtitleIndex] = useState(() => Math.floor(Math.random() * 11));
   const [otherMatches, setOtherMatches] = useState<any[]>([]);
-  const [featuredMatchId, setFeaturedMatchId] = useState<string | null>(null);
+  const [featuredMatchIds, setFeaturedMatchIds] = useState<string[]>([]);
   const [showHistoryModal, setShowHistoryModal] = useState(false);
   const [allMatches, setAllMatches] = useState<any[]>([]);
   const [isLoadingMatches, setIsLoadingMatches] = useState(true);
@@ -57,39 +57,51 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ firstName, onSugge
           const data = await response.json();
           setAllMatches(data);
           
-          // Determine the featured match of the day dynamically
           const todayStr = new Date().toISOString().split('T')[0];
-          const todayMatches = data.filter((m: any) => m.kickoff.startsWith(todayStr));
           
-          let featured = null;
-          if (todayMatches.length > 0) {
-            // 1. Look for live match first
-            featured = todayMatches.find((m: any) => m.status === 'live');
-            // 2. Look for scheduled match next
-            if (!featured) {
-              featured = todayMatches.find((m: any) => m.status === 'scheduled');
+          // 1. Check for live matches first
+          let featuredMatches = data.filter((m: any) => m.status === 'live');
+          
+          // 2. If no live matches, check for scheduled matches today
+          if (featuredMatches.length === 0) {
+            const todayMatches = data.filter((m: any) => m.kickoff.startsWith(todayStr));
+            const scheduledToday = todayMatches.filter((m: any) => m.status === 'scheduled');
+            
+            if (scheduledToday.length > 0) {
+              // Sort by kickoff asc to find the earliest/next kickoff time
+              scheduledToday.sort((a: any, b: any) => a.kickoff.localeCompare(b.kickoff));
+              const nextKickoff = scheduledToday[0].kickoff;
+              // Feature all scheduled matches today that start at this next kickoff time
+              featuredMatches = scheduledToday.filter((m: any) => m.kickoff === nextKickoff);
+            } else if (todayMatches.length > 0) {
+              // Fallback to today's matches (which would be finished today)
+              // Feature matches that start at the first kickoff of today
+              todayMatches.sort((a: any, b: any) => a.kickoff.localeCompare(b.kickoff));
+              const firstKickoff = todayMatches[0].kickoff;
+              featuredMatches = todayMatches.filter((m: any) => m.kickoff === firstKickoff);
             }
-            // 3. Fallback to finished match today
-            if (!featured) {
-              featured = todayMatches[0];
+          }
+          
+          // 3. If still empty, check overall scheduled matches
+          if (featuredMatches.length === 0) {
+            const scheduledOverall = data.filter((m: any) => m.status === 'scheduled');
+            if (scheduledOverall.length > 0) {
+              scheduledOverall.sort((a: any, b: any) => a.kickoff.localeCompare(b.kickoff));
+              const nextKickoff = scheduledOverall[0].kickoff;
+              featuredMatches = scheduledOverall.filter((m: any) => m.kickoff === nextKickoff);
             }
           }
           
-          // If no matches today, find the first scheduled match overall
-          if (!featured) {
-            featured = data.find((m: any) => m.status === 'scheduled');
+          // 4. Fallback to first match overall
+          if (featuredMatches.length === 0 && data.length > 0) {
+            featuredMatches = [data[0]];
           }
           
-          // Fallback to first match overall
-          if (!featured && data.length > 0) {
-            featured = data[0];
-          }
+          const finalFeaturedIds = featuredMatches.length > 0 ? featuredMatches.map((m: any) => m.id) : ["arg_alg_2026"];
+          setFeaturedMatchIds(finalFeaturedIds);
           
-          const finalFeaturedId = featured ? featured.id : "arg_alg_2026";
-          setFeaturedMatchId(finalFeaturedId);
-          
-          // Other matches of the day are today's matches except the featured one
-          const otherGames = data.filter((m: any) => m.id !== finalFeaturedId && m.kickoff.startsWith(todayStr));
+          // Other matches of the day are today's matches except the featured ones
+          const otherGames = data.filter((m: any) => !finalFeaturedIds.includes(m.id) && m.kickoff.startsWith(todayStr));
           setOtherMatches(otherGames);
         }
       } catch (err) {
@@ -190,8 +202,20 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ firstName, onSugge
             </div>
             <MatchDbSyncStatus />
           </div>
-          {featuredMatchId ? (
-            <MatchCardWidget matchId={featuredMatchId} />
+          {featuredMatchIds.length > 0 ? (
+            <div className="w-[calc(100%+2rem)] -ml-4 sm:w-[calc(100%+4rem)] sm:-ml-8 relative"
+              style={{
+                WebkitMaskImage: 'linear-gradient(to right, transparent 0%, black 5%, black 95%, transparent 100%)',
+                maskImage: 'linear-gradient(to right, transparent 0%, black 5%, black 95%, transparent 100%)'
+              }}>
+              <div className="flex gap-4 overflow-x-auto pb-4 pt-2 px-4 sm:px-8 snap-x snap-mandatory scroll-smooth hide-scrollbar justify-start md:justify-center items-start w-max md:w-full min-w-full">
+                {featuredMatchIds.map((id) => (
+                  <div key={id} className="min-w-[280px] sm:min-w-[320px] md:w-full max-w-md flex-shrink-0 snap-center">
+                    <MatchCardWidget matchId={id} />
+                  </div>
+                ))}
+              </div>
+            </div>
           ) : (
             <div className="w-full max-w-4xl h-64 sm:h-[340px] bg-slate-200/50 dark:bg-slate-800/50 animate-pulse rounded-[32px] border border-slate-300/50 dark:border-slate-700/50" />
           )}

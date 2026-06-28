@@ -75,6 +75,84 @@ const TEAM_COLORS: Record<string, { primary: string; secondary: string; glow: st
     SA: { primary: '#047857', secondary: '#10b981', glow: 'rgba(16, 185, 129, 0.2)' }, // Saudi Arabia: Green
 };
 
+const AnimatedStatRow: React.FC<{
+    label: string;
+    home: number;
+    away: number;
+    suffix?: string;
+    active: boolean;
+}> = ({ label, home, away, suffix, active }) => {
+    const [animatedHome, setAnimatedHome] = useState(0);
+    const [animatedAway, setAnimatedAway] = useState(0);
+    const [progressWidth, setProgressWidth] = useState({ home: 0, away: 0 });
+
+    useEffect(() => {
+        if (!active) {
+            setAnimatedHome(0);
+            setAnimatedAway(0);
+            setProgressWidth({ home: 0, away: 0 });
+            return;
+        }
+
+        const total = home + away || 1;
+        const targetHomePct = (home / total) * 100;
+        const targetAwayPct = (away / total) * 100;
+        
+        const t1 = setTimeout(() => {
+            setProgressWidth({ home: targetHomePct, away: targetAwayPct });
+        }, 50);
+
+        let startTimestamp: number | null = null;
+        const duration = 1200;
+
+        const step = (timestamp: number) => {
+            if (!startTimestamp) startTimestamp = timestamp;
+            const elapsed = timestamp - startTimestamp;
+            const progress = Math.min(elapsed / duration, 1);
+            
+            const easeProgress = progress * (2 - progress); // easeOutQuad
+
+            setAnimatedHome(Math.round(easeProgress * home));
+            setAnimatedAway(Math.round(easeProgress * away));
+
+            if (progress < 1) {
+                window.requestAnimationFrame(step);
+            }
+        };
+
+        const animationFrameId = window.requestAnimationFrame(step);
+
+        return () => {
+            clearTimeout(t1);
+            window.cancelAnimationFrame(animationFrameId);
+        };
+    }, [active, home, away]);
+
+    return (
+        <div className="flex flex-col gap-1">
+            <div className="flex items-center justify-between text-xs">
+                <span className="font-jersey text-sm text-white w-8 text-left select-none">
+                    {animatedHome}{suffix ? <span className="font-sans text-[10px] text-slate-500 font-bold">{suffix}</span> : null}
+                </span>
+                <span className="text-slate-400 font-semibold text-[10px] uppercase tracking-wider flex-1 text-center select-none">{label}</span>
+                <span className="font-jersey text-sm text-white w-8 text-right select-none">
+                    {animatedAway}{suffix ? <span className="font-sans text-[10px] text-slate-500 font-bold">{suffix}</span> : null}
+                </span>
+            </div>
+            <div className="flex h-1.5 rounded-full overflow-hidden bg-slate-800">
+                <div
+                    className="bg-emerald-500 transition-all duration-[1200ms] rounded-l-full"
+                    style={{ width: `${progressWidth.home}%`, transitionTimingFunction: 'cubic-bezier(0.34, 1.56, 0.64, 1)' }}
+                />
+                <div
+                    className="bg-sky-500 transition-all duration-[1200ms] rounded-r-full"
+                    style={{ width: `${progressWidth.away}%`, transitionTimingFunction: 'cubic-bezier(0.34, 1.56, 0.64, 1)' }}
+                />
+            </div>
+        </div>
+    );
+};
+
 export const MatchCardWidget: React.FC<MatchCardWidgetProps> = ({ matchId, defaultShowWeather = false, onVoteCompleted }) => {
     const { user } = useAuth();
     const [match, setMatch] = useState<Match | null>(null);
@@ -1045,34 +1123,16 @@ export const MatchCardWidget: React.FC<MatchCardWidgetProps> = ({ matchId, defau
                                     { label: 'Fautes', home: match.stats.fouls.home, away: match.stats.fouls.away },
                                     { label: 'Cartons jaunes', home: match.stats.yellowCards.home, away: match.stats.yellowCards.away },
                                     { label: 'Corners', home: match.stats.corners.home, away: match.stats.corners.away },
-                                ] as const).map((stat) => {
-                                    const total = stat.home + stat.away || 1;
-                                    const homePct = (stat.home / total) * 100;
-                                    const awayPct = (stat.away / total) * 100;
-                                    return (
-                                        <div key={stat.label} className="flex flex-col gap-1">
-                                            <div className="flex items-center justify-between text-xs">
-                                                <span className="font-jersey text-sm text-white w-8 text-left">
-                                                    {stat.home}{'suffix' in stat && stat.suffix ? <span className="font-sans text-[10px] text-slate-500 font-bold">{stat.suffix}</span> : null}
-                                                </span>
-                                                <span className="text-slate-400 font-semibold text-[10px] uppercase tracking-wider flex-1 text-center">{stat.label}</span>
-                                                <span className="font-jersey text-sm text-white w-8 text-right">
-                                                    {stat.away}{'suffix' in stat && stat.suffix ? <span className="font-sans text-[10px] text-slate-500 font-bold">{stat.suffix}</span> : null}
-                                                </span>
-                                            </div>
-                                            <div className="flex h-1.5 rounded-full overflow-hidden bg-slate-800">
-                                                <div
-                                                    className="bg-emerald-500 transition-all duration-500 rounded-l-full"
-                                                    style={{ width: `${homePct}%` }}
-                                                />
-                                                <div
-                                                    className="bg-sky-500 transition-all duration-500 rounded-r-full"
-                                                    style={{ width: `${awayPct}%` }}
-                                                />
-                                            </div>
-                                        </div>
-                                    );
-                                })}
+                                ] as const).map((stat) => (
+                                    <AnimatedStatRow
+                                        key={stat.label}
+                                        label={stat.label}
+                                        home={stat.home}
+                                        away={stat.away}
+                                        suffix={'suffix' in stat ? stat.suffix : undefined}
+                                        active={showStats && activeTab === 'stats'}
+                                    />
+                                ))}
                             </div>
                         )}
 
