@@ -331,6 +331,54 @@ const isLocalIp = (ip) => {
     return false;
 };
 
+const getCoordsFromIp = async (ip) => {
+    if (!ip || isLocalIp(ip)) return null;
+
+    // Clean IP by stripping IPv4-mapped IPv6 prefix
+    let cleanIp = ip.trim();
+    if (cleanIp.startsWith('::ffff:')) {
+        cleanIp = cleanIp.substring(7);
+    }
+
+    // Try ip-api.com first (HTTP)
+    try {
+        const res = await fetch(`http://ip-api.com/json/${cleanIp}`);
+        if (res.ok) {
+            const data = await res.json();
+            if (data && data.status === 'success') {
+                return {
+                    lat: data.lat,
+                    lon: data.lon,
+                    city: data.city,
+                    country: data.country
+                };
+            }
+        }
+    } catch (err) {
+        console.warn("[MeteoSran Server] ip-api.com failed:", err.message);
+    }
+
+    // Try ipapi.co as a fallback (HTTPS, handles IPv6 and has generous free limits)
+    try {
+        const res = await fetch(`https://ipapi.co/${cleanIp}/json/`);
+        if (res.ok) {
+            const data = await res.json();
+            if (data && !data.error) {
+                return {
+                    lat: parseFloat(data.latitude),
+                    lon: parseFloat(data.longitude),
+                    city: data.city,
+                    country: data.country_name
+                };
+            }
+        }
+    } catch (err) {
+        console.warn("[MeteoSran Server] ipapi.co failed:", err.message);
+    }
+
+    return null;
+};
+
 const mapOpenWeather25ToSchema = (currentData, forecastData, locationLabel) => {
     const uv = currentData.uvi || 0; 
     let uvText = "Faible";
@@ -539,20 +587,11 @@ app.get('/api/weather/current', async (req, res) => {
                     locationLabel = `Coordinates: ${lat.toFixed(4)}, ${lon.toFixed(4)}`;
                 } else {
                     const ip = req.get('x-forwarded-for')?.split(',')[0] || req.connection.remoteAddress;
-                    if (ip && !isLocalIp(ip)) {
-                        try {
-                            const ipGeoResp = await fetch(`http://ip-api.com/json/${ip}`);
-                            if (ipGeoResp.ok) {
-                                const ipGeoData = await ipGeoResp.json();
-                                if (ipGeoData && ipGeoData.status === 'success') {
-                                    lat = ipGeoData.lat;
-                                    lon = ipGeoData.lon;
-                                    locationLabel = `${ipGeoData.city}, ${ipGeoData.country}`;
-                                }
-                            }
-                        } catch (e) {
-                            console.warn("[MeteoSran Server] IP Geolocation failed, using default Abidjan coordinates.", e.message);
-                        }
+                    const coords = await getCoordsFromIp(ip);
+                    if (coords) {
+                        lat = coords.lat;
+                        lon = coords.lon;
+                        locationLabel = `${coords.city}, ${coords.country}`;
                     }
                     
                     if (!lat || !lon) {
@@ -616,8 +655,12 @@ app.get('/api/weather/current', async (req, res) => {
         query = `${req.query.lat},${req.query.lon}`;
     } else {
         const ip = req.get('x-forwarded-for')?.split(',')[0] || req.connection.remoteAddress;
-        if (ip && !isLocalIp(ip)) {
-            query = ip;
+        let cleanIp = ip ? ip.trim() : '';
+        if (cleanIp.startsWith('::ffff:')) {
+            cleanIp = cleanIp.substring(7);
+        }
+        if (cleanIp && !isLocalIp(cleanIp)) {
+            query = cleanIp;
         } else {
             query = 'Abidjan';
         }
@@ -755,25 +798,22 @@ app.get('/api/weather/current', async (req, res) => {
             if (!locationKey) {
                 try {
                     const ip = req.get('x-forwarded-for')?.split(',')[0] || req.connection.remoteAddress;
-                    const ipGeoResp = await fetch(`http://ip-api.com/json/${ip}`);
-                    if (ipGeoResp.ok) {
-                        const ipGeoData = await ipGeoResp.json();
-                        if (ipGeoData && ipGeoData.status === 'success') {
-                            lat = ipGeoData.lat;
-                            lon = ipGeoData.lon;
-                            const isNewKey = ACCUWEATHER_API_KEY.startsWith('zpka_');
-                            const authHeader = isNewKey ? { 'Authorization': `Bearer ${ACCUWEATHER_API_KEY}` } : {};
-                            const geoUrl = isNewKey
-                                ? `https://dataservice.accuweather.com/locations/v1/cities/geoposition/search?q=${lat},${lon}`
-                                : `http://dataservice.accuweather.com/locations/v1/cities/geoposition/search?apikey=${ACCUWEATHER_API_KEY}&q=${lat},${lon}`;
+                    const coords = await getCoordsFromIp(ip);
+                    if (coords) {
+                        lat = coords.lat;
+                        lon = coords.lon;
+                        const isNewKey = ACCUWEATHER_API_KEY.startsWith('zpka_');
+                        const authHeader = isNewKey ? { 'Authorization': `Bearer ${ACCUWEATHER_API_KEY}` } : {};
+                        const geoUrl = isNewKey
+                            ? `https://dataservice.accuweather.com/locations/v1/cities/geoposition/search?q=${lat},${lon}`
+                            : `http://dataservice.accuweather.com/locations/v1/cities/geoposition/search?apikey=${ACCUWEATHER_API_KEY}&q=${lat},${lon}`;
 
-                            const geoResp = await fetch(geoUrl, { headers: authHeader });
-                            if (geoResp.ok) {
-                                const geoData = await geoResp.json();
-                                if (geoData && geoData.Key) {
-                                    locationKey = geoData.Key;
-                                    locationLabel = geoData.LocalizedName + (geoData.AdministrativeArea ? ', ' + geoData.AdministrativeArea.LocalizedName : '') + (geoData.Country ? ', ' + geoData.Country.LocalizedName : '');
-                                }
+                        const geoResp = await fetch(geoUrl, { headers: authHeader });
+                        if (geoResp.ok) {
+                            const geoData = await geoResp.json();
+                            if (geoData && geoData.Key) {
+                                locationKey = geoData.Key;
+                                locationLabel = geoData.LocalizedName + (geoData.AdministrativeArea ? ', ' + geoData.AdministrativeArea.LocalizedName : '') + (geoData.Country ? ', ' + geoData.Country.LocalizedName : '');
                             }
                         }
                     }
