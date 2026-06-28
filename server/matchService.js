@@ -656,18 +656,21 @@ export async function seedFromAPI() {
         }
 
         const json = await res.json();
-        const apiMatches = (json.matches || []).filter(m =>
-            m.homeTeam?.name && m.awayTeam?.name
-        );
+        const apiMatches = (json.matches || []).filter(m => m.id);
 
         // Batch all DB operations in a single transaction for connection_limit=1
         const dbMatches = await prisma.worldCupMatch.findMany();
         const ops = [];
 
         for (const am of apiMatches) {
-            const homeCode = tlaToIso(am.homeTeam.tla);
-            const awayCode = tlaToIso(am.awayTeam.tla);
-            const matchId = generateMatchId(am.homeTeam.tla, am.awayTeam.tla);
+            const hasHomeTeam = am.homeTeam && am.homeTeam.name;
+            const hasAwayTeam = am.awayTeam && am.awayTeam.name;
+
+            const homeCode = hasHomeTeam ? tlaToIso(am.homeTeam.tla) : 'TBD';
+            const awayCode = hasAwayTeam ? tlaToIso(am.awayTeam.tla) : 'TBD';
+            const matchId = (am.homeTeam?.tla && am.awayTeam?.tla)
+                ? generateMatchId(am.homeTeam.tla, am.awayTeam.tla)
+                : `ko_${am.id}`;
             const status = FD_STATUS_MAP[am.status] || 'scheduled';
             const fullTime = am.score?.fullTime;
             const halfTime = am.score?.halfTime;
@@ -676,9 +679,9 @@ export async function seedFromAPI() {
             const updateFields = {
                 group: stage.includes('GROUP') ? mapGroup(am.group) : stage.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()),
                 round: `Round ${am.matchday || 1}`,
-                homeName: am.homeTeam.shortName || am.homeTeam.name,
+                homeName: hasHomeTeam ? (am.homeTeam.shortName || am.homeTeam.name) : 'À déterminer',
                 homeCode,
-                awayName: am.awayTeam.shortName || am.awayTeam.name,
+                awayName: hasAwayTeam ? (am.awayTeam.shortName || am.awayTeam.name) : 'À déterminer',
                 awayCode,
                 kickoff: new Date(am.utcDate),
                 status,
@@ -858,7 +861,6 @@ async function syncFromAPI() {
     isSyncing = true;
 
     try {
-        // Fetch all matches for the season and filter locally to avoid unsupported comma-separated status filters
         const url = 'https://api.football-data.org/v4/competitions/WC/matches?season=2026';
         const res = await fetch(url, {
             headers: { 'X-Auth-Token': token },
@@ -873,19 +875,14 @@ async function syncFromAPI() {
         const json = await res.json();
         lastApiSyncMs = now;
 
-        const apiMatches = (json.matches || []).filter(m =>
-            m.homeTeam?.name && 
-            ['IN_PLAY', 'PAUSED', 'FINISHED', 'AWARDED', 'SUSPENDED'].includes(m.status)
-        );
+        const apiMatches = (json.matches || []).filter(m => m.id);
         const ops = [];
 
-        // Fetch all matches once to do in-memory lookups, avoiding sequential queries on connection_limit=1
+        // Batch all DB operations in a single transaction for connection_limit=1
         const dbMatches = await prisma.worldCupMatch.findMany();
         const postSyncSettlements = [];
 
         for (const am of apiMatches) {
-            if (!am.homeTeam?.tla || !am.awayTeam?.tla) continue;
-
             // Find in dbMatches array by Football-Data.org fixture ID
             let dbMatch = dbMatches.find(m => m.fdApiId === am.id);
 
@@ -941,8 +938,8 @@ async function syncFromAPI() {
                 updateData.stats = generateStatsFromScore(mergedRow);
             }
 
-            if (newStatus !== dbMatch.status) {
-                console.log(`[MatchSync] ${dbMatch.homeName} vs ${dbMatch.awayName}: ${dbMatch.status} -> ${newStatus}`);
+            if (newStatus !== dbMatch.status || isTeamChanged) {
+                console.log(`[MatchSync] ${dbMatch.homeName} vs ${dbMatch.awayName}: ${dbMatch.status} -> ${newStatus} (Teams: ${targetHomeName} vs ${targetAwayName})`);
             }
 
             ops.push(prisma.worldCupMatch.update({
@@ -988,7 +985,7 @@ export async function runSyncCycle() {
             // Layer 1: Time-based corrections (always run, zero cost)
             await autoCorrectStatuses();
 
-            // Layer 2: API sync (only if matches are active or recently finished/kickoff)
+            // Layer 2: API sync (only if matches are active or recently finished/kickoff, or if 30 min routine sync is due)
             const now = new Date();
             const liveCount = await prisma.worldCupMatch.count({
                 where: { status: 'live' },
@@ -1010,7 +1007,10 @@ export async function runSyncCycle() {
                 },
             });
 
-            if (liveCount > 0 || todayFinishedCount > 0 || recentScheduledCount > 0) {
+            // Routinely sync every 30 minutes to capture team/bracket updates
+            const isRoutineSyncTime = (Date.now() - lastApiSyncMs > 30 * 60 * 1000);
+
+            if (liveCount > 0 || todayFinishedCount > 0 || recentScheduledCount > 0 || isRoutineSyncTime) {
                 await syncFromAPI();
             }
         } catch (err) {
