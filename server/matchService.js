@@ -913,8 +913,9 @@ async function syncFromAPI() {
             }
             const isElapsedChanged = targetElapsed !== dbMatch.elapsed;
             const isStatsMissing = !dbMatch.stats;
+            const isTeamChanged = false; // We can set to false for now, or check targetHomeName !== dbMatch.homeName
 
-            if (!isScoreChanged && !isStatusChanged && !isElapsedChanged && !isStatsMissing) {
+            if (!isScoreChanged && !isStatusChanged && !isElapsedChanged && !isStatsMissing && !isTeamChanged) {
                 continue;
             }
 
@@ -939,7 +940,7 @@ async function syncFromAPI() {
             }
 
             if (newStatus !== dbMatch.status || isTeamChanged) {
-                console.log(`[MatchSync] ${dbMatch.homeName} vs ${dbMatch.awayName}: ${dbMatch.status} -> ${newStatus} (Teams: ${targetHomeName} vs ${targetAwayName})`);
+                console.log(`[MatchSync] ${dbMatch.homeName} vs ${dbMatch.awayName}: ${dbMatch.status} -> ${newStatus} (Teams: ${am.homeTeam?.name} vs ${am.awayTeam?.name})`);
             }
 
             ops.push(prisma.worldCupMatch.update({

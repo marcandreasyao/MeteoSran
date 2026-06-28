@@ -71,7 +71,7 @@ const MATCH_KEYWORDS = [
     'schedulé', 'programme', 'programmé', 'scheduled'
 ];
 
-const GROUP_PATTERN = /(?:group|groupe)\s*([a-z])/i;
+const GROUP_PATTERN = /\b(?:group|groupe)\s+([a-l])\b/i;
 
 function statusLabel(status) {
     if (status === 'finished') return 'Terminé';
@@ -149,7 +149,7 @@ export async function retrieveGraphContext(queryText) {
     // Detect keyword intents
     const wantsScore = ['score', 'résultat', 'resultat', 'result', 'gagné', 'gagne', 'perdu', 'victoire', 'défaite', 'defaite', 'nul', 'draw', 'goal', 'but'].some(k => queryLower.includes(k));
     const wantsStats = ['statistique', 'statistiques', 'stats', 'stat', 'possession', 'tir', 'tirs', 'shot', 'shots', 'carton', 'corner', 'corners', 'yellow', 'jaune', 'faute', 'foul'].some(k => queryLower.includes(k));
-    const wantsStandings = ['classement', 'standing', 'standings', 'tableau'].some(k => queryLower.includes(k));
+    const wantsStandings = ['classement', 'standing', 'standings', 'tableau', 'groupes', 'groups'].some(k => queryLower.includes(k));
     const wantsLive = ['live', 'en cours', 'direct'].some(k => queryLower.includes(k));
     const wantsNext = ['prochain', 'next', 'upcoming', 'programme', 'programmé', 'scheduled'].some(k => queryLower.includes(k));
     const wantsToday = ['today', "aujourd'hui", 'aujourdhui'].some(k => queryLower.includes(k));
