@@ -748,7 +748,11 @@ export async function seedFromAPI() {
         }
 
         if (ops.length > 0) {
-            await prisma.$transaction(ops);
+            const chunkSize = 25;
+            for (let i = 0; i < ops.length; i += chunkSize) {
+                const chunk = ops.slice(i, i + chunkSize);
+                await prisma.$transaction(chunk);
+            }
             await ensureMatchCacheLoaded(true);
         }
 
@@ -924,6 +928,18 @@ async function syncFromAPI() {
             const fullTime = am.score?.fullTime;
             const halfTime = am.score?.halfTime;
 
+            const hasHomeTeam = am.homeTeam && am.homeTeam.name;
+            const hasAwayTeam = am.awayTeam && am.awayTeam.name;
+            const targetHomeName = hasHomeTeam ? (am.homeTeam.shortName || am.homeTeam.name) : 'À déterminer';
+            const targetHomeCode = hasHomeTeam ? tlaToIso(am.homeTeam.tla) : 'TBD';
+            const targetAwayName = hasAwayTeam ? (am.awayTeam.shortName || am.awayTeam.name) : 'À déterminer';
+            const targetAwayCode = hasAwayTeam ? tlaToIso(am.awayTeam.tla) : 'TBD';
+
+            const isTeamChanged = targetHomeName !== dbMatch.homeName ||
+                                  targetAwayName !== dbMatch.awayName ||
+                                  targetHomeCode !== dbMatch.homeCode ||
+                                  targetAwayCode !== dbMatch.awayCode;
+
             // Check if anything changed to avoid unneeded database writes
             const isScoreChanged = (fullTime?.home != null && fullTime.home !== dbMatch.scoreHome) ||
                                    (fullTime?.away != null && fullTime.away !== dbMatch.scoreAway) ||
@@ -939,7 +955,6 @@ async function syncFromAPI() {
             }
             const isElapsedChanged = targetElapsed !== dbMatch.elapsed;
             const isStatsMissing = !dbMatch.stats;
-            const isTeamChanged = false; // We can set to false for now, or check targetHomeName !== dbMatch.homeName
 
             if (!isScoreChanged && !isStatusChanged && !isElapsedChanged && !isStatsMissing && !isTeamChanged) {
                 continue;
@@ -949,6 +964,13 @@ async function syncFromAPI() {
                 status: newStatus,
                 lastSyncedAt: new Date(),
             };
+
+            if (isTeamChanged) {
+                updateData.homeName = targetHomeName;
+                updateData.homeCode = targetHomeCode;
+                updateData.awayName = targetAwayName;
+                updateData.awayCode = targetAwayCode;
+            }
 
             if (fullTime?.home != null) updateData.scoreHome = fullTime.home;
             if (fullTime?.away != null) updateData.scoreAway = fullTime.away;
@@ -966,7 +988,7 @@ async function syncFromAPI() {
             }
 
             if (newStatus !== dbMatch.status || isTeamChanged) {
-                console.log(`[MatchSync] ${dbMatch.homeName} vs ${dbMatch.awayName}: ${dbMatch.status} -> ${newStatus} (Teams: ${am.homeTeam?.name} vs ${am.awayTeam?.name})`);
+                console.log(`[MatchSync] ${dbMatch.homeName} vs ${dbMatch.awayName}: ${dbMatch.status} -> ${newStatus} (Teams: ${targetHomeName} vs ${targetAwayName})`);
             }
 
             ops.push(prisma.worldCupMatch.update({
