@@ -1088,7 +1088,7 @@ const App: React.FC = () => {
           </div>
         </div> */}
 
-        {/* Database Extended & Restored Notice */}
+        {/* Database Extended & Restored Notice (Commented out - chat history fully restored)
         {showExtensionAlert && (
           <div className="bg-emerald-500/10 border-b border-emerald-500/20 dark:bg-emerald-500/10 text-emerald-900 dark:text-emerald-100 px-4 py-3 text-xs sm:text-sm text-center font-medium z-30 flex flex-col justify-center items-center gap-2 shadow-sm relative">
             <div className="flex items-center gap-1.5">
@@ -1117,7 +1117,7 @@ const App: React.FC = () => {
               <span className="material-symbols-outlined notranslate text-xl" translate="no">close</span>
             </button>
           </div>
-        )}
+        )} */}
 
         <UpcomingMatchesTicker onMatchClick={handleTickerMatchClick} />
 
