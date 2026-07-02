@@ -14,19 +14,20 @@ import prisma from './db.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Neon cold-start retry helper.
-// Neon serverless databases can take a few seconds to wake up.
-// This wrapper retries any failed Prisma operation up to `maxRetries` times
-// with exponential backoff before giving up and throwing the error.
+// Database retry helper for transient network blips and pooler reconnections.
 const withRetry = async (operation, maxRetries = 3) => {
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
         try {
             return await operation();
         } catch (err) {
-            const isConnectionError = err.errorCode === 'P1001' || err.message?.includes("Can't reach database");
+            const isConnectionError = err.errorCode === 'P1001' || 
+                                       err.errorCode === 'P1002' || 
+                                       err.errorCode === 'P1017' || 
+                                       err.message?.includes("Can't reach database") ||
+                                       err.message?.includes("Server has closed the connection");
             if (isConnectionError && attempt < maxRetries) {
                 const delay = attempt * 1500; // 1.5s, 3s, 4.5s ...
-                console.warn(`[MeteoSran Server] DB connection failed (attempt ${attempt}/${maxRetries}). Neon may be waking up. Retrying in ${delay}ms...`);
+                console.warn(`[MeteoSran Server] DB connection retry (attempt ${attempt}/${maxRetries}) in ${delay}ms...`);
                 await new Promise(resolve => setTimeout(resolve, delay));
             } else {
                 throw err;

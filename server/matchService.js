@@ -12,6 +12,27 @@ let matchCache = [];
 let cacheLoadPromise = null;
 let lastSyncError = null;
 
+// Retry helper for transient database connection drops
+const withRetry = async (operation, maxRetries = 3) => {
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        try {
+            return await operation();
+        } catch (err) {
+            const isConnectionError = err.errorCode === 'P1001' ||
+                                       err.errorCode === 'P1002' ||
+                                       err.errorCode === 'P1017' ||
+                                       err.message?.includes("Can't reach database") ||
+                                       err.message?.includes("Server has closed the connection");
+            if (isConnectionError && attempt < maxRetries) {
+                const delay = attempt * 1000;
+                await new Promise(resolve => setTimeout(resolve, delay));
+            } else {
+                throw err;
+            }
+        }
+    }
+};
+
 async function ensureMatchCacheLoaded(force = false) {
     if (force) {
         matchCache = [];
@@ -25,9 +46,9 @@ async function ensureMatchCacheLoaded(force = false) {
 
     cacheLoadPromise = (async () => {
         try {
-            const rows = await prisma.worldCupMatch.findMany({
+            const rows = await withRetry(() => prisma.worldCupMatch.findMany({
                 orderBy: { kickoff: 'asc' },
-            });
+            }));
             matchCache = rows.map(dbRowToMatch);
             return matchCache;
         } finally {
