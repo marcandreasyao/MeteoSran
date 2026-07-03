@@ -2734,80 +2734,71 @@ ${resultsText}`;
     }
 });
 
-// Serve static files from the React app
-app.use(express.static(path.join(__dirname, '../dist')));
+// ─────────────────────────────────────────────────────────────────
+// STATIC FILE SERVING: Only in local/Render mode, not on Vercel.
+// On Vercel, the /dist folder is served natively by the CDN.
+// ─────────────────────────────────────────────────────────────────
+const isVercel = process.env.VERCEL === '1';
 
-app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, '../dist/index.html'));
-});
-
-const startServer = (port) => {
-    const server = app.listen(port, () => {
-        console.log(`[MeteoSran Server] Weather proxy server running on port ${port}`);
-
-        // ─────────────────────────────────────────────────────────────
-        // NEON KEEP-ALIVE: Ping every 4 minutes to prevent cold-starts.
-        // Neon suspends after ~5 min of inactivity — this keeps it warm.
-        // (DISABLED to save Neon free tier compute quota)
-        // ─────────────────────────────────────────────────────────────
-        const NEON_PING_INTERVAL_MS = 4 * 60 * 1000; // 4 minutes
-
-        const pingNeon = async () => {
-            try {
-                await prisma.$queryRaw`SELECT 1`;
-                // Silent success — no console spam
-            } catch (err) {
-                console.warn('[MeteoSran Server] ⚠️ Neon keep-alive ping failed:', err.message);
-            }
-        };
-
-        // Initial warm-up on startup (DISABLED to save Neon free tier compute quota)
-        /*
-        console.log('[MeteoSran Server] 🔌 Warming up Neon database connection...');
-        pingNeon().then(() => {
-            console.log('[MeteoSran Server] ✅ Neon database is awake and ready.');
-        });
-        */
-
-        // Recurring ping to keep it alive (not needed on Supabase)
-        const neonKeepAlive = null;
-
-        // ─────────────────────────────────────────────────────────────
-        // MATCH SYNC: Seed from API then start smart background poller
-        // ACTIVE on Supabase — safe from compute quota limits
-        // ─────────────────────────────────────────────────────────────
-        seedFromAPI().then(() => {
-            startSmartPoller();
-        }).catch(err => {
-            console.warn('[MeteoSran Server] Seed failed, starting poller anyway:', err.message);
-            startSmartPoller();
-        });
-
-        // ─────────────────────────────────────────────────────────────
-        // GRACEFUL SHUTDOWN: Clean up on process termination
-        // ─────────────────────────────────────────────────────────────
-        const shutdown = async (signal) => {
-            console.log(`\n[MeteoSran Server] ${signal} received — shutting down gracefully...`);
-            clearInterval(neonKeepAlive);
-            server.close(async () => {
-                await prisma.$disconnect();
-                console.log('[MeteoSran Server] 🔌 Neon disconnected. Goodbye!');
-                process.exit(0);
-            });
-        };
-
-        process.on('SIGTERM', () => shutdown('SIGTERM'));
-        process.on('SIGINT',  () => shutdown('SIGINT'));
-
-    }).on('error', (err) => {
-        if (err.code === 'EADDRINUSE') {
-            const nextPort = Number(port) + 1;
-            console.warn(`[MeteoSran Server] Port ${port} is in use, trying ${nextPort}...`);
-            startServer(nextPort);
-        } else {
-            console.error('[MeteoSran Server] Server error:', err);
-        }
+if (!isVercel) {
+    app.use(express.static(path.join(__dirname, '../dist')));
+    app.get('*', (req, res) => {
+        res.sendFile(path.join(__dirname, '../dist/index.html'));
     });
-};
+}
 
-startServer(PORT);
+// ─────────────────────────────────────────────────────────────────
+// EXPORT: For Vercel serverless (api/index.js imports this)
+// ─────────────────────────────────────────────────────────────────
+export default app;
+
+// ─────────────────────────────────────────────────────────────────
+// LOCAL / RENDER START: Only call app.listen() when NOT on Vercel
+// ─────────────────────────────────────────────────────────────────
+if (!isVercel) {
+    const startServer = (port) => {
+        const server = app.listen(port, () => {
+            console.log(`[MeteoSran Server] Weather proxy server running on port ${port}`);
+
+            const neonKeepAlive = null;
+
+            // ─────────────────────────────────────────────────────────────
+            // MATCH SYNC: Seed from API then start smart background poller
+            // ACTIVE on Supabase — safe from compute quota limits
+            // ─────────────────────────────────────────────────────────────
+            seedFromAPI().then(() => {
+                startSmartPoller();
+            }).catch(err => {
+                console.warn('[MeteoSran Server] Seed failed, starting poller anyway:', err.message);
+                startSmartPoller();
+            });
+
+            // ─────────────────────────────────────────────────────────────
+            // GRACEFUL SHUTDOWN: Clean up on process termination
+            // ─────────────────────────────────────────────────────────────
+            const shutdown = async (signal) => {
+                console.log(`\n[MeteoSran Server] ${signal} received — shutting down gracefully...`);
+                clearInterval(neonKeepAlive);
+                server.close(async () => {
+                    await prisma.$disconnect();
+                    console.log('[MeteoSran Server] Disconnected. Goodbye!');
+                    process.exit(0);
+                });
+            };
+
+            process.on('SIGTERM', () => shutdown('SIGTERM'));
+            process.on('SIGINT',  () => shutdown('SIGINT'));
+
+        }).on('error', (err) => {
+            if (err.code === 'EADDRINUSE') {
+                const nextPort = Number(port) + 1;
+                console.warn(`[MeteoSran Server] Port ${port} is in use, trying ${nextPort}...`);
+                startServer(nextPort);
+            } else {
+                console.error('[MeteoSran Server] Server error:', err);
+            }
+        });
+    };
+
+    startServer(PORT);
+}
