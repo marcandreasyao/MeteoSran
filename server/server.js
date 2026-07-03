@@ -1976,14 +1976,23 @@ app.get('/api/worldcup/leaderboard', async (req, res) => {
 });
 
 app.post('/api/worldcup/sync', async (req, res) => {
+    // Protect: require CRON_SECRET bearer token (sent by Vercel Cron automatically)
+    const cronSecret = process.env.CRON_SECRET;
+    if (cronSecret) {
+        const authHeader = req.headers['authorization'];
+        if (!authHeader || authHeader !== `Bearer ${cronSecret}`) {
+            return res.status(401).json({ error: 'Unauthorized — invalid or missing CRON_SECRET.' });
+        }
+    }
+
     try {
-        console.log('[MeteoSran Server] Manual sync requested on-demand.');
+        console.log('[MeteoSran Server] Cron/manual sync triggered.');
         await runSyncCycle();
         const status = getSyncStatus();
         res.json({ success: true, ...status });
     } catch (err) {
-        console.error("Error during manual sync:", err);
-        res.status(500).json({ error: "Sync failed", details: err.message });
+        console.error('Error during sync:', err);
+        res.status(500).json({ error: 'Sync failed', details: err.message });
     }
 });
 
