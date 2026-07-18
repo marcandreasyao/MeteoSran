@@ -651,7 +651,8 @@ export const WorldCupHubModal: React.FC<WorldCupHubModalProps> = ({ onClose }) =
                                                         <div className="flex items-center gap-2 truncate max-w-[80%]">
                                                             {match.home && match.home.code !== 'UN' ? (
                                                                 <img 
-                                                                    src={`https://flagcdn.com/${match.home.code.toLowerCase()}.svg`} 
+                                                                    src={(!match.home?.code || match.home.code.toLowerCase() === 'tbd') ? 'https://flagcdn.com/un.svg' : `https://flagcdn.com/${match.home.code.toLowerCase()}.svg`} 
+                                                                    onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = 'https://flagcdn.com/un.svg'; }}
                                                                     alt="" 
                                                                     className="w-4 h-3 object-cover rounded-[1px]"
                                                                 />
@@ -680,7 +681,8 @@ export const WorldCupHubModal: React.FC<WorldCupHubModalProps> = ({ onClose }) =
                                                         <div className="flex items-center gap-2 truncate max-w-[80%]">
                                                             {match.away && match.away.code !== 'UN' ? (
                                                                 <img 
-                                                                    src={`https://flagcdn.com/${match.away.code.toLowerCase()}.svg`} 
+                                                                    src={(!match.away?.code || match.away.code.toLowerCase() === 'tbd') ? 'https://flagcdn.com/un.svg' : `https://flagcdn.com/${match.away.code.toLowerCase()}.svg`} 
+                                                                    onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = 'https://flagcdn.com/un.svg'; }}
                                                                     alt="" 
                                                                     className="w-4 h-3 object-cover rounded-[1px]"
                                                                 />
@@ -709,7 +711,8 @@ export const WorldCupHubModal: React.FC<WorldCupHubModalProps> = ({ onClose }) =
                                     </h5>
                                     <div className="flex items-center gap-3">
                                         <img 
-                                            src={`https://flagcdn.com/${champion.code.toLowerCase()}.svg`} 
+                                            src={(!champion.code || champion.code.toLowerCase() === 'tbd') ? 'https://flagcdn.com/un.svg' : `https://flagcdn.com/${champion.code.toLowerCase()}.svg`} 
+                                            onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = 'https://flagcdn.com/un.svg'; }}
                                             alt={champion.name} 
                                             className="w-8 h-5.5 object-cover rounded border border-yellow-500/20 shadow-md"
                                         />

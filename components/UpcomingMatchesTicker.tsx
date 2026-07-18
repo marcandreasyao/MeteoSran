@@ -154,7 +154,8 @@ export const UpcomingMatchesTicker: React.FC<UpcomingMatchesTickerProps> = ({ on
                                 {/* Middle/Right: Flags & Score */}
                                 <div className="flex items-center gap-1.5 ml-1">
                                     <img 
-                                        src={`https://flagcdn.com/w40/${match.home.code.toLowerCase()}.png`} 
+                                        src={(!match.home.code || match.home.code.toLowerCase() === 'tbd') ? 'https://flagcdn.com/un.svg' : `https://flagcdn.com/${match.home.code.toLowerCase()}.svg`} 
+                                        onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = 'https://flagcdn.com/un.svg'; }}
                                         alt={match.home.code} 
                                         className="w-4 h-4 object-cover rounded-full border border-white/20 shadow-sm" 
                                     />
@@ -168,7 +169,8 @@ export const UpcomingMatchesTicker: React.FC<UpcomingMatchesTickerProps> = ({ on
                                         <span className="text-[10px] opacity-60 font-bold mx-0.5">-</span>
                                     )}
                                     <img 
-                                        src={`https://flagcdn.com/w40/${match.away.code.toLowerCase()}.png`} 
+                                        src={(!match.away.code || match.away.code.toLowerCase() === 'tbd') ? 'https://flagcdn.com/un.svg' : `https://flagcdn.com/${match.away.code.toLowerCase()}.svg`} 
+                                        onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = 'https://flagcdn.com/un.svg'; }}
                                         alt={match.away.code} 
                                         className="w-4 h-4 object-cover rounded-full border border-white/20 shadow-sm" 
                                     />

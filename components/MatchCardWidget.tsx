@@ -33,14 +33,26 @@ interface Match {
     stats?: {
         possession: { home: number; away: number };
         shots: { home: number; away: number };
-        shotsOnTarget: { home: number; away: number };
-        fouls: { home: number; away: number };
-        yellowCards: { home: number; away: number };
-        corners: { home: number; away: number };
+        shotsOnTarget?: { home: number; away: number };
+        fouls?: { home: number; away: number };
+        yellowCards?: { home: number; away: number };
+        corners?: { home: number; away: number };
     };
     events?: MatchEvent[];
     momentum?: number[];
 }
+
+const getFlagUrl = (code?: string) => {
+    if (!code || code.toLowerCase() === 'tbd' || code.toLowerCase() === 'unk') {
+        return 'https://flagcdn.com/un.svg';
+    }
+    return `https://flagcdn.com/${code.toLowerCase()}.svg`;
+};
+
+const handleFlagError = (e: React.SyntheticEvent<HTMLImageElement>) => {
+    e.currentTarget.onerror = null;
+    e.currentTarget.src = 'https://flagcdn.com/un.svg';
+};
 
 interface MatchCardWidgetProps {
     matchId: string;
@@ -457,7 +469,8 @@ export const MatchCardWidget: React.FC<MatchCardWidgetProps> = ({ matchId, defau
                     <div className="flex flex-col items-center w-28 text-center">
                         <div className="w-14 h-14 rounded-full bg-slate-800 border-2 border-slate-700 shadow-md flex items-center justify-center overflow-hidden mb-2 hover:scale-105 transition-transform">
                             <img 
-                                src={`https://flagcdn.com/${match.home.code.toLowerCase()}.svg`} 
+                                src={getFlagUrl(match.home.code)} 
+                                onError={handleFlagError}
                                 alt={match.home.name} 
                                 className="w-full h-full object-cover scale-[1.05]" 
                             />
@@ -547,7 +560,8 @@ export const MatchCardWidget: React.FC<MatchCardWidgetProps> = ({ matchId, defau
                     <div className="flex flex-col items-center w-28 text-center">
                         <div className="w-14 h-14 rounded-full bg-slate-800 border-2 border-slate-700 shadow-md flex items-center justify-center overflow-hidden mb-2 hover:scale-105 transition-transform">
                             <img 
-                                src={`https://flagcdn.com/${match.away.code.toLowerCase()}.svg`} 
+                                src={getFlagUrl(match.away.code)} 
+                                onError={handleFlagError}
                                 alt={match.away.name} 
                                 className="w-full h-full object-cover scale-[1.05]" 
                             />
@@ -1029,7 +1043,8 @@ export const MatchCardWidget: React.FC<MatchCardWidgetProps> = ({ matchId, defau
                                 label={match.home.name}
                                 icon={
                                     <img
-                                        src={`https://flagcdn.com/${match.home.code.toLowerCase()}.svg`}
+                                        src={getFlagUrl(match.home.code)}
+                                        onError={handleFlagError}
                                         alt={match.home.name}
                                         className="w-5 h-3.5 object-cover rounded-[2px] border border-slate-700/30 shadow-sm"
                                     />
@@ -1045,7 +1060,8 @@ export const MatchCardWidget: React.FC<MatchCardWidgetProps> = ({ matchId, defau
                                 label={match.away.name}
                                 icon={
                                     <img
-                                        src={`https://flagcdn.com/${match.away.code.toLowerCase()}.svg`}
+                                        src={getFlagUrl(match.away.code)}
+                                        onError={handleFlagError}
                                         alt={match.away.name}
                                         className="w-5 h-3.5 object-cover rounded-[2px] border border-slate-700/30 shadow-sm"
                                     />

@@ -11,6 +11,18 @@ interface WelcomeScreenProps {
   isKeyboardOpen?: boolean;
 }
 
+const getFlagUrl = (code?: string) => {
+  if (!code || code.toLowerCase() === 'tbd' || code.toLowerCase() === 'unk') {
+    return 'https://flagcdn.com/un.svg';
+  }
+  return `https://flagcdn.com/${code.toLowerCase()}.svg`;
+};
+
+const handleFlagError = (e: React.SyntheticEvent<HTMLImageElement>) => {
+  e.currentTarget.onerror = null;
+  e.currentTarget.src = 'https://flagcdn.com/un.svg';
+};
+
 const allQuestions = [
   { key: "q1", icon: "today" },
   { key: "q2", icon: "rainy" },
@@ -271,7 +283,8 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ firstName, onSugge
                           <div className="flex items-center gap-2.5 w-[42%]">
                             <div className="w-7 h-7 rounded-full overflow-hidden border border-slate-200/10 dark:border-slate-800/10 flex-shrink-0 flex items-center justify-center">
                               <img
-                                src={`https://flagcdn.com/${match.home.code.toLowerCase()}.svg`}
+                                src={getFlagUrl(match.home.code)}
+                                onError={handleFlagError}
                                 alt={match.home.name}
                                 className="w-full h-full object-cover scale-[1.05]"
                               />
@@ -283,7 +296,8 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ firstName, onSugge
                             <span className="font-bold text-xs sm:text-sm text-slate-700 dark:text-slate-200 truncate">{match.away.name}</span>
                             <div className="w-7 h-7 rounded-full overflow-hidden border border-slate-200/10 dark:border-slate-800/10 flex-shrink-0 flex items-center justify-center">
                               <img
-                                src={`https://flagcdn.com/${match.away.code.toLowerCase()}.svg`}
+                                src={getFlagUrl(match.away.code)}
+                                onError={handleFlagError}
                                 alt={match.away.name}
                                 className="w-full h-full object-cover scale-[1.05]"
                               />
@@ -494,7 +508,8 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ firstName, onSugge
                             <span className="font-bold text-sm text-slate-100 text-right leading-tight">{match.home.name}</span>
                             <div className="w-8 h-8 rounded-full overflow-hidden border border-slate-700 flex-shrink-0">
                               <img
-                                src={`https://flagcdn.com/${match.home.code.toLowerCase()}.svg`}
+                                src={getFlagUrl(match.home.code)}
+                                onError={handleFlagError}
                                 alt={match.home.name}
                                 className="w-full h-full object-cover scale-[1.05]"
                               />
@@ -512,7 +527,8 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ firstName, onSugge
                           <div className="flex items-center gap-2 flex-1 justify-start">
                             <div className="w-8 h-8 rounded-full overflow-hidden border border-slate-700 flex-shrink-0">
                               <img
-                                src={`https://flagcdn.com/${match.away.code.toLowerCase()}.svg`}
+                                src={getFlagUrl(match.away.code)}
+                                onError={handleFlagError}
                                 alt={match.away.name}
                                 className="w-full h-full object-cover scale-[1.05]"
                               />
