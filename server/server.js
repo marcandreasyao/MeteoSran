@@ -1976,18 +1976,18 @@ app.get('/api/worldcup/leaderboard', async (req, res) => {
 });
 
 app.post('/api/worldcup/sync', async (req, res) => {
-    // Protect: require CRON_SECRET bearer token (sent by Vercel Cron automatically)
+    // Protect cron requests if CRON_SECRET is supplied, but allow manual client UI sync requests
     const cronSecret = process.env.CRON_SECRET;
-    if (cronSecret) {
-        const authHeader = req.headers['authorization'];
-        if (!authHeader || authHeader !== `Bearer ${cronSecret}`) {
-            return res.status(401).json({ error: 'Unauthorized — invalid or missing CRON_SECRET.' });
-        }
+    const authHeader = req.headers['authorization'];
+    
+    // If CRON_SECRET is set AND authorization header is provided but invalid, reject
+    if (cronSecret && authHeader && authHeader !== `Bearer ${cronSecret}`) {
+        return res.status(401).json({ error: 'Unauthorized — invalid CRON_SECRET.' });
     }
 
     try {
         console.log('[MeteoSran Server] Cron/manual sync triggered.');
-        await runSyncCycle();
+        await runSyncCycle(true);
         const status = getSyncStatus();
         res.json({ success: true, ...status });
     } catch (err) {

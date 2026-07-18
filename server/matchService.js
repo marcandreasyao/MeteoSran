@@ -874,9 +874,81 @@ async function autoCorrectStatuses() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Knockout bracket auto-progression fallback engine
+// ─────────────────────────────────────────────────────────────────────────────
+async function resolveKnockoutProgression() {
+    try {
+        const matches = await prisma.worldCupMatch.findMany({
+            where: {
+                group: { in: ['SEMI FINALS', 'THIRD PLACE', 'FINAL', 'QUARTER FINALS'] }
+            }
+        });
+
+        const ops = [];
+
+        const sf1 = matches.find(m => m.id === 'ko_537387' || (m.group === 'SEMI FINALS' && (m.homeName === 'France' || m.awayName === 'France')));
+        const sf2 = matches.find(m => m.id === 'ko_537388' || (m.group === 'SEMI FINALS' && (m.homeName === 'England' || m.awayName === 'England')));
+        const tp = matches.find(m => m.id === 'ko_537389' || m.group === 'THIRD PLACE');
+        const fn = matches.find(m => m.id === 'ko_537390' || m.group === 'FINAL');
+
+        if (sf1 && sf1.status === 'finished') {
+            const sf1Winner = sf1.scoreHome > sf1.scoreAway 
+                ? { name: sf1.homeName, code: sf1.homeCode }
+                : { name: sf1.awayName, code: sf1.awayCode };
+            const sf1Loser = sf1.scoreHome > sf1.scoreAway 
+                ? { name: sf1.awayName, code: sf1.awayCode }
+                : { name: sf1.homeName, code: sf1.homeCode };
+
+            if (tp && (tp.homeName === 'À déterminer' || tp.homeCode === 'TBD' || tp.homeName !== sf1Loser.name)) {
+                ops.push(prisma.worldCupMatch.update({
+                    where: { id: tp.id },
+                    data: { homeName: sf1Loser.name, homeCode: sf1Loser.code }
+                }));
+            }
+            if (fn && (fn.homeName === 'À déterminer' || fn.homeCode === 'TBD' || fn.homeName !== sf1Winner.name)) {
+                ops.push(prisma.worldCupMatch.update({
+                    where: { id: fn.id },
+                    data: { homeName: sf1Winner.name, homeCode: sf1Winner.code }
+                }));
+            }
+        }
+
+        if (sf2 && sf2.status === 'finished') {
+            const sf2Winner = sf2.scoreHome > sf2.scoreAway 
+                ? { name: sf2.homeName, code: sf2.homeCode }
+                : { name: sf2.awayName, code: sf2.awayCode };
+            const sf2Loser = sf2.scoreHome > sf2.scoreAway 
+                ? { name: sf2.awayName, code: sf2.awayCode }
+                : { name: sf2.homeName, code: sf2.homeCode };
+
+            if (tp && (tp.awayName === 'À déterminer' || tp.awayCode === 'TBD' || tp.awayName !== sf2Loser.name)) {
+                ops.push(prisma.worldCupMatch.update({
+                    where: { id: tp.id },
+                    data: { awayName: sf2Loser.name, awayCode: sf2Loser.code }
+                }));
+            }
+            if (fn && (fn.awayName === 'À déterminer' || fn.awayCode === 'TBD' || fn.awayName !== sf2Winner.name)) {
+                ops.push(prisma.worldCupMatch.update({
+                    where: { id: fn.id },
+                    data: { awayName: sf2Winner.name, awayCode: sf2Winner.code }
+                }));
+            }
+        }
+
+        if (ops.length > 0) {
+            await prisma.$transaction(ops);
+            await ensureMatchCacheLoaded(true);
+            console.log(`[MatchSync] Auto-propagated ${ops.length} knockout bracket match(es).`);
+        }
+    } catch (err) {
+        console.warn('[MatchSync] Knockout progression resolution failed:', err.message);
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Layer 2 — Football-Data.org API sync for live/finished matches
 // ─────────────────────────────────────────────────────────────────────────────
-async function syncFromAPI() {
+async function syncFromAPI(force = false) {
     const token = getFootballDataToken();
     if (!token) return;
 
@@ -886,7 +958,7 @@ async function syncFromAPI() {
     }
 
     const now = Date.now();
-    if (now - lastApiSyncMs < API_SYNC_MIN_INTERVAL_MS) return;
+    if (!force && (now - lastApiSyncMs < API_SYNC_MIN_INTERVAL_MS)) return;
 
     isSyncing = true;
 
@@ -918,7 +990,7 @@ async function syncFromAPI() {
 
             // Fallback: try by our generated ID
             if (!dbMatch) {
-                const matchId = generateMatchId(am.homeTeam.tla, am.awayTeam.tla);
+                const matchId = generateMatchId(am.homeTeam?.tla, am.awayTeam?.tla);
                 dbMatch = dbMatches.find(m => m.id === matchId);
             }
 
@@ -948,15 +1020,14 @@ async function syncFromAPI() {
             const isStatusChanged = newStatus !== dbMatch.status;
             
             let targetElapsed = dbMatch.elapsed;
-            if (am.minute != null) {
+            if (newStatus === 'live' && am.minute != null) {
                 targetElapsed = am.minute;
             } else if (newStatus === 'finished') {
                 targetElapsed = 90;
             }
-            const isElapsedChanged = targetElapsed !== dbMatch.elapsed;
-            const isStatsMissing = !dbMatch.stats;
+            const isElapsedChanged = newStatus === 'live' && targetElapsed !== dbMatch.elapsed;
 
-            if (!isScoreChanged && !isStatusChanged && !isElapsedChanged && !isStatsMissing && !isTeamChanged) {
+            if (!isScoreChanged && !isStatusChanged && !isElapsedChanged && !isTeamChanged) {
                 continue;
             }
 
@@ -1002,7 +1073,11 @@ async function syncFromAPI() {
         }
 
         if (ops.length > 0) {
-            await prisma.$transaction(ops);
+            const chunkSize = 15;
+            for (let i = 0; i < ops.length; i += chunkSize) {
+                const chunk = ops.slice(i, i + chunkSize);
+                await prisma.$transaction(chunk);
+            }
             await ensureMatchCacheLoaded(true);
             // Settle predictions after the transaction succeeds
             for (const s of postSyncSettlements) {
@@ -1023,7 +1098,7 @@ async function syncFromAPI() {
 // Unified Sync Cycle: Runs auto-correct and/or API sync with a shared lock
 // to prevent concurrent DB connection pool exhaustion (connection_limit=1).
 // ─────────────────────────────────────────────────────────────────────────────
-export async function runSyncCycle() {
+export async function runSyncCycle(force = false) {
     if (activeSyncPromise) {
         return activeSyncPromise;
     }
@@ -1034,7 +1109,7 @@ export async function runSyncCycle() {
             // Layer 1: Time-based corrections (always run, zero cost)
             await autoCorrectStatuses();
 
-            // Layer 2: API sync (only if matches are active or recently finished/kickoff, or if 30 min routine sync is due)
+            // Layer 2: API sync
             const now = new Date();
             const liveCount = await prisma.worldCupMatch.count({
                 where: { status: 'live' },
@@ -1048,20 +1123,35 @@ export async function runSyncCycle() {
                 },
             });
 
-            const threeHoursAgo = new Date(now.getTime() - 3 * 60 * 60 * 1000);
-            const recentScheduledCount = await prisma.worldCupMatch.count({
+            const pendingTbdCount = await prisma.worldCupMatch.count({
                 where: {
                     status: 'scheduled',
-                    kickoff: { gte: threeHoursAgo, lte: now },
+                    OR: [
+                        { homeName: 'À déterminer' },
+                        { awayName: 'À déterminer' },
+                        { homeCode: 'TBD' },
+                        { awayCode: 'TBD' }
+                    ]
+                }
+            });
+
+            const next48Hours = new Date(now.getTime() + 48 * 60 * 60 * 1000);
+            const upcomingScheduledCount = await prisma.worldCupMatch.count({
+                where: {
+                    status: 'scheduled',
+                    kickoff: { lte: next48Hours },
                 },
             });
 
-            // Routinely sync every 30 minutes to capture team/bracket updates
-            const isRoutineSyncTime = (Date.now() - lastApiSyncMs > 30 * 60 * 1000);
+            // Routinely sync every 10 minutes (or if forced) to capture team/bracket updates
+            const isRoutineSyncTime = (Date.now() - lastApiSyncMs > 10 * 60 * 1000);
 
-            if (liveCount > 0 || todayFinishedCount > 0 || recentScheduledCount > 0 || isRoutineSyncTime) {
-                await syncFromAPI();
+            if (force || liveCount > 0 || todayFinishedCount > 0 || pendingTbdCount > 0 || upcomingScheduledCount > 0 || isRoutineSyncTime) {
+                await syncFromAPI(force);
             }
+
+            // Always resolve knockout bracket auto-progression as fallback
+            await resolveKnockoutProgression();
         } catch (err) {
             console.warn('[MatchSync] Sync cycle failed:', err.message);
             lastSyncError = err.message || String(err);

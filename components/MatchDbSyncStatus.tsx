@@ -50,6 +50,7 @@ export const MatchDbSyncStatus: React.FC = () => {
                     setLastSync(data.lastApiSyncMs);
                 }
                 setErrorMsg(data.lastSyncError);
+                window.dispatchEvent(new CustomEvent('worldcup-matches-synced'));
             } else {
                 const data = await res.json().catch(() => ({}));
                 setStatus('error');

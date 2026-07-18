@@ -114,7 +114,15 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ firstName, onSugge
 
     // Re-fetch every 60 seconds so the UI stays current after server syncs
     const refreshInterval = setInterval(fetchMatches, 60 * 1000);
-    return () => clearInterval(refreshInterval);
+    const handleMatchesSynced = () => {
+      fetchMatches();
+    };
+    window.addEventListener('worldcup-matches-synced', handleMatchesSynced);
+
+    return () => {
+      clearInterval(refreshInterval);
+      window.removeEventListener('worldcup-matches-synced', handleMatchesSynced);
+    };
   }, []);
 
   const getGreetingKey = () => {
