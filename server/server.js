@@ -1134,36 +1134,28 @@ app.post('/api/ai/chat', async (req, res) => {
         }
 
         let finalSystemInstruction = (systemInstruction || "You are MeteoSran.") + hydratedMemoryBlock;
+        let graphContext = '';
+        let hasGraphContext = false;
 
-        // WORLD CUP RAG INTEGRATION
+        // WORLD CUP RAG & GRAPH INTEGRATION
         if (lastUserText) {
-            const queryLower = lastUserText.toLowerCase();
-            const worldCupKeywords = [
-                'world cup', 'coupe du monde', 'mondial',
-                'match', 'football', 'soccer', 'fifa',
-                'score', 'résultat', 'resultat', 'statistique', 'stat', 'stats',
-                'classement', 'standing', 'groupe', 'group',
-                'gagné', 'gagne', 'perdu', 'victoire', 'défaite', 'defaite',
-                'nul', 'draw', 'goal', 'but', 'tir', 'shot', 'possession', 'carton',
-                'prochain', 'next', 'today', 'aujourd',
-                'live', 'en cours', 'terminé', 'termine',
-                'stade', 'stadium', 'terrain',
-                'équipe', 'equipe', 'team',
-                'algeria', 'algérie', 'algerie',
-                'argentina', 'argentine',
-                'france', 'senegal', 'sénégal',
-                'cote d', 'côte d',
-                'portugal', 'england', 'angleterre', 'croatia', 'croatie',
-                'ghana', 'panama',
-                'iraq', 'irak', 'norway', 'norvège', 'norvege',
-                'austria', 'autriche', 'jordan', 'jordanie',
-                'usa', 'united states', 'états-unis', 'etats-unis',
-                'congo', 'dr congo', 'rd congo'
-            ];
-            const isWorldCupQuery = worldCupKeywords.some(kw => queryLower.includes(kw));
+            try {
+                const queryLower = lastUserText.toLowerCase();
+                
+                // Fetch graph context first to see if query is database-relevant
+                graphContext = await retrieveGraphContext(lastUserText);
+                hasGraphContext = graphContext && graphContext.trim().length > 0;
 
-            if (isWorldCupQuery) {
-                try {
+                // Match keywords for static RAG background knowledge (e.g. venue weather, stadium roofs, altitude)
+                const worldCupStaticKeywords = [
+                    'world cup', 'coupe du monde', 'mondial', 'fifa',
+                    'altitude', 'thin air', 'wet pitch', 'humidity', 'heat',
+                    'roof', 'host', 'stadium', 'venue', 'villes', 'stades',
+                    'qualification', 'third-place', 'troisième', 'marcandreas'
+                ];
+                const isStaticRAGQuery = worldCupStaticKeywords.some(kw => queryLower.includes(kw));
+
+                if (hasGraphContext || isStaticRAGQuery) {
                     // Fetch top 3 context chunks via hybrid search (Dense + BM25 RRF)
                     const activeKey = geminiKeysState.length > 0 ? getNextAvailableKey()?.key || process.env.GEMINI_API_KEY : process.env.GEMINI_API_KEY;
                     if (activeKey) {
@@ -1174,19 +1166,9 @@ app.post('/api/ai/chat', async (req, res) => {
                             finalSystemInstruction += ragPrompt;
                         }
                     }
-
-                    // GRAPH RAG: Live match scores, stats, and standings
-                    try {
-                        const graphContext = await retrieveGraphContext(lastUserText);
-                        if (graphContext && graphContext.length > 0) {
-                            finalSystemInstruction += `\n\n[LIVE MATCH INTELLIGENCE]\nThe following is real-time match data from the FIFA World Cup 2026. Use this to answer questions about scores, results, statistics, standings, and upcoming fixtures accurately:\n${graphContext}`;
-                        }
-                    } catch (graphErr) {
-                        console.error('[MeteoSran Server] Graph RAG retrieval failed:', graphErr);
-                    }
-                } catch (ragErr) {
-                    console.error("[MeteoSran Server] World Cup RAG retrieval failed:", ragErr);
                 }
+            } catch (err) {
+                console.error("[MeteoSran Server] World Cup RAG/Graph context injection failed:", err);
             }
         }
 
@@ -1229,7 +1211,18 @@ app.post('/api/ai/chat', async (req, res) => {
 
                     let loopCount = 0;
                     const MAX_LOOPS = 3;
-                    let currentContents = [...sanitizedContents];
+                    // Deep copy sanitizedContents and inject graphContext into the last user message parts
+                    let currentContents = sanitizedContents.map((msg, idx) => {
+                        if (idx === lastUserIdx) {
+                            const msgCopy = { ...msg, parts: msg.parts.map(p => ({ ...p })) };
+                            const textPart = msgCopy.parts.find(p => p.text !== undefined) || msgCopy.parts[0];
+                            if (textPart && hasGraphContext) {
+                                textPart.text = `${textPart.text}\n\n[COMPUTED FACTS & LIVE MATCH INTELLIGENCE — SERVER-VERIFIED, MUST USE AS THE ABSOLUTE TRUTH]\nCRITICAL ARITHMETIC & STATISTICAL RULES:\n1. The statistics below (goals, match counts, team scores, wins/losses, card counts, clean sheets, records) have been pre-calculated directly from the database by the server.\n2. You MUST treat these numbers as 100% accurate and final. Do NOT perform your own addition, subtraction, multiplication, or arithmetic calculations.\n3. Directly output the exact numbers provided below when answering. Never alter, estimate, round, or hallucinate these values.\n4. If there is any conflict between your memory or user suggestions and the numbers below, the numbers below override everything.\n5. Answer the user query using these facts. Never mention "the server statistics" or "according to the computed facts" to the user. State them as absolute, verified facts in your voice.\n\n${graphContext}`;
+                            }
+                            return msgCopy;
+                        }
+                        return msg;
+                    });
                     let responseText = null;
 
                     while (loopCount < MAX_LOOPS) {
