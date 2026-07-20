@@ -1217,7 +1217,16 @@ app.post('/api/ai/chat', async (req, res) => {
                             const msgCopy = { ...msg, parts: msg.parts.map(p => ({ ...p })) };
                             const textPart = msgCopy.parts.find(p => p.text !== undefined) || msgCopy.parts[0];
                             if (textPart && hasGraphContext) {
-                                textPart.text = `${textPart.text}\n\n[COMPUTED FACTS & LIVE MATCH INTELLIGENCE — SERVER-VERIFIED, MUST USE AS THE ABSOLUTE TRUTH]\nCRITICAL ARITHMETIC & STATISTICAL RULES:\n1. The statistics below (goals, match counts, team scores, wins/losses, card counts, clean sheets, records) have been pre-calculated directly from the database by the server.\n2. You MUST treat these numbers as 100% accurate and final. Do NOT perform your own addition, subtraction, multiplication, or arithmetic calculations.\n3. Directly output the exact numbers provided below when answering. Never alter, estimate, round, or hallucinate these values.\n4. If there is any conflict between your memory or user suggestions and the numbers below, the numbers below override everything.\n5. Answer the user query using these facts. Never mention "the server statistics" or "according to the computed facts" to the user. State them as absolute, verified facts in your voice.\n\n${graphContext}`;
+                                textPart.text = `${textPart.text}\n\n[COMPUTED FACTS & LIVE MATCH INTELLIGENCE — SERVER-VERIFIED, MUST USE AS THE ABSOLUTE TRUTH]
+CRITICAL ARITHMETIC & STATISTICAL RULES:
+1. The statistics below (goals, match counts, team scores, wins/losses, card counts, clean sheets, records) have been pre-calculated directly from the database by the server.
+2. You MUST treat these numbers as 100% accurate and final. Do NOT perform your own addition, subtraction, multiplication, or arithmetic calculations.
+3. Directly output the exact numbers provided below when answering. Never alter, estimate, round, or hallucinate these values.
+4. If there is any conflict between your memory or user suggestions and the numbers below, the numbers below override everything.
+5. Answer the user query using these facts. Never mention "the server statistics" or "according to the computed facts" to the user. State them as absolute, verified facts in your voice.
+6. PRIVATE IDENTIFIERS: Match IDs formatted as '[Internal Match ID: ...]' (e.g., '[Internal Match ID: ko_537390]') are technical details. You MUST NEVER show, print, or leak these Match IDs in your conversational text replies to the user. If you refer to a match, refer to it by the team names (e.g., 'Spain vs Argentina'). The IDs are strictly for your internal logic or to output the interactive weather tag: [WORLD_CUP_MATCH: match_id] on its own line.
+
+${graphContext}`;
                             }
                             return msgCopy;
                         }

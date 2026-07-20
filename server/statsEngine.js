@@ -324,6 +324,7 @@ export async function getTournamentStats() {
             yellowCards,
             fouls,
             corners,
+            round: m.group && m.group.toUpperCase() === m.group ? m.group : m.round,
             venue: `${m.venueName || ''} (${m.venueCity || ''})`
         };
     });

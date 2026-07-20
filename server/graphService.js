@@ -168,13 +168,21 @@ function matchInvolvesTeam(match, teamName) {
     return match.home.name === teamName || match.away.name === teamName;
 }
 
+function checkKeywords(queryLower, keywords) {
+    return keywords.some(k => {
+        const escaped = k.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+        const regex = new RegExp(`(?:^|[^a-zA-Z0-9àâäéèêëîïôöùûüç])${escaped}(?:$|[^a-zA-Z0-9àâäéèêëîïôöùûüç])`, 'i');
+        return regex.test(queryLower);
+    });
+}
+
 export async function retrieveGraphContext(queryText) {
     if (!queryText) return '';
 
     const queryLower = queryText.toLowerCase();
     const allMatches = await getAllMatches();
 
-    // Extract mentioned teams with clean word boundary matching
+    // 1. Extract mentioned teams with clean word boundary matching
     const mentionedTeams = new Set();
     for (const [alias, canonical] of Object.entries(TEAM_ALIASES)) {
         const escaped = alias.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
@@ -184,33 +192,62 @@ export async function retrieveGraphContext(queryText) {
         }
     }
 
-    // Extract mentioned groups
+    // 2. Extract mentioned groups (Group A-L stage only)
     const mentionedGroups = new Set();
     const groupMatch = queryLower.match(GROUP_PATTERN);
     if (groupMatch) {
         mentionedGroups.add(`Group ${groupMatch[1].toUpperCase()}`);
     }
-    // Also detect bare group names mentioned in text
     const allGroups = [...new Set(allMatches.map(m => m.group))];
     for (const g of allGroups) {
-        if (queryLower.includes(g.toLowerCase())) {
+        if (g.startsWith('Group') && queryLower.includes(g.toLowerCase())) {
             mentionedGroups.add(g);
         }
     }
 
-    // Detect keyword intents
-    const wantsScore = ['score', 'résultat', 'resultat', 'result', 'gagné', 'gagne', 'perdu', 'victoire', 'défaite', 'defaite', 'nul', 'draw', 'goal', 'but'].some(k => queryLower.includes(k));
-    const wantsStats = ['statistique', 'statistiques', 'stats', 'stat', 'possession', 'tir', 'tirs', 'shot', 'shots', 'carton', 'corner', 'corners', 'yellow', 'jaune', 'faute', 'foul'].some(k => queryLower.includes(k));
-    const wantsStandings = ['classement', 'standing', 'standings', 'tableau', 'groupes', 'groups'].some(k => queryLower.includes(k));
-    const wantsLive = ['live', 'en cours', 'direct'].some(k => queryLower.includes(k));
-    const wantsNext = ['prochain', 'next', 'upcoming', 'programme', 'programmé', 'scheduled'].some(k => queryLower.includes(k));
-    const wantsToday = ['today', "aujourd'hui", 'aujourdhui'].some(k => queryLower.includes(k));
-    const wantsTotals = ['somme', 'combien', 'total', 'overall', 'all teams', 'top scorer', 'ranking', 'meilleur', 'leader', 'buts', 'goals'].some(k => queryLower.includes(k));
+    // 3. Detect keyword intents using regex word boundaries to prevent substring false triggers
+    const wantsScore = checkKeywords(queryLower, ['score', 'résultat', 'resultat', 'result', 'gagné', 'gagne', 'perdu', 'victoire', 'défaite', 'defaite', 'nul', 'draw', 'goal', 'but']);
+    const wantsStats = checkKeywords(queryLower, ['statistique', 'statistiques', 'stats', 'stat', 'possession', 'tir', 'tirs', 'shot', 'shots', 'carton', 'corner', 'corners', 'yellow', 'jaune', 'faute', 'foul']);
+    const wantsStandings = checkKeywords(queryLower, ['classement', 'standing', 'standings', 'tableau', 'groupes', 'groups']);
+    const wantsLive = checkKeywords(queryLower, ['live', 'en cours', 'direct']);
+    const wantsNext = checkKeywords(queryLower, ['prochain', 'next', 'upcoming', 'programme', 'programmé', 'scheduled']);
+    const wantsToday = checkKeywords(queryLower, ['today', "aujourd'hui", 'aujourdhui']);
+    const wantsTotals = checkKeywords(queryLower, ['somme', 'combien', 'total', 'overall', 'all teams', 'top scorer', 'ranking', 'meilleur', 'leader', 'buts', 'goals']);
+    const wantsFinals = checkKeywords(queryLower, ['finale', 'finals', 'final', 'demi-finale', 'semis', 'semi', 'knockout', 'k.o.']);
 
     const contextParts = [];
 
+    // ALWAYS INJECT TODAY'S MATCHES AND NEXT UPCOMING MATCHES
+    // The current local date is July 19, 2026
+    const todayDateStr = '2026-07-19';
+    const todayMatches = allMatches.filter(m => {
+        const dateStr = new Date(m.kickoff).toISOString().split('T')[0];
+        return dateStr === todayDateStr;
+    });
+
+    if (todayMatches.length > 0) {
+        contextParts.push(`\n[TODAY'S WORLD CUP MATCHES — CURRENT DATE: ${todayDateStr}]`);
+        for (const m of todayMatches) {
+            contextParts.push(formatMatchLine(m));
+            if (m.status === 'live' || wantsStats) {
+                contextParts.push(formatStats(m));
+            }
+        }
+    }
+
+    // Always fetch and inject the next 2 scheduled matches in the entire tournament
+    const upcomingMatches = allMatches
+        .filter(m => m.status === 'scheduled' && !todayMatches.some(tm => tm.id === m.id))
+        .slice(0, 2);
+    if (upcomingMatches.length > 0) {
+        contextParts.push(`\n[UPCOMING WORLD CUP MATCHES]`);
+        for (const m of upcomingMatches) {
+            contextParts.push(formatMatchLine(m));
+        }
+    }
+
     // Inject aggregate tournament facts if requested
-    if (wantsTotals || (queryLower.includes('goal') || queryLower.includes('but')) && mentionedTeams.size === 0) {
+    if (wantsTotals || ((queryLower.includes('goal') || queryLower.includes('but')) && mentionedTeams.size === 0 && !wantsFinals)) {
         try {
             const stats = await getTournamentStats();
             contextParts.push(`\n[COMPUTED TOURNAMENT STATISTICS — VERIFIED SERVER-SIDE, DO NOT RECALCULATE]`);
@@ -222,42 +259,35 @@ export async function retrieveGraphContext(queryText) {
             contextParts.push(`Total yellow cards: ${stats.totalYellowCards}`);
             contextParts.push(`Total fouls committed: ${stats.totalFouls}`);
             
-            // Goals leaderboard top 5
             contextParts.push(`\nGoal Scoring Leaderboard (Top 5):`);
             stats.goalLeaderboard.slice(0, 5).forEach((t, idx) => {
                 contextParts.push(`${idx + 1}. ${t.name}: ${t.goals} goals (played ${t.played})`);
             });
 
-            // Defensive Leaderboard (fewest goals conceded, top 5)
             contextParts.push(`\nBest Defenses (Fewest goals conceded, Top 5):`);
             stats.defensiveLeaderboard.slice(0, 5).forEach((t, idx) => {
                 contextParts.push(`${idx + 1}. ${t.name}: Conceded ${t.goalsConceded} goals (avg ${t.avgGoalsConceded}/match, clean sheets: ${t.cleanSheets})`);
             });
 
-            // Discipline Leaderboard (Top 3 yellow cards)
             contextParts.push(`\nMost Yellow Cards (Top 3):`);
             stats.disciplineLeaderboard.slice(0, 3).forEach((t, idx) => {
                 contextParts.push(`${idx + 1}. ${t.name}: ${t.yellowCards} yellow cards, ${t.fouls} fouls`);
             });
 
-            // Possession Averages (Top 3)
             contextParts.push(`\nBest Possession Averages (Top 3):`);
             stats.teamPerformanceAverages.slice(0, 3).forEach((t, idx) => {
                 contextParts.push(`${idx + 1}. ${t.name}: ${t.avgPossession} average possession (avg corners: ${t.avgCorners})`);
             });
 
-            // Highest Scoring Matches (Top 3)
             contextParts.push(`\nHighest Scoring Matches (Top 3):`);
             stats.highestScoringMatches.slice(0, 3).forEach((m, idx) => {
                 contextParts.push(`${idx + 1}. ${m.home} ${m.scoreStr} ${m.away} (${m.totalGoals} goals) - Round: ${m.round} - Venue: ${m.venue}`);
             });
 
-            // Biggest wins (Top 3)
             contextParts.push(`\nBiggest Win Margins (Top 3):`);
             stats.biggestWins.slice(0, 3).forEach((m, idx) => {
                 contextParts.push(`${idx + 1}. ${m.home} ${m.scoreStr} ${m.away} (+${m.diff} diff) - Round: ${m.round}`);
             });
-
         } catch (err) {
             console.error('[GraphRAG] Failed to retrieve tournament stats:', err);
         }
@@ -296,8 +326,22 @@ export async function retrieveGraphContext(queryText) {
         }
     }
 
+    // If finals/knockouts are mentioned, provide the knockout match data explicitly
+    if (wantsFinals && mentionedTeams.size === 0) {
+        const knockouts = allMatches.filter(m => m.group === 'FINAL' || m.group.includes('SEMI') || m.group.includes('QUARTER') || m.group.includes('THIRD PLACE'));
+        if (knockouts.length > 0) {
+            contextParts.push(`\n[KNOCKOUT STAGE & FINALS DETAILS — KEY FIXTURES]`);
+            for (const m of knockouts) {
+                contextParts.push(formatMatchLine(m));
+                if (m.status === 'finished' || m.status === 'live') {
+                    contextParts.push(formatStats(m));
+                }
+            }
+        }
+    }
+
     // Live matches
-    if (wantsLive || (mentionedTeams.size === 0 && !wantsNext && !wantsStandings && !wantsTotals)) {
+    if (wantsLive) {
         const liveMatches = allMatches.filter(m => m.status === 'live');
         if (liveMatches.length > 0) {
             contextParts.push('--- MATCHS EN DIRECT / LIVE MATCHES ---');
@@ -309,7 +353,7 @@ export async function retrieveGraphContext(queryText) {
     }
 
     // Scores / Results
-    if (wantsScore && mentionedTeams.size === 0 && !wantsTotals) {
+    if (wantsScore && mentionedTeams.size === 0 && !wantsTotals && !wantsFinals) {
         const finishedMatches = allMatches.filter(m => m.status === 'finished');
         if (finishedMatches.length > 0) {
             contextParts.push('--- RESULTATS / RESULTS ---');
@@ -332,22 +376,11 @@ export async function retrieveGraphContext(queryText) {
 
     // Group standings
     if (wantsStandings || mentionedGroups.size > 0) {
-        const groupsToShow = mentionedGroups.size > 0 ? mentionedGroups : new Set(allGroups);
+        const groupsToShow = mentionedGroups.size > 0 ? mentionedGroups : new Set(allGroups.filter(g => g.startsWith('Group')));
         for (const g of groupsToShow) {
             const standings = await getGroupStandings(g);
             if (standings.length > 0) {
                 contextParts.push(formatStandingsTable(g, standings));
-            }
-        }
-    }
-
-    // Fallback: if no specific context was generated but query has match keywords, provide everything
-    if (contextParts.length === 0) {
-        const hasKeyword = MATCH_KEYWORDS.some(k => queryLower.includes(k));
-        if (hasKeyword) {
-            contextParts.push('--- TOUS LES MATCHS / ALL MATCHES ---');
-            for (const m of allMatches) {
-                contextParts.push(formatMatchLine(m));
             }
         }
     }
