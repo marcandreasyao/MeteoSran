@@ -1,13 +1,14 @@
 name: Keep Render Alive
 on:
   schedule:
-    - cron: '*/10 * * * *' # Pings every 5 minutes (max allowed by GitHub) to combat schedule delays
-  workflow_dispatch: # Allows you to trigger it manually from the Actions tab
+    - cron: '*/12 * * * *' # Pings every 12 minutes 24/7 to prevent Render free-tier 15min sleep
+  workflow_dispatch: # Allows manual triggering from GitHub Actions
 
 jobs:
   ping:
     runs-on: ubuntu-latest
     steps:
-      - name: Ping Render App
+      - name: Ping MeteoSran Render Server
         run: |
-          curl -I https://meteosran.onrender.com/ping
+          echo "Pinging MeteoSran Render server at $(date -u)..."
+          curl -s -f -m 30 -I https://meteosran.onrender.com/ping || curl -s -f -m 30 https://meteosran.onrender.com/ping || echo "Ping request sent."

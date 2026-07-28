@@ -47,8 +47,8 @@ const ABIDJAN_LOCATION_KEY = '223019';
 app.use(cors());
 app.use(express.json({ limit: '10mb' }));
 
-// Keep-alive ping route
-app.get('/ping', (req, res) => {
+// Keep-alive ping route (supports GET and HEAD requests)
+app.all('/ping', (req, res) => {
     res.status(200).send('pong');
 });
 
