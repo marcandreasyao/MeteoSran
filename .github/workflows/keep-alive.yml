@@ -10,5 +10,5 @@ jobs:
     steps:
       - name: Ping MeteoSran Render Server
         run: |
-          echo "Pinging MeteoSran Render server at $(date -u)..."
-          curl -s -f -m 30 -I https://meteosran.onrender.com/ping || curl -s -f -m 30 https://meteosran.onrender.com/ping || echo "Ping request sent."
+          echo "Pinging MeteoSran custom domain and Render server at $(date -u)..."
+          curl -s -f -m 30 -I https://meteosran.com/ping || curl -s -f -m 30 -I https://meteosran.onrender.com/ping || echo "Ping request sent."
